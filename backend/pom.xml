@@ -73,6 +73,12 @@
             <artifactId>spring-modulith-starter-jdbc</artifactId>
         </dependency>
         <dependency>
+            <!-- Метрики для Prometheus на порту управления (раздел 12.5 ТЗ). -->
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>

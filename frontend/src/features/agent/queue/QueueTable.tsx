@@ -140,7 +140,7 @@ export function QueueCards({ rows, now, selected, onToggle, onOpen }: Pick<Props
                 {row.number}
               </Text>
             </Group>
-            <SlaBadge timer={row.sla} now={now} compact />
+            <SlaBadge timer={row.sla} now={now} startAt={row.createdAt} />
           </Group>
           <Text size="sm" fw={row.awaitingAgent ? 600 : 500} lineClamp={2}>
             {row.awaitingAgent && <span className="ew-unread-dot" aria-hidden />} {row.title}

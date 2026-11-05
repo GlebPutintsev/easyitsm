@@ -173,11 +173,11 @@ function TicketView({ ticket }: { ticket: Ticket }) {
               </ActionIcon>
             </Tooltip>
             {ticket.confidential && <ConfidentialIcon />}
+            <PriorityBadge priority={ticket.priority} variant="full" />
             <StatusBadge status={ticket.status} />
-            <PriorityBadge priority={ticket.priority} />
-            <SlaBadge timer={ticket.sla} now={now} withKind />
+            <SlaBadge timer={ticket.sla} now={now} startAt={ticket.createdAt} withKind />
             {ticket.escalationLevel > 0 && (
-              <Text size="xs" c="orange" fw={600}>
+              <Text size="xs" c="var(--ei-warn)" fw={600}>
                 {t('workspace.ticket.escalated', { level: ticket.escalationLevel })}
               </Text>
             )}

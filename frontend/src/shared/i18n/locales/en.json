@@ -322,6 +322,33 @@
       "title": "Maybe the answer is already here"
     }
   },
+  "ticket": {
+    "status": {
+      "draft": "Draft",
+      "new": "New",
+      "approval": "Approval",
+      "assigned": "Assigned",
+      "in_progress": "In progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "P1": "Critical",
+      "P2": "High",
+      "P3": "Medium",
+      "P4": "Low"
+    }
+  },
+  "sla": {
+    "paused": "paused",
+    "pausedLabel": "SLA paused",
+    "none": "No SLA target",
+    "days": "{{count}} d",
+    "remainingLabel": "{{value}} left",
+    "breachedLabel": "Overdue by {{value}}"
+  },
   "workspace": {
     "demo": "Demo data: the tickets module is not connected yet, changes live until the page reloads.",
     "unassigned": "Unassigned",

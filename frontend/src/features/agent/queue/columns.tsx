@@ -83,7 +83,7 @@ export const COLUMNS: Record<ColumnId, ColumnDef> = {
       ),
   },
   group: { id: 'group', width: 180, render: (r) => <Text size="sm" lineClamp={1}>{r.group?.name ?? '—'}</Text> },
-  sla: { id: 'sla', width: 130, sort: 'sla', render: (r, { now }) => <SlaBadge timer={r.sla} now={now} compact /> },
+  sla: { id: 'sla', width: 130, sort: 'sla', render: (r, { now }) => <SlaBadge timer={r.sla} now={now} startAt={r.createdAt} /> },
   updatedAt: {
     id: 'updatedAt',
     width: 130,

@@ -77,7 +77,7 @@ export function TicketSidePanel({ ticket }: { ticket: Ticket }) {
           {ticket.slaTimers.length > 0 && (
             <Stack gap={4}>
               {ticket.slaTimers.map((timer) => (
-                <SlaBadge key={timer.kind} timer={timer} now={now} withKind />
+                <SlaBadge key={timer.kind} timer={timer} now={now} startAt={ticket.createdAt} withKind />
               ))}
             </Stack>
           )}
@@ -193,7 +193,7 @@ export function TicketSidePanel({ ticket }: { ticket: Ticket }) {
               </Text>
               {ticket.requesterInfo.vip && (
                 <Tooltip label={t('workspace.side.vip')}>
-                  <IconStar size={14} color="var(--mantine-color-yellow-6)" fill="var(--mantine-color-yellow-6)" aria-label={t('workspace.side.vip')} />
+                  <IconStar size={14} color="var(--ei-warn)" fill="var(--ei-warn)" aria-label={t('workspace.side.vip')} />
                 </Tooltip>
               )}
             </Group>

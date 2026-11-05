@@ -1,34 +1,34 @@
-/* Стили рабочего места агента. Цвета — токены Mantine, поэтому работают в светлой и тёмной теме. */
+/* Стили рабочего места агента. Цвета — токены дизайн-системы «Ясность» (DESIGN.md), одинаковые в обеих темах. */
 
 .ew-unread-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--mantine-primary-color-filled);
+  background: var(--ei-accent);
   flex-shrink: 0;
 }
 
 .ew-queue tbody tr[data-selected] {
-  background: var(--mantine-primary-color-light);
+  background: var(--ei-accent-soft);
 }
 
 .ew-queue tbody tr[data-cursor] {
-  box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
-  background: var(--mantine-color-default-hover);
+  box-shadow: inset 3px 0 0 var(--ei-accent);
+  background: var(--ei-hover);
 }
 
 .ew-queue tbody tr[data-cursor][data-selected] {
-  background: var(--mantine-primary-color-light-hover);
+  background: var(--ei-accent-soft);
 }
 
 .ew-queue-card[data-selected] {
-  border-color: var(--mantine-primary-color-filled);
-  background: var(--mantine-primary-color-light);
+  border-color: var(--ei-accent);
+  background: var(--ei-accent-soft);
 }
 
 .ew-th-sort:focus-visible {
-  outline: 2px solid var(--mantine-primary-color-filled);
+  outline: 2px solid var(--ei-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -63,26 +63,26 @@
 /* Внутренняя заметка — жёлтый фон, публичный ответ — обычный; режим видно сразу (10.7). */
 .ew-note,
 .ew-composer-note {
-  background: light-dark(var(--mantine-color-yellow-0), rgba(250, 176, 5, 0.08));
-  border-color: light-dark(var(--mantine-color-yellow-3), rgba(250, 176, 5, 0.35));
+  background: var(--ei-note);
+  border-color: var(--ei-note-border);
 }
 
 .ew-reply-requester {
-  background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.08));
-  border-color: light-dark(var(--mantine-color-blue-2), rgba(34, 139, 230, 0.3));
+  background: var(--ei-surface);
+  border-color: var(--ei-border);
 }
 
 .ew-composer-reply {
-  border-color: var(--mantine-primary-color-filled);
+  border-color: var(--ei-accent);
 }
 
 .ew-resolution {
-  background: light-dark(var(--mantine-color-green-0), rgba(64, 192, 87, 0.08));
+  background: var(--ei-ok-soft);
 }
 
 .ew-feed-event strong {
   font-weight: 600;
-  color: var(--mantine-color-text);
+  color: var(--ei-text);
 }
 
 .ew-strike {
@@ -90,7 +90,7 @@
 }
 
 .ew-mention {
-  color: var(--mantine-primary-color-filled);
+  color: var(--ei-accent);
   font-weight: 500;
 }
 
@@ -102,9 +102,31 @@
 }
 
 .ew-mention-option[data-active] {
-  background: var(--mantine-primary-color-light);
+  background: var(--ei-accent-soft);
 }
 
 .ew-md p:first-child {
   margin-top: 0;
+}
+
+.ew-sla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ew-sla-kind {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ei-text-3);
+}
+
+.ew-sla-met {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ei-ok);
 }

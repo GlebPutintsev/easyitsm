@@ -1,0 +1,23 @@
+{{- $db := .Values.database -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "easyitsm.fullname" . }}-core
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+data:
+  # Только несекретные параметры. Пароли и лицензия монтируются файлами (SEC-36).
+  SPRING_CONFIG_IMPORT: "optional:configtree:/run/secrets/easyitsm/"
+  SPRING_PROFILES_ACTIVE: "prod"
+  EASYITSM_DB_URL: {{ printf "jdbc:postgresql://%s:%v/%s?sslmode=%s" (include "easyitsm.dbHost" .) $db.port $db.name $db.sslMode | quote }}
+  EASYITSM_TENANCY_MODE: {{ .Values.tenancy.mode | quote }}
+  {{- with .Values.tenancy.defaultTenantId }}
+  EASYITSM_TENANCY_DEFAULT_TENANT_ID: {{ . | quote }}
+  {{- end }}
+  {{- if .Values.license.existingSecret }}
+  EASYITSM_LICENSE_FILE: /run/secrets/easyitsm/license/license.json
+  {{- end }}
+  MANAGEMENT_SERVER_PORT: "8081"
+  SERVER_PORT: "8080"
+  # Заголовки X-Forwarded-* от Ingress: правильные адреса клиентов в журнале аудита.
+  SERVER_FORWARD_HEADERS_STRATEGY: framework

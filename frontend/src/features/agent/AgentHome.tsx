@@ -7,10 +7,10 @@ import { ticketsApi } from './api';
 import { useViews } from './api/hooks';
 
 const TILES = [
-  { id: 'mine', icon: IconUser, color: 'blue' },
-  { id: 'unassigned', icon: IconInbox, color: 'teal' },
-  { id: 'overdue', icon: IconAlertTriangle, color: 'red' },
-  { id: 'group', icon: IconUsersGroup, color: 'grape' },
+  { id: 'mine', icon: IconUser, color: 'accent' },
+  { id: 'unassigned', icon: IconInbox, color: 'text-2' },
+  { id: 'overdue', icon: IconAlertTriangle, color: 'danger' },
+  { id: 'group', icon: IconUsersGroup, color: 'wait' },
 ] as const;
 
 /** Главная рабочего места: сколько работы в каждом встроенном представлении, переход в очередь в один клик. */
@@ -47,7 +47,7 @@ export function AgentHome() {
                 <Text size="sm" c="dimmed" fw={500}>
                   {t(`workspace.views.builtin.${tile.id}`)}
                 </Text>
-                <tile.icon size={20} color={`var(--mantine-color-${tile.color}-6)`} />
+                <tile.icon size={20} color={`var(--ei-${tile.color})`} />
               </Group>
               {q?.isSuccess ? (
                 <Text fz={32} fw={700} mt="xs" c={tile.id === 'overdue' && q.data.total > 0 ? 'red' : undefined}>

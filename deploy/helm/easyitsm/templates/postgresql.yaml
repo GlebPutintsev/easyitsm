@@ -1,0 +1,127 @@
+{{- if .Values.postgresql.enabled }}
+{{- $fullname := include "easyitsm.fullname" . -}}
+{{- $pg := .Values.postgresql -}}
+# Скрипт не содержит паролей, но хранится в Secret: в нём создаются роли, и сканеры
+# конфигурации (Trivy KSV-0109) справедливо не ждут такого в ConfigMap.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $fullname }}-postgresql-init
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+type: Opaque
+stringData:
+  # Роли как в deploy/compose/postgres/init.sql: владелец схемы для миграций
+  # и роль приложения без BYPASSRLS (ADR-07). Пароли читаются из смонтированного секрета.
+  01-easyitsm.sh: |
+    # Скрипт выполняется через source из docker-entrypoint.sh, set -e уже включён.
+    S=/run/secrets/easyitsm
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres \
+      -v owner="$(cat $S/owner-username)" -v owner_pw="$(cat $S/owner-password)" \
+      -v app="$(cat $S/app-username)" -v app_pw="$(cat $S/app-password)" \
+      -v db={{ .Values.database.name | quote }} <<'SQL'
+    CREATE ROLE :"owner" LOGIN PASSWORD :'owner_pw' NOSUPERUSER NOBYPASSRLS;
+    CREATE ROLE :"app"   LOGIN PASSWORD :'app_pw'   NOSUPERUSER NOBYPASSRLS;
+    CREATE DATABASE :"db" OWNER :"owner";
+    \connect :"db"
+    REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+    ALTER SCHEMA public OWNER TO :"owner";
+    GRANT USAGE ON SCHEMA public TO :"app";
+    SQL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-postgresql
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  selector:
+    {{- include "easyitsm.selector" (list . "postgresql") | nindent 4 }}
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullname }}-postgresql
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  serviceName: {{ $fullname }}-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "postgresql") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "easyitsm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      serviceAccountName: {{ include "easyitsm.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      {{- include "easyitsm.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        # Пользователь postgres в образе alpine.
+        {{- include "easyitsm.podSecurityContext" (dict "uid" 70) | nindent 8 }}
+      containers:
+        - name: postgresql
+          image: {{ include "easyitsm.image" (list . $pg.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "easyitsm.containerSecurityContext" . | nindent 12 }}
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/easyitsm/superuser-password
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1"] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1"] }
+            periodSeconds: 15
+            failureThreshold: 6
+          resources:
+            {{- toYaml $pg.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: run, mountPath: /var/run/postgresql }
+            - { name: tmp, mountPath: /tmp }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d, readOnly: true }
+            - { name: secrets, mountPath: /run/secrets/easyitsm, readOnly: true }
+      volumes:
+        - { name: run, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
+        - name: init
+          secret:
+            secretName: {{ $fullname }}-postgresql-init
+            defaultMode: 0440
+        - name: secrets
+          secret:
+            secretName: {{ include "easyitsm.dbSecretName" . }}
+            defaultMode: 0440
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with $pg.storage.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $pg.storage.size }}
+{{- end }}

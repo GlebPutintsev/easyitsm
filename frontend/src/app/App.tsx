@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { router } from './router';
-import { theme } from './theme';
+import { cssVariablesResolver, theme } from './theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="auto">
       <Notifications position="bottom-right" />
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
