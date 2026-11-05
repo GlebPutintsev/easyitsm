@@ -76,21 +76,26 @@ class SlaTrackerScenariosTest {
 
     @Test
     void sla01_defaultTargetsFromSection53() {
-        TenantContext.runAs(OTHER, () -> admin.installDefaults(MSK));
+        // Политика по умолчанию без условий подходит ко всем заявкам арендатора; чтобы сценарий не зависел
+        // от политик других тестов, ограничиваем её своей услугой и ставим первой.
+        UUID service = UUID.randomUUID();
+        TenantContext.runAs(OTHER, () -> admin.updatePolicy(admin.installDefaults(MSK), "\"0\"",
+                new SlaCommands.PolicyUpdate(null, null, null, 0, null, null,
+                        new SlaCommands.ConditionsInput(null, null, List.of(service), null, null), null, null)));
         Instant created = msk("2026-11-05T10:00");
 
-        Facts p3 = new Facts(UUID.randomUUID(), null).at(created).priority("P3");
+        Facts p3 = new Facts(UUID.randomUUID(), service).at(created).priority("P3");
         apply(OTHER, p3, created);
         // Реакция 4 ч по графику: чт 10:00 → 14:00. Решение 2 рабочих дня = 18 ч: чт 8 ч, пт 9 ч, пн 1 ч.
         assertDue(OTHER, p3.ticket, "response", msk("2026-11-05T14:00"));
         assertDue(OTHER, p3.ticket, "resolution", msk("2026-11-09T10:00"));
 
-        Facts p1 = new Facts(UUID.randomUUID(), null).at(created).priority("P1");
+        Facts p1 = new Facts(UUID.randomUUID(), service).at(created).priority("P1");
         apply(OTHER, p1, created);
         assertDue(OTHER, p1.ticket, "response", msk("2026-11-05T10:15"));
         assertDue(OTHER, p1.ticket, "resolution", msk("2026-11-05T14:00"));
 
-        Facts p4 = new Facts(UUID.randomUUID(), null).at(msk("2026-11-06T17:00")).priority("P4");
+        Facts p4 = new Facts(UUID.randomUUID(), service).at(msk("2026-11-06T17:00")).priority("P4");
         apply(OTHER, p4, msk("2026-11-06T17:00"));
         // Реакция 8 ч: пт 1 ч, пн 7 ч → пн 16:00. Решение 5 рабочих дней = 45 ч: пт 1, пн–пт 44 → пт 13.11 17:00.
         assertDue(OTHER, p4.ticket, "response", msk("2026-11-09T16:00"));

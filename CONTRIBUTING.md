@@ -33,6 +33,7 @@ backend/src/main/resources/db/migration/<module>/
 
 ## Новый раздел фронтенда
 
+- Вид экранов — по `DESIGN.md` и макетам по ссылке из него. Цвета только через токены `var(--ei-…)`, статус, приоритет и SLA — через `StatusBadge`, `PriorityBadge`, `SlaTimer` из `src/shared/ui`.
 - Код раздела в `frontend/src/features/<модуль>/`, маршруты добавляются в `src/app/router.tsx`, пункт меню — в `src/app/layout/spaces.ts`.
 - Все тексты в `src/shared/i18n/locales/ru.json` и `en.json`, линтер предупреждает о русском тексте в JSX.
 - Запросы через `src/shared/api/client.ts` и TanStack Query. Каждый список показывает состояния через `ListState` (UI-02).

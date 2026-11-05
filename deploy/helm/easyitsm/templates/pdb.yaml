@@ -1,0 +1,21 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- range $component := list "api" "web" "worker" }}
+{{- $cfg := index $.Values $component }}
+{{- $replicas := int $cfg.replicas }}
+{{- if and (eq $component "api") $cfg.autoscaling.enabled }}{{ $replicas = int $cfg.autoscaling.minReplicas }}{{ end }}
+{{- if and (gt $replicas 1) (or (ne $component "worker") $.Values.worker.enabled) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "easyitsm.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "easyitsm.labels" $ | nindent 4 }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list $ $component) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}

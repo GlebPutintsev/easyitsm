@@ -15,11 +15,11 @@ import ru.easyitsm.tickets.events.TicketStatusChanged;
  * транзакция трекера. При ошибке публикация остаётся незавершённой и повторяется при перезапуске.
  */
 @Component
-class TicketEventsListener {
+class SlaTicketEventsListener {
 
     private final SlaTracker tracker;
 
-    TicketEventsListener(SlaTracker tracker) {
+    SlaTicketEventsListener(SlaTracker tracker) {
         this.tracker = tracker;
     }
 

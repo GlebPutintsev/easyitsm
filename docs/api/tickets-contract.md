@@ -37,7 +37,11 @@ REST: [`tickets.yaml`](tickets.yaml) (OpenAPI 3.1). Java: пакеты `ru.easyi
 - Настраиваемые поля (TCK-07) хранятся в `ticket.custom` (JSONB) по коду поля и проверяются по определению.
 - Очередь агента: `sort=due` по `slaDueAt` (копия ближайшего срока, её обновляет модуль sla через
   `TicketCommands.updateSlaDue`), `awaitingAgent` (последняя публичная запись от заявителя),
-  `GET /tickets/count`, `updatedFrom`, несколько `groupId`/`assigneeId` через запятую.
+  `GET /tickets/count`, `updatedFrom`, `dueBefore` (просроченные: ближайший из `slaDueAt`/`dueAt` раньше
+  переданного времени), несколько `groupId`/`assigneeId` через запятую, `none` — без группы или исполнителя.
+- Значения по умолчанию при создании: влияние `low`, срочность `medium`, значит приоритет `P4`.
+- Фронтенд: типы и хуки в `frontend/src/features/tickets/api.ts` (`ticketsApi` для адаптеров,
+  `useTickets`, `useTicket`, `useTransitionTicket` и т. д.); If-Match берётся из `version` записи.
 - Сохранённые представления `/ticket-views` (TCK-16) и готовые ответы `/response-templates` (TCK-09):
   личные, групповые, общие.
 - Описание и записи ленты — Markdown без HTML; клиент рендерит его без `dangerouslySetInnerHTML`.
@@ -47,7 +51,7 @@ REST: [`tickets.yaml`](tickets.yaml) (OpenAPI 3.1). Java: пакеты `ru.easyi
 - Создать: все роли, кроме `AUD`. Заявителем другого человека может указать только поддержка.
 - Поддержка = `AGT, LEAD, MIM, CHG, PRB, CFG, AST`. Видит заявки, внутренние заметки, меняет поля.
   Ограничение «только своих групп» включится, когда модуль identity отдаст членство в группах
-  (интерфейс `GroupMembership` внутри tickets, сейчас — без ограничения по группам).
+  (интерфейс `AccessScopes` внутри tickets, сейчас — без ограничения по группам).
 - `REQ`, `APR` и любой пользователь видят заявки, где они заявитель, получатель (`createdFor`) или
   наблюдатель; только публичная лента; переходы с псевдоролью `requester`.
 - `AUD` — только чтение, включая заметки. `ADM` — настройки (`/ticket-settings/**`).

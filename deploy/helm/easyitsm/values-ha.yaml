@@ -1,0 +1,36 @@
+# Промышленная HA-конфигурация до 5 000 пользователей (раздел 12.1 ТЗ).
+# helm install easyitsm ./easyitsm -f values-ha.yaml --set database.host=...
+api:
+  replicas: 3
+  workerEnabled: false
+  resources:
+    requests: { cpu: "2", memory: 3Gi }
+    limits: { memory: 4Gi }
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: api
+
+worker:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: "1", memory: 2Gi }
+    limits: { memory: 3Gi }
+
+web:
+  replicas: 2
+
+postgresql:
+  enabled: false
+
+database:
+  # host и existingSecret обязательны.
+  host: ""
+  sslMode: verify-full
+  existingSecret: easyitsm-db

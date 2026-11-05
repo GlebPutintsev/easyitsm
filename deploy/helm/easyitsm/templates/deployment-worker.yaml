@@ -1,0 +1,3 @@
+{{- if .Values.worker.enabled }}
+{{ include "easyitsm.coreDeployment" (dict "root" . "role" "worker" "cfg" .Values.worker "workerEnabled" true) }}
+{{- end }}
