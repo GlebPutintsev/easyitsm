@@ -12,7 +12,6 @@ import {
 } from '@mantine/core';
 import {
   IconBell,
-  IconChecklist,
   IconChevronDown,
   IconLanguage,
   IconLogout,
@@ -27,7 +26,15 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { api } from '@/shared/api/client';
 import { useMe } from '@/features/auth/api';
+import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
 import { spaces, type SpaceId } from './spaces';
+
+/** Куда ведут пункты «+ Создать». Остальные пункты подключат модули изменений, проблем и знаний. */
+const createTarget: Record<string, string | undefined> = {
+  incident: '/portal/report',
+  request: '/portal/catalog',
+  article: '/agent/kb/new',
+};
 
 interface Props {
   space: SpaceId;
@@ -94,18 +101,14 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
           </Menu.Target>
           <Menu.Dropdown>
             {(['incident', 'request', 'change', 'problem', 'article'] as const).map((kind) => (
-              <Menu.Item key={kind} onClick={kind === 'article' ? () => navigate('/agent/kb/new') : undefined}>
+              <Menu.Item key={kind} onClick={() => createTarget[kind] && navigate(createTarget[kind])}>
                 {t(`create.${kind}`)}
               </Menu.Item>
             ))}
           </Menu.Dropdown>
         </Menu>
 
-        <Tooltip label={t('topbar.approvals')}>
-          <ActionIcon variant="subtle" size="lg" aria-label={t('topbar.approvals')}>
-            <IconChecklist size={20} />
-          </ActionIcon>
-        </Tooltip>
+        <ApprovalsButton />
         <Tooltip label={t('topbar.notifications')}>
           <Indicator disabled size={8} offset={6}>
             <ActionIcon variant="subtle" size="lg" aria-label={t('topbar.notifications')}>
