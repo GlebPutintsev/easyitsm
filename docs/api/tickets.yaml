@@ -1,0 +1,1339 @@
+openapi: 3.1.0
+info:
+  title: Easy ITSM — заявки
+  version: 0.1.0
+  description: |
+    Модуль tickets: заявки всех типов (TCK), инциденты (INC), жизненные циклы (5.1, 5.4), приоритет (5.2),
+    маршрутизация (5.8). Общие правила API: ошибки RFC 9457 с `code` и `trace_id`, курсорная пагинация
+    (`limit` до 200), `Idempotency-Key` на создание, `ETag`/`If-Match` на изменение.
+
+    Коды значений в JSON — в нижнем регистре: `incident`, `in_progress`, `high`. Приоритет — `P1`…`P4`.
+    Пользователи, группы, услуги, КЕ — UUID, имена берутся из модулей identity, catalog, cmdb.
+    Краткое описание контракта и решений: docs/api/tickets-contract.md.
+servers:
+  - url: /api/v1
+security:
+  - session: []
+
+tags:
+  - name: tickets
+  - name: activity
+  - name: relations
+  - name: bulk
+  - name: settings
+
+paths:
+  /tickets:
+    get:
+      tags: [tickets]
+      summary: Поиск и списки заявок с учётом прав
+      parameters:
+        - name: scope
+          in: query
+          description: |
+            all — всё доступное; mine — я заявитель, получатель или наблюдатель (портал);
+            assigned_to_me; unassigned — без исполнителя; watching — я наблюдатель.
+          schema: {type: string, enum: [all, mine, assigned_to_me, unassigned, watching], default: all}
+        - name: state
+          in: query
+          description: |
+            Короткий фильтр по категориям статуса. active — draft, new, approval, assigned, in_progress;
+            waiting — pending, resolved (ждут заявителя); closed — closed, cancelled.
+          schema: {type: string, enum: [active, waiting, closed]}
+        - {name: type, in: query, description: Через запятую, schema: {type: string, example: "incident,request"}}
+        - {name: status, in: query, description: Коды статусов через запятую, schema: {type: string}}
+        - {name: statusCategory, in: query, description: Категории через запятую, schema: {type: string}}
+        - {name: priority, in: query, description: Через запятую, schema: {type: string, example: "P1,P2"}}
+        - {name: groupId, in: query, schema: {type: string, format: uuid}}
+        - {name: assigneeId, in: query, schema: {type: string, format: uuid}}
+        - {name: requesterId, in: query, schema: {type: string, format: uuid}}
+        - {name: serviceId, in: query, schema: {type: string, format: uuid}}
+        - {name: categoryId, in: query, schema: {type: string, format: uuid}}
+        - {name: q, in: query, description: Полнотекст (морфология RU) по теме и описанию или номер, schema: {type: string}}
+        - {name: createdFrom, in: query, schema: {type: string, format: date-time}}
+        - {name: createdTo, in: query, schema: {type: string, format: date-time}}
+        - name: custom
+          in: query
+          description: Фильтр по настраиваемому полю, `custom=<код>:<значение>`, можно повторять
+          schema: {type: array, items: {type: string}}
+          explode: true
+        - name: sort
+          in: query
+          schema: {type: string, enum: [-created, created, -updated, priority], default: -created}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Страница
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketPage'}
+        '400': {$ref: '#/components/responses/Problem'}
+    post:
+      tags: [tickets]
+      summary: Создать заявку
+      description: |
+        Номер выдаётся по типу (`INC-000123`). Приоритет — по матрице влияния и срочности, ручной приоритет
+        требует `priorityReason`. Если группа не указана, работают правила маршрутизации (5.8).
+        Заявитель по умолчанию — текущий пользователь; указать другого может только поддержка.
+        Секреты в описании: `secrets=warn` (по умолчанию) вернёт 422 `secrets_detected` с находками,
+        `mask` — заменит их маской, `allow` — сохранит как есть (только поддержка).
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TicketCreate'}
+      responses:
+        '201':
+          description: Создана
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+            Location: {schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '422': {$ref: '#/components/responses/SecretsDetected'}
+
+  /tickets/{ref}:
+    parameters:
+      - name: ref
+        in: path
+        required: true
+        description: UUID или номер заявки (`INC-000123`)
+        schema: {type: string}
+    get:
+      tags: [tickets]
+      summary: Карточка заявки
+      responses:
+        '200':
+          description: Заявка, доступные переходы и права текущего пользователя
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '404': {$ref: '#/components/responses/Problem'}
+    patch:
+      tags: [tickets]
+      summary: Изменить поля заявки
+      description: |
+        Частичное изменение: отсутствующее поле не меняется, сбросить значение — перечислить его в `clear`.
+        Статус меняется только через /transitions. Смена группы в статусе `new` запускает переход с
+        триггером `group_assigned`. Изменение влияния или срочности пересчитывает приоритет, если он не ручной.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TicketUpdate'}
+      responses:
+        '200':
+          description: Изменена
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '412': {$ref: '#/components/responses/Problem'}
+        '428': {$ref: '#/components/responses/Problem'}
+
+  /tickets/{id}/transitions:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [tickets]
+      summary: Переходы, доступные текущему пользователю из текущего статуса
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/AvailableTransition'}
+    post:
+      tags: [tickets]
+      summary: Сменить статус с проверкой прав и обязательных полей
+      description: |
+        Ошибки: 409 `transition_not_allowed` (нет такого перехода или нет прав), 400 `field_required`
+        с `field` в теле ошибки, 409 `open_subtasks` (решение при открытых подзадачах),
+        409 `identity_check_required` (INC-10).
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransitionRequest'}
+      responses:
+        '200':
+          description: Статус изменён
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '412': {$ref: '#/components/responses/Problem'}
+
+  /tickets/{id}/take:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    post:
+      tags: [tickets]
+      summary: Взять в работу — исполнитель = я, статус категории in_progress
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Взята
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /tickets/take-next:
+    post:
+      tags: [tickets]
+      summary: Взять следующую — самая срочная неназначенная заявка группы
+      description: Порядок — приоритет, затем срок (dueAt), затем время создания. Блокировка SKIP LOCKED.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupId: {type: string, format: uuid, description: По умолчанию — любая доступная группа}
+      responses:
+        '200':
+          description: Назначена мне и взята в работу
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+        '204':
+          description: Очередь пуста
+
+  /tickets/{id}/escalate:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    post:
+      tags: [tickets]
+      summary: Эскалация функциональная (в группу) или иерархическая (руководителю), INC-04
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, reason]
+              properties:
+                kind: {type: string, enum: [functional, hierarchical]}
+                groupId: {type: string, format: uuid, description: Обязательна для functional}
+                reason: {type: string, maxLength: 2000}
+      responses:
+        '200':
+          description: Эскалирована
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+
+  /tickets/{id}/identity-check:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    post:
+      tags: [tickets]
+      summary: Отметить проверку личности заявителя (INC-10)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method]
+              properties:
+                method: {type: string, enum: [callback, manager_confirmation, in_person, mfa, other]}
+                note: {type: string, maxLength: 1000}
+      responses:
+        '200':
+          description: Отмечена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+
+  /tickets/{id}/activity:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [activity]
+      summary: Лента — ответы, заметки, системные события и изменения полей, по возрастанию времени
+      description: Заявитель видит только public. Внутренние записи — поддержка и аудитор.
+      parameters:
+        - {name: visibility, in: query, schema: {type: string, enum: [public, internal]}}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Страница
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ActivityPage'}
+    post:
+      tags: [activity]
+      summary: Ответ заявителю или внутренняя заметка
+      description: |
+        Публичный ответ заявителя в решённой заявке возвращает её в работу (INC-08), в закрытой — 409
+        `ticket_closed` (нужно создать новую связанную заявку). Упомянутые пользователи становятся
+        наблюдателями. Первый публичный ответ агента фиксирует время реакции.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActivityCreate'}
+      responses:
+        '201':
+          description: Добавлено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Activity'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '422': {$ref: '#/components/responses/SecretsDetected'}
+
+  /tickets/{id}/history:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [activity]
+      summary: История изменений полей (журнал), только поддержка и аудитор
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Страница
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/FieldChange'}}
+                  nextCursor: {type: [string, 'null']}
+
+  /tickets/{id}/links:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [relations]
+      summary: Связи заявки, видимые с этой стороны
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Link'}
+    post:
+      tags: [relations]
+      summary: Связать заявки (TCK-05)
+      description: Запись видна в обеих карточках с обратным видом связи. Повтор — 409 `link_exists`, цикл родителей — 409 `link_cycle`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetId, kind]
+              properties:
+                targetId: {type: string, description: UUID или номер}
+                kind: {$ref: '#/components/schemas/LinkKind'}
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Link'}
+  /tickets/{id}/links/{linkId}:
+    parameters:
+      - {$ref: '#/components/parameters/TicketId'}
+      - {name: linkId, in: path, required: true, schema: {type: string, format: uuid}}
+    delete:
+      tags: [relations]
+      summary: Удалить связь
+      responses:
+        '204': {description: Удалена}
+
+  /tickets/{id}/subtasks:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [relations]
+      summary: Подзадачи (TSK) заявки
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Ticket'}
+    post:
+      tags: [relations]
+      summary: Создать подзадачу с отдельным исполнителем, сроком и статусом (TCK-06)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: {type: string, maxLength: 255}
+                description: {type: string}
+                groupId: {type: string, format: uuid, description: По умолчанию — группа родителя}
+                assigneeId: {type: string, format: uuid}
+                dueAt: {type: string, format: date-time}
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketDetails'}
+
+  /tickets/{id}/watchers:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    get:
+      tags: [relations]
+      summary: Наблюдатели (TCK-10)
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Watcher'}
+  /tickets/{id}/watchers/{userId}:
+    parameters:
+      - {$ref: '#/components/parameters/TicketId'}
+      - {name: userId, in: path, required: true, description: UUID или `me`, schema: {type: string}}
+    put:
+      tags: [relations]
+      summary: Подписать пользователя. Себя может подписать любой, кто видит заявку; других — поддержка
+      responses:
+        '204': {description: Подписан}
+    delete:
+      tags: [relations]
+      summary: Отписать
+      responses:
+        '204': {description: Отписан}
+
+  /tickets/{id}/merge:
+    parameters: [{$ref: '#/components/parameters/TicketId'}]
+    post:
+      tags: [relations]
+      summary: Слить дубликаты в эту (основную) заявку (TCK-13)
+      description: |
+        Дубликаты закрываются со статусом категории closed, кодом решения `duplicate` и связью
+        `duplicate_of`. Их заявители и наблюдатели становятся наблюдателями основной. История дубликатов
+        сохраняется, в обе ленты пишется системная запись. `preview=true` ничего не меняет.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceIds]
+              properties:
+                sourceIds: {type: array, minItems: 1, maxItems: 50, items: {type: string}}
+                preview: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Результат или предпросмотр
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MergeResult'}
+
+  /tickets/bulk:
+    post:
+      tags: [bulk]
+      summary: Массовое действие с предпросмотром и отменой 10 секунд (TCK-12)
+      description: |
+        `preview=true` возвращает изменения по каждой заявке без записи. Выполнение применяет действие к
+        каждой заявке отдельно (ошибка одной не откатывает другие) и возвращает `operationId` и `undoUntil`.
+        Действия и параметры: assign {groupId?, assigneeId?}; transition {to, comment?, reasonCode?,
+        resolutionCode?, resolutionText?, pendingUntil?}; priority {impact?, urgency?, priority?, reason?};
+        watch {userId}. Не более 200 заявок.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BulkRequest'}
+      responses:
+        '200':
+          description: Результат или предпросмотр
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BulkResult'}
+  /tickets/bulk/{operationId}/undo:
+    parameters:
+      - {name: operationId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [bulk]
+      summary: Отменить массовое действие, пока не истёк undoUntil
+      description: |
+        Возвращает прежние значения в заявках, которые с тех пор никто не менял. Остальные пропускаются
+        с кодом `changed_since`. После срока — 409 `undo_expired`. Отменить может только автор.
+      responses:
+        '200':
+          description: Итог по заявкам
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BulkResult'}
+
+  /tickets/secret-scan:
+    post:
+      tags: [tickets]
+      summary: Проверить текст на секреты до отправки (TCK-17)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: {type: string, maxLength: 200000}
+      responses:
+        '200':
+          description: Находки и замаскированный текст
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SecretScanResult'}
+
+  /tickets/similar:
+    get:
+      tags: [tickets]
+      summary: Похожие открытые заявки при создании (INC-05)
+      parameters:
+        - {name: q, in: query, required: true, schema: {type: string}}
+        - {name: type, in: query, schema: {type: string, default: incident}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 20, default: 5}}
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Ticket'}
+
+  /ticket-settings/workflows:
+    get:
+      tags: [settings]
+      summary: Жизненные циклы всех типов заявок
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Workflow'}
+  /ticket-settings/workflows/{type}:
+    parameters:
+      - {name: type, in: path, required: true, schema: {$ref: '#/components/schemas/TicketType'}}
+    get:
+      tags: [settings]
+      summary: Жизненный цикл типа
+      responses:
+        '200':
+          description: Цикл
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Workflow'}
+    put:
+      tags: [settings]
+      summary: Заменить цикл целиком (ADM)
+      description: |
+        Проверки: один начальный статус каждой нужной категории, коды уникальны, у каждого статуса есть путь
+        в финальную категорию, нельзя удалить статус, в котором есть заявки (409 `status_in_use`).
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Workflow'}
+      responses:
+        '200':
+          description: Сохранён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Workflow'}
+  /ticket-settings/priority-matrix:
+    get:
+      tags: [settings]
+      summary: Матрица приоритета (5.2)
+      responses:
+        '200':
+          description: Матрица
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PriorityMatrix'}
+    put:
+      tags: [settings]
+      summary: Изменить матрицу (ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PriorityMatrix'}
+      responses:
+        '200':
+          description: Сохранена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PriorityMatrix'}
+  /ticket-settings/general:
+    get:
+      tags: [settings]
+      summary: Общие настройки заявок
+      responses:
+        '200':
+          description: Настройки
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GeneralSettings'}
+    put:
+      tags: [settings]
+      summary: Изменить (ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GeneralSettings'}
+      responses:
+        '200':
+          description: Сохранены
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GeneralSettings'}
+  /ticket-settings/fields:
+    get:
+      tags: [settings]
+      summary: Настраиваемые поля (TCK-07)
+      parameters:
+        - {name: type, in: query, description: Только поля этого типа заявки, schema: {$ref: '#/components/schemas/TicketType'}}
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CustomField'}
+    post:
+      tags: [settings]
+      summary: Создать поле (ADM). Код и тип после создания не меняются
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CustomField'}
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CustomField'}
+  /ticket-settings/fields/{fieldId}:
+    parameters:
+      - {name: fieldId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      tags: [settings]
+      summary: Изменить название, варианты, обязательность, типы заявок, активность (ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CustomField'}
+      responses:
+        '200':
+          description: Изменено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CustomField'}
+  /ticket-settings/categories:
+    get:
+      tags: [settings]
+      summary: Категории заявок (дерево, плоским списком с parentId)
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Category'}
+    post:
+      tags: [settings]
+      summary: Создать категорию (ADM)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Category'}
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Category'}
+  /ticket-settings/categories/{categoryId}:
+    parameters:
+      - {name: categoryId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      tags: [settings]
+      summary: Изменить категорию (ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Category'}
+      responses:
+        '200':
+          description: Изменена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Category'}
+  /ticket-settings/routing-rules:
+    get:
+      tags: [settings]
+      summary: Правила маршрутизации по порядку применения (5.8)
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/RoutingRule'}
+    post:
+      tags: [settings]
+      summary: Создать правило (ADM)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RoutingRule'}
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoutingRule'}
+  /ticket-settings/routing-rules/{ruleId}:
+    parameters:
+      - {name: ruleId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      tags: [settings]
+      summary: Изменить правило (ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RoutingRule'}
+      responses:
+        '200':
+          description: Изменено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RoutingRule'}
+    delete:
+      tags: [settings]
+      summary: Удалить правило (ADM)
+      responses:
+        '204': {description: Удалено}
+  /ticket-settings/group-dispatch/{groupId}:
+    parameters:
+      - {name: groupId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      tags: [settings]
+      summary: Распределение внутри группы
+      responses:
+        '200':
+          description: Настройка
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupDispatch'}
+    put:
+      tags: [settings]
+      summary: Задать распределение внутри группы (ADM, LEAD)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GroupDispatch'}
+      responses:
+        '200':
+          description: Сохранено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupDispatch'}
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: SESSION
+      description: Сессия модуля identity. В профиле dev — заголовки X-Dev-User, X-Dev-Tenant, X-Dev-Roles.
+
+  parameters:
+    TicketId:
+      name: id
+      in: path
+      required: true
+      description: UUID или номер заявки
+      schema: {type: string}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 200, default: 50}
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag записи; без него 428, с устаревшим 412
+      schema: {type: string, example: '"3"'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: 8–128 символов, повтор в течение 24 часов возвращает исходный результат
+      schema: {type: string}
+
+  headers:
+    ETag:
+      description: Версия записи в кавычках
+      schema: {type: string, example: '"3"'}
+
+  responses:
+    Problem:
+      description: Ошибка RFC 9457
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    SecretsDetected:
+      description: В тексте найдены секреты, `code = secrets_detected`, находки в `findings`
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Problem'
+              - type: object
+                properties:
+                  findings:
+                    type: array
+                    items: {$ref: '#/components/schemas/SecretFinding'}
+
+  schemas:
+    Problem:
+      type: object
+      required: [status, code, trace_id]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        code: {type: string}
+        trace_id: {type: string}
+        field: {type: string, description: Для field_required и invalid_custom_field}
+
+    TicketType:
+      type: string
+      enum: [incident, request, problem, change, task]
+    StatusCategory:
+      type: string
+      description: |
+        Фиксированная категория поверх настраиваемых статусов. Другие модули опираются только на неё.
+        pending — пауза SLA; in_progress — реакция; resolved — решение; closed/cancelled — финал.
+      enum: [draft, new, approval, assigned, in_progress, pending, resolved, closed, cancelled]
+    Priority:
+      type: string
+      enum: [P1, P2, P3, P4]
+    Level:
+      type: string
+      description: 'Влияние: high — услуга или организация, medium — подразделение, low — один пользователь'
+      enum: [high, medium, low]
+    Channel:
+      type: string
+      enum: [portal, email, api, chat, monitoring, agent]
+    LinkKind:
+      type: string
+      description: |
+        Вид связи с точки зрения этой заявки. Пары: parent_of/child_of, duplicate_of/duplicated_by,
+        blocks/blocked_by, caused_by/causes, relates_to (симметрична).
+      enum: [parent_of, child_of, duplicate_of, duplicated_by, blocks, blocked_by, caused_by, causes, relates_to]
+    SecretsPolicy:
+      type: string
+      enum: [warn, mask, allow]
+      default: warn
+
+    StatusRef:
+      type: object
+      required: [code, name, category]
+      properties:
+        code: {type: string, example: in_progress}
+        name: {type: string, example: В работе}
+        category: {$ref: '#/components/schemas/StatusCategory'}
+
+    Ticket:
+      type: object
+      description: Заявка в списке. В карточке — TicketDetails.
+      required: [id, number, type, title, status, priority, impact, urgency, priorityManual, requesterId, channel,
+                 confidential, reopenCount, escalationLevel, custom, createdAt, updatedAt, version]
+      properties:
+        id: {type: string, format: uuid}
+        number: {type: string, example: INC-000123}
+        type: {$ref: '#/components/schemas/TicketType'}
+        title: {type: string, maxLength: 255}
+        status: {$ref: '#/components/schemas/StatusRef'}
+        priority: {$ref: '#/components/schemas/Priority'}
+        impact: {$ref: '#/components/schemas/Level'}
+        urgency: {$ref: '#/components/schemas/Level'}
+        priorityManual: {type: boolean, description: Приоритет задан вручную в обход матрицы}
+        requesterId: {type: string, format: uuid}
+        createdForId: {type: [string, 'null'], format: uuid}
+        organizationId: {type: [string, 'null'], format: uuid}
+        groupId: {type: [string, 'null'], format: uuid}
+        assigneeId: {type: [string, 'null'], format: uuid}
+        serviceId: {type: [string, 'null'], format: uuid}
+        ciId: {type: [string, 'null'], format: uuid}
+        categoryId: {type: [string, 'null'], format: uuid}
+        catalogItemId: {type: [string, 'null'], format: uuid}
+        parentId: {type: [string, 'null'], format: uuid}
+        channel: {$ref: '#/components/schemas/Channel'}
+        confidential: {type: boolean}
+        dueAt: {type: [string, 'null'], format: date-time, description: Срок подзадачи или заданный вручную}
+        pendingReason: {type: [string, 'null']}
+        pendingUntil: {type: [string, 'null'], format: date-time}
+        resolutionCode: {type: [string, 'null']}
+        resolutionText: {type: [string, 'null']}
+        reopenCount: {type: integer}
+        escalationLevel: {type: integer, description: 0 — без эскалации}
+        identityCheck: {$ref: '#/components/schemas/IdentityCheck'}
+        custom: {type: object, additionalProperties: true, description: Значения настраиваемых полей по кодам}
+        firstResponseAt: {type: [string, 'null'], format: date-time}
+        resolvedAt: {type: [string, 'null'], format: date-time}
+        closedAt: {type: [string, 'null'], format: date-time}
+        createdAt: {type: string, format: date-time}
+        createdBy: {type: [string, 'null'], format: uuid}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, 'null'], format: uuid}
+        version: {type: integer, description: Совпадает с ETag}
+
+    TicketDetails:
+      allOf:
+        - $ref: '#/components/schemas/Ticket'
+        - type: object
+          required: [description, transitions, permissions]
+          properties:
+            description: {type: string, description: Markdown без HTML, рендерится на клиенте безопасно}
+            transitions:
+              type: array
+              items: {$ref: '#/components/schemas/AvailableTransition'}
+            permissions: {$ref: '#/components/schemas/TicketPermissions'}
+
+    TicketPermissions:
+      type: object
+      description: Что может текущий пользователь. Только для интерфейса, сервер проверяет сам.
+      properties:
+        edit: {type: boolean}
+        assign: {type: boolean}
+        comment: {type: boolean}
+        internalNotes: {type: boolean}
+        merge: {type: boolean}
+        setConfidential: {type: boolean}
+
+    IdentityCheck:
+      type: object
+      description: Проверка личности для сброса пароля и восстановления доступа (INC-10)
+      properties:
+        required: {type: boolean}
+        verifiedAt: {type: [string, 'null'], format: date-time}
+        verifiedBy: {type: [string, 'null'], format: uuid}
+        method: {type: [string, 'null']}
+
+    TicketPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Ticket'}}
+        nextCursor: {type: [string, 'null']}
+
+    TicketCreate:
+      type: object
+      required: [type, title]
+      properties:
+        type: {$ref: '#/components/schemas/TicketType'}
+        title: {type: string, minLength: 1, maxLength: 255}
+        description: {type: string, maxLength: 100000}
+        requesterId: {type: string, format: uuid, description: По умолчанию — текущий пользователь}
+        createdForId: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        impact: {$ref: '#/components/schemas/Level'}
+        urgency: {$ref: '#/components/schemas/Level'}
+        priority: {$ref: '#/components/schemas/Priority'}
+        priorityReason: {type: string, description: Обязательна, если priority задан}
+        groupId: {type: string, format: uuid}
+        assigneeId: {type: string, format: uuid}
+        serviceId: {type: string, format: uuid}
+        ciId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        channel: {$ref: '#/components/schemas/Channel'}
+        confidential: {type: boolean}
+        dueAt: {type: string, format: date-time}
+        custom: {type: object, additionalProperties: true}
+        watcherIds: {type: array, items: {type: string, format: uuid}}
+        secrets: {$ref: '#/components/schemas/SecretsPolicy'}
+
+    TicketUpdate:
+      type: object
+      properties:
+        title: {type: string, minLength: 1, maxLength: 255}
+        description: {type: string, maxLength: 100000}
+        impact: {$ref: '#/components/schemas/Level'}
+        urgency: {$ref: '#/components/schemas/Level'}
+        priority: {$ref: '#/components/schemas/Priority'}
+        priorityReason: {type: string}
+        groupId: {type: string, format: uuid}
+        assigneeId: {type: string, format: uuid}
+        serviceId: {type: string, format: uuid}
+        ciId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        createdForId: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        confidential: {type: boolean}
+        confidentialReason: {type: string, description: Обязательна при включении confidential}
+        dueAt: {type: string, format: date-time}
+        custom: {type: object, additionalProperties: true, description: Сливается с текущими значениями; null в значении удаляет поле}
+        clear:
+          type: array
+          description: Сбросить в null
+          items: {type: string, enum: [groupId, assigneeId, serviceId, ciId, categoryId, createdForId, organizationId, dueAt, priority]}
+        secrets: {$ref: '#/components/schemas/SecretsPolicy'}
+
+    AvailableTransition:
+      type: object
+      required: [to, name, category, requiredFields]
+      properties:
+        to: {type: string, description: Код целевого статуса}
+        name: {type: string, description: Название действия или статуса}
+        category: {$ref: '#/components/schemas/StatusCategory'}
+        requiredFields:
+          type: array
+          items: {type: string, enum: [comment, reason_code, resolution, pending_until, group, assignee]}
+
+    TransitionRequest:
+      type: object
+      required: [to]
+      properties:
+        to: {type: string}
+        comment: {type: string, maxLength: 10000, description: Пишется в ленту публично}
+        reasonCode: {type: string, description: Причина ожидания или отмены}
+        resolutionCode: {type: string}
+        resolutionText: {type: string, maxLength: 10000}
+        pendingUntil: {type: string, format: date-time}
+
+    Activity:
+      type: object
+      required: [id, kind, visibility, body, meta, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        kind:
+          type: string
+          enum: [reply, note, system, change]
+          description: reply — публичный ответ; note — внутренняя заметка; system — событие (статус, слияние, эскалация); change — изменение полей
+        visibility: {type: string, enum: [public, internal]}
+        authorId: {type: [string, 'null'], format: uuid}
+        fromRequester: {type: boolean}
+        body: {type: string, description: Markdown, секреты замаскированы, если выбран mask}
+        meta: {type: object, additionalProperties: true, description: 'Для change: {changes: [FieldChange]}; для system: {event, ...}'}
+        mentions: {type: array, items: {type: string, format: uuid}}
+        createdAt: {type: string, format: date-time}
+
+    ActivityPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Activity'}}
+        nextCursor: {type: [string, 'null']}
+
+    ActivityCreate:
+      type: object
+      required: [body]
+      properties:
+        body: {type: string, minLength: 1, maxLength: 100000}
+        visibility: {type: string, enum: [public, internal], default: internal, description: Заявитель всегда пишет public}
+        mentions: {type: array, items: {type: string, format: uuid}}
+        secrets: {$ref: '#/components/schemas/SecretsPolicy'}
+
+    FieldChange:
+      type: object
+      required: [field, at]
+      properties:
+        field: {type: string, example: priority}
+        from: {}
+        to: {}
+        actorId: {type: [string, 'null'], format: uuid}
+        reason: {type: [string, 'null']}
+        at: {type: string, format: date-time}
+
+    Link:
+      type: object
+      required: [id, kind, ticket]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {$ref: '#/components/schemas/LinkKind'}
+        ticket:
+          type: object
+          description: Другая сторона связи; если нет прав на неё — только id и number
+          properties:
+            id: {type: string, format: uuid}
+            number: {type: string}
+            title: {type: [string, 'null']}
+            status: {oneOf: [{$ref: '#/components/schemas/StatusRef'}, {type: 'null'}]}
+        createdAt: {type: string, format: date-time}
+
+    Watcher:
+      type: object
+      required: [userId, reason, createdAt]
+      properties:
+        userId: {type: string, format: uuid}
+        reason: {type: string, enum: [self, added, mention, merge, creator]}
+        createdAt: {type: string, format: date-time}
+
+    MergeResult:
+      type: object
+      required: [preview, target, sources]
+      properties:
+        preview: {type: boolean}
+        target: {$ref: '#/components/schemas/Ticket'}
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string, format: uuid}
+              number: {type: string}
+              ok: {type: boolean}
+              code: {type: [string, 'null'], description: Причина отказа, например already_closed}
+        watchersAdded: {type: array, items: {type: string, format: uuid}}
+
+    BulkRequest:
+      type: object
+      required: [ticketIds, action]
+      properties:
+        ticketIds: {type: array, minItems: 1, maxItems: 200, items: {type: string, format: uuid}}
+        action: {type: string, enum: [assign, transition, priority, watch]}
+        params: {type: object, additionalProperties: true}
+        preview: {type: boolean, default: false}
+
+    BulkResult:
+      type: object
+      required: [preview, items]
+      properties:
+        preview: {type: boolean}
+        operationId: {type: [string, 'null'], format: uuid}
+        undoUntil: {type: [string, 'null'], format: date-time}
+        items:
+          type: array
+          items:
+            type: object
+            required: [ticketId, ok]
+            properties:
+              ticketId: {type: string, format: uuid}
+              number: {type: string}
+              ok: {type: boolean}
+              code: {type: [string, 'null']}
+              detail: {type: [string, 'null']}
+              changes: {type: array, items: {$ref: '#/components/schemas/FieldChange'}}
+
+    SecretFinding:
+      type: object
+      required: [kind, start, end, masked]
+      properties:
+        kind: {type: string, example: password}
+        start: {type: integer}
+        end: {type: integer}
+        masked: {type: string}
+
+    SecretScanResult:
+      type: object
+      required: [findings, masked]
+      properties:
+        findings: {type: array, items: {$ref: '#/components/schemas/SecretFinding'}}
+        masked: {type: string}
+
+    Workflow:
+      type: object
+      required: [type, statuses, transitions]
+      properties:
+        type: {$ref: '#/components/schemas/TicketType'}
+        version: {type: integer, readOnly: true}
+        statuses:
+          type: array
+          items:
+            type: object
+            required: [code, name, category]
+            properties:
+              code: {type: string, pattern: '^[a-z][a-z0-9_]{1,39}$'}
+              name: {type: string}
+              category: {$ref: '#/components/schemas/StatusCategory'}
+              initial: {type: boolean, description: 'Стартовый статус; у запроса может быть второй — для awaitingApproval (категория approval)'}
+        transitions:
+          type: array
+          items:
+            type: object
+            required: [from, to]
+            properties:
+              from: {type: string}
+              to: {type: string}
+              name: {type: string, description: Название действия, например «Решить»}
+              roles:
+                type: array
+                description: Коды ролей (AGT, LEAD, MIM…) и псевдороли requester, assignee, system
+                items: {type: string}
+              requiredFields:
+                type: array
+                items: {type: string, enum: [comment, reason_code, resolution, pending_until, group, assignee]}
+              trigger:
+                type: string
+                enum: [manual, group_assigned, requester_reply, timer, approval]
+                default: manual
+
+    PriorityMatrix:
+      type: object
+      required: [cells]
+      properties:
+        version: {type: integer, readOnly: true}
+        cells:
+          type: object
+          description: 'Ключ impact, затем urgency: {"high": {"high": "P1", "medium": "P2", "low": "P3"}, …}'
+          additionalProperties:
+            type: object
+            additionalProperties: {$ref: '#/components/schemas/Priority'}
+
+    GeneralSettings:
+      type: object
+      properties:
+        version: {type: integer, readOnly: true}
+        defaultGroupId: {type: [string, 'null'], format: uuid, description: Группа по умолчанию (правило 5 раздела 5.8)}
+        autoCloseBusinessDays: {type: integer, minimum: 1, maximum: 60, default: 5, description: INC-07}
+        resolveRequiresClosedSubtasks: {type: boolean, default: true}
+        identityCheckCategoryIds:
+          type: array
+          description: Категории, в которых решение требует проверки личности (INC-10)
+          items: {type: string, format: uuid}
+
+    CustomField:
+      type: object
+      required: [code, name, fieldType]
+      properties:
+        id: {type: string, format: uuid, readOnly: true}
+        code: {type: string, pattern: '^[a-z][a-z0-9_]{1,62}$'}
+        name: {type: string, maxLength: 255}
+        fieldType: {type: string, enum: [text, number, date, list, user, group, ci, checkbox, file]}
+        options:
+          type: array
+          description: Варианты для list
+          items:
+            type: object
+            properties:
+              value: {type: string}
+              label: {type: string}
+        multiple: {type: boolean, default: false, description: Несколько значений (list, user, group, ci, file)}
+        required: {type: boolean, default: false}
+        ticketTypes: {type: array, description: Пусто — для всех типов, items: {$ref: '#/components/schemas/TicketType'}}
+        active: {type: boolean, default: true}
+        position: {type: integer}
+        version: {type: integer, readOnly: true}
+
+    Category:
+      type: object
+      required: [name]
+      properties:
+        id: {type: string, format: uuid, readOnly: true}
+        parentId: {type: [string, 'null'], format: uuid}
+        name: {type: string, maxLength: 255}
+        ticketTypes: {type: array, items: {$ref: '#/components/schemas/TicketType'}}
+        active: {type: boolean, default: true}
+        version: {type: integer, readOnly: true}
+
+    RoutingRule:
+      type: object
+      required: [name, groupId]
+      properties:
+        id: {type: string, format: uuid, readOnly: true}
+        name: {type: string}
+        position: {type: integer, description: Меньше — раньше}
+        enabled: {type: boolean, default: true}
+        conditions:
+          type: object
+          description: Все заданные условия должны совпасть; внутри списка — любое значение
+          properties:
+            ticketTypes: {type: array, items: {$ref: '#/components/schemas/TicketType'}}
+            serviceIds: {type: array, items: {type: string, format: uuid}}
+            categoryIds: {type: array, items: {type: string, format: uuid}}
+            ciIds: {type: array, items: {type: string, format: uuid}}
+            channels: {type: array, items: {$ref: '#/components/schemas/Channel'}}
+            priorities: {type: array, items: {$ref: '#/components/schemas/Priority'}}
+            keywords: {type: array, description: Подстрока в теме, без учёта регистра, items: {type: string}}
+            language: {type: string, description: ru, en — по тексту заявки}
+        groupId: {type: string, format: uuid}
+        assigneeId: {type: [string, 'null'], format: uuid}
+        version: {type: integer, readOnly: true}
+
+    GroupDispatch:
+      type: object
+      required: [strategy]
+      properties:
+        groupId: {type: string, format: uuid, readOnly: true}
+        strategy:
+          type: string
+          enum: [none, round_robin, least_loaded]
+          description: none — заявка остаётся на группе
+        members:
+          type: array
+          description: Исполнители, участвующие в распределении; доступность и навыки — после модуля identity
+          items: {type: string, format: uuid}
