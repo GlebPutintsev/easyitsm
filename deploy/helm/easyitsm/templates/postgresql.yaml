@@ -1,14 +1,17 @@
 {{- if .Values.postgresql.enabled }}
 {{- $fullname := include "easyitsm.fullname" . -}}
 {{- $pg := .Values.postgresql -}}
+# Скрипт не содержит паролей, но хранится в Secret: в нём создаются роли, и сканеры
+# конфигурации (Trivy KSV-0109) справедливо не ждут такого в ConfigMap.
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: {{ $fullname }}-postgresql-init
   labels:
     {{- include "easyitsm.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgresql
-data:
+type: Opaque
+stringData:
   # Роли как в deploy/compose/postgres/init.sql: владелец схемы для миграций
   # и роль приложения без BYPASSRLS (ADR-07). Пароли читаются из смонтированного секрета.
   01-easyitsm.sh: |
@@ -103,7 +106,9 @@ spec:
         - { name: run, emptyDir: {} }
         - { name: tmp, emptyDir: {} }
         - name: init
-          configMap: { name: {{ $fullname }}-postgresql-init }
+          secret:
+            secretName: {{ $fullname }}-postgresql-init
+            defaultMode: 0440
         - name: secrets
           secret:
             secretName: {{ include "easyitsm.dbSecretName" . }}

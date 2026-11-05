@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -q -DskipTests package \
  && cp target/core-*.jar /tmp/app.jar \
  && java -Djarmode=tools -jar /tmp/app.jar extract --layers --destination /layers
 
-FROM gcr.io/distroless/java21-debian12:nonroot
+FROM gcr.io/distroless/java21-debian13:nonroot
 ARG VERSION=dev
 ARG REVISION=unknown
 LABEL org.opencontainers.image.title="Easy ITSM core" \

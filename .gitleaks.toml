@@ -10,4 +10,7 @@ paths = [
   # Пароли окружения разработки (deploy/compose), не используются в поставке.
   '''deploy/compose/.*''',
   '''frontend/package-lock\.json''',
+  # Тесты детекторов секретов: поддельные пароли и ключи в них — это тестовые данные.
+  # Соглашение: такие тесты называются *Secret*Test.java.
+  '''backend/src/test/java/.*Secret[A-Za-z]*Test\.java''',
 ]
