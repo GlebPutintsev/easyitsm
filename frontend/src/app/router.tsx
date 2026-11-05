@@ -8,7 +8,7 @@ import { ItemEditorPage } from '@/features/catalog/admin/ItemEditorPage';
 import { MyTicketsPage } from '@/features/portal/MyTicketsPage';
 import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
-import { AgentHome } from '@/features/agent/AgentHome';
+import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
 import { ArticleEditor } from '@/features/knowledge/ArticleEditor';
 import { ArticleHistory } from '@/features/knowledge/ArticleHistory';
@@ -40,7 +40,7 @@ export const router = createBrowserRouter([
       { path: 'admin/catalog/items/:id', element: <ItemEditorPage /> },
       { path: 'portal/kb', element: <KnowledgePortal /> },
       { path: 'portal/kb/:id', element: <ArticlePage space="portal" /> },
-      { path: 'agent', element: <AgentHome /> },
+      agentRoutes,
       { path: 'agent/kb', element: <KnowledgeWorkspace /> },
       { path: 'agent/kb/new', element: <NewArticle /> },
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
