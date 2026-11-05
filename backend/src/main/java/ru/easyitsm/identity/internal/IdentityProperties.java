@@ -84,12 +84,14 @@ record IdentityProperties(
     /**
      * SEC-02.
      *
+     * @param enforced              требовать MFA по ролям (SEC-02); выключается только для разработки
      * @param requiredForAll        требовать MFA и от REQ, APR (политика заказчика)
      * @param rememberDeviceDays    «Запомнить устройство», 0 — запрещено
      * @param issuer                название в приложении-аутентификаторе
      * @param trustSsoMfa           считать вход через SSO прошедшим MFA (MFA проверяет IdP, например Keycloak)
      */
     record Mfa(
+            @DefaultValue("true") boolean enforced,
             @DefaultValue("false") boolean requiredForAll,
             @DefaultValue("30") int rememberDeviceDays,
             @DefaultValue("Easy ITSM") String issuer,

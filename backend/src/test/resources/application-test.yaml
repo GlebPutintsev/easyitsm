@@ -12,3 +12,7 @@ easyitsm:
   security:
     dev-auth:
       enabled: true
+  identity:
+    lockout:
+      # Без задержек после неудачного входа, чтобы тесты шли быстро. Сама задержка проверяется отдельно.
+      failure-delay: 0ms
