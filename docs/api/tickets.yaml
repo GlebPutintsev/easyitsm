@@ -44,14 +44,16 @@ paths:
         - {name: status, in: query, description: Коды статусов через запятую, schema: {type: string}}
         - {name: statusCategory, in: query, description: Категории через запятую, schema: {type: string}}
         - {name: priority, in: query, description: Через запятую, schema: {type: string, example: "P1,P2"}}
-        - {name: groupId, in: query, schema: {type: string, format: uuid}}
-        - {name: assigneeId, in: query, schema: {type: string, format: uuid}}
+        - {name: groupId, in: query, description: UUID через запятую, schema: {type: string}}
+        - {name: assigneeId, in: query, description: UUID через запятую или `none`, schema: {type: string}}
+        - {name: awaitingAgent, in: query, description: Последняя публичная запись от заявителя, schema: {type: boolean}}
         - {name: requesterId, in: query, schema: {type: string, format: uuid}}
         - {name: serviceId, in: query, schema: {type: string, format: uuid}}
         - {name: categoryId, in: query, schema: {type: string, format: uuid}}
         - {name: q, in: query, description: Полнотекст (морфология RU) по теме и описанию или номер, schema: {type: string}}
         - {name: createdFrom, in: query, schema: {type: string, format: date-time}}
         - {name: createdTo, in: query, schema: {type: string, format: date-time}}
+        - {name: updatedFrom, in: query, description: Для плашки «Показать N новых», schema: {type: string, format: date-time}}
         - name: custom
           in: query
           description: Фильтр по настраиваемому полю, `custom=<код>:<значение>`, можно повторять
@@ -59,7 +61,8 @@ paths:
           explode: true
         - name: sort
           in: query
-          schema: {type: string, enum: [-created, created, -updated, priority], default: -created}
+          description: due — по ближайшему сроку SLA (slaDueAt), заявки без срока в конце
+          schema: {type: string, enum: [-created, created, -updated, priority, due], default: -created}
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -97,6 +100,21 @@ paths:
         '400': {$ref: '#/components/responses/Problem'}
         '403': {$ref: '#/components/responses/Problem'}
         '422': {$ref: '#/components/responses/SecretsDetected'}
+
+  /tickets/count:
+    get:
+      tags: [tickets]
+      summary: Число заявок с теми же фильтрами, что у GET /tickets (без cursor, limit, sort)
+      responses:
+        '200':
+          description: Число
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count: {type: integer}
 
   /tickets/{ref}:
     parameters:
@@ -537,6 +555,110 @@ paths:
                 type: array
                 items: {$ref: '#/components/schemas/Ticket'}
 
+  /ticket-views:
+    get:
+      tags: [settings]
+      summary: Сохранённые представления, доступные мне (TCK-16) — личные, моих групп и общие
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TicketViewDef'}
+    post:
+      tags: [settings]
+      summary: Сохранить представление. Групповое — LEAD или ADM, общее — ADM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TicketViewDef'}
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketViewDef'}
+  /ticket-views/{viewId}:
+    parameters:
+      - {name: viewId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      tags: [settings]
+      summary: Изменить представление (владелец; групповое — LEAD, общее — ADM)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TicketViewDef'}
+      responses:
+        '200':
+          description: Изменено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TicketViewDef'}
+    delete:
+      tags: [settings]
+      summary: Удалить представление
+      responses:
+        '204': {description: Удалено}
+
+  /response-templates:
+    get:
+      tags: [settings]
+      summary: Готовые ответы (TCK-09), видимые мне
+      parameters:
+        - {name: q, in: query, description: Поиск по названию, schema: {type: string}}
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ResponseTemplate'}
+    post:
+      tags: [settings]
+      summary: Создать готовый ответ. Личный — любой агент, групповой — LEAD, общий — ADM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ResponseTemplate'}
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResponseTemplate'}
+  /response-templates/{templateId}:
+    parameters:
+      - {name: templateId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      tags: [settings]
+      summary: Изменить готовый ответ
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ResponseTemplate'}
+      responses:
+        '200':
+          description: Изменён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResponseTemplate'}
+    delete:
+      tags: [settings]
+      summary: Удалить готовый ответ
+      responses:
+        '204': {description: Удалён}
+
   /ticket-settings/workflows:
     get:
       tags: [settings]
@@ -944,7 +1066,10 @@ components:
         parentId: {type: [string, 'null'], format: uuid}
         channel: {$ref: '#/components/schemas/Channel'}
         confidential: {type: boolean}
+        securityGroupId: {type: [string, 'null'], format: uuid, description: Группа безопасности конфиденциальной заявки (ACC-04)}
         dueAt: {type: [string, 'null'], format: date-time, description: Срок подзадачи или заданный вручную}
+        slaDueAt: {type: [string, 'null'], format: date-time, description: Ближайший срок SLA, копия из модуля sla для сортировки очереди}
+        awaitingAgent: {type: boolean, description: Последняя публичная запись от заявителя, агент ещё не ответил}
         pendingReason: {type: [string, 'null']}
         pendingUntil: {type: [string, 'null'], format: date-time}
         resolutionCode: {type: [string, 'null']}
@@ -1045,12 +1170,13 @@ components:
         organizationId: {type: string, format: uuid}
         confidential: {type: boolean}
         confidentialReason: {type: string, description: Обязательна при включении confidential}
+        securityGroupId: {type: string, format: uuid}
         dueAt: {type: string, format: date-time}
         custom: {type: object, additionalProperties: true, description: Сливается с текущими значениями; null в значении удаляет поле}
         clear:
           type: array
           description: Сбросить в null
-          items: {type: string, enum: [groupId, assigneeId, serviceId, ciId, categoryId, createdForId, organizationId, dueAt, priority]}
+          items: {type: string, enum: [groupId, assigneeId, serviceId, ciId, categoryId, createdForId, organizationId, dueAt, priority, securityGroupId]}
         secrets: {$ref: '#/components/schemas/SecretsPolicy'}
 
     AvailableTransition:
@@ -1204,6 +1330,43 @@ components:
       properties:
         findings: {type: array, items: {$ref: '#/components/schemas/SecretFinding'}}
         masked: {type: string}
+
+    TicketViewDef:
+      type: object
+      required: [name, visibility, filter]
+      properties:
+        id: {type: string, format: uuid, readOnly: true}
+        name: {type: string, maxLength: 255}
+        visibility: {type: string, enum: [personal, group, shared]}
+        groupId: {type: [string, 'null'], format: uuid, description: Обязательна для group}
+        ownerId: {type: string, format: uuid, readOnly: true}
+        filter:
+          type: object
+          additionalProperties: true
+          description: 'Параметры GET /tickets как есть, например {"scope": "unassigned", "priority": "P1,P2"}'
+        sort: {type: string}
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              field: {type: string}
+              width: {type: integer}
+        position: {type: integer}
+        version: {type: integer, readOnly: true}
+
+    ResponseTemplate:
+      type: object
+      required: [name, body, visibility]
+      properties:
+        id: {type: string, format: uuid, readOnly: true}
+        name: {type: string, maxLength: 255}
+        body: {type: string, maxLength: 20000, description: 'Markdown с переменными {{ticket.number}}, {{ticket.title}}, {{requester.name}}, {{agent.name}} — подставляет клиент'}
+        visibility: {type: string, enum: [personal, group, shared]}
+        groupId: {type: [string, 'null'], format: uuid}
+        ticketTypes: {type: array, items: {$ref: '#/components/schemas/TicketType'}}
+        ownerId: {type: string, format: uuid, readOnly: true}
+        version: {type: integer, readOnly: true}
 
     Workflow:
       type: object
