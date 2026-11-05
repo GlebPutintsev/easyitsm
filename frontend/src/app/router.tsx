@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { AppLayout } from './layout/AppLayout';
 import { PortalHome } from '@/features/portal/PortalHome';
-import { AgentHome } from '@/features/agent/AgentHome';
+import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
 import { ArticleEditor } from '@/features/knowledge/ArticleEditor';
 import { ArticleHistory } from '@/features/knowledge/ArticleHistory';
@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
       { path: 'portal', element: <PortalHome /> },
       { path: 'portal/kb', element: <KnowledgePortal /> },
       { path: 'portal/kb/:id', element: <ArticlePage space="portal" /> },
-      { path: 'agent', element: <AgentHome /> },
+      agentRoutes,
       { path: 'agent/kb', element: <KnowledgeWorkspace /> },
       { path: 'agent/kb/new', element: <NewArticle /> },
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
