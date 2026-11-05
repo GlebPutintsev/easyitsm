@@ -1,0 +1,8 @@
+# Находки gitleaks в истории, которые не являются секретами. Формат: <commit>:<файл>:<правило>:<строка>.
+# В текущем коде эти строки помечены gitleaks:allow, здесь — их первые версии в истории ветки identity.
+# Ключ шифрования только для профиля dev (base64 от «dev-only-easyitsm-secret-key-32b»).
+57d4203ea125de3f8806076b5d13f42acc14964f:backend/src/main/resources/application.yaml:generic-api-key:85
+# Пароль тестового пользователя в тестах identity.
+57d4203ea125de3f8806076b5d13f42acc14964f:backend/src/test/java/ru/easyitsm/identity/internal/IdentityTestSupport.java:generic-api-key:34
+# Тестовый вектор TOTP из RFC 6238 (секрет «12345678901234567890»).
+57d4203ea125de3f8806076b5d13f42acc14964f:backend/src/test/java/ru/easyitsm/identity/internal/TotpTest.java:generic-api-key:36
