@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: easyitsm-core
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${EASYITSM_DB_URL:jdbc:postgresql://localhost:5432/easyitsm}
+    username: ${EASYITSM_DB_APP_USER:easyitsm_app}
+    password: ${EASYITSM_DB_APP_PASSWORD:app}
+  flyway:
+    user: ${EASYITSM_DB_OWNER_USER:easyitsm_owner}
+    password: ${EASYITSM_DB_OWNER_PASSWORD:owner}
+    # Flyway обходит подпапки рекурсивно: каждый модуль кладёт миграции в db/migration/<модуль>/.
+    locations: classpath:db/migration
+    # Модули разрабатываются параллельно, версии миграций — метка времени. Порядок слияния веток не важен.
+    out-of-order: true
+    placeholders:
+      app_role: ${EASYITSM_DB_APP_USER:easyitsm_app}
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
+      republish-outstanding-events-on-restart: true
+  mvc:
+    problemdetails:
+      enabled: true
+
+easyitsm:
+  tenancy:
+    mode: SINGLE
+  worker:
+    # Роль фонового обработчика: outbox, таймеры SLA, почта, очистка. В HA-установке
+    # включается на отдельных подах, на пилоте работает в том же процессе.
+    enabled: true
+  security:
+    dev-auth:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+  shutdown: graceful
+
+logging:
+  pattern:
+    correlation: "[%X{trace_id:-}] "
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
+easyitsm:
+  tenancy:
+    default-tenant-id: 01930000-0000-7000-8000-000000000001
+  security:
+    dev-auth:
+      enabled: true

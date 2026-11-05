@@ -1,0 +1,43 @@
+# Как работать с репозиторием
+
+Модули разрабатываются параллельно в отдельных ветках. Эти правила нужны, чтобы ветки сливались без конфликтов и без нарушения архитектуры.
+
+## Ветки и PR
+
+- Ветка на задачу: `<модуль>/<кратко>`, например `tickets/core-model`.
+- PR в `main`, CI должен быть зелёным. Изменения в `platform`, корневых конфигах и `frontend/src/app` — отдельным небольшим PR с пояснением, зачем это нужно всем.
+- Миграции не редактируются после слияния: только новая миграция.
+
+## Новый бэкенд-модуль
+
+Образец — модуль `announcements`.
+
+```
+backend/src/main/java/ru/easyitsm/<module>/
+├── package-info.java      @ApplicationModule(displayName = "...")
+├── api/                   публичные интерфейсы и DTO (@NamedInterface("api"))
+├── events/                доменные события (@NamedInterface("events"))
+└── internal/              сущности, репозитории, сервисы, контроллеры
+backend/src/main/resources/db/migration/<module>/
+└── VYYYY_MM_DD_HHMM__<module>_<описание>.sql
+```
+
+Обязательно:
+
+1. Сущность наследует `TenantEntity`: UUIDv7, `tenant_id`, служебные поля и `version` заполняются сами.
+2. В миграции у таблицы есть `tenant_id`, служебные поля, `ENABLE ROW LEVEL SECURITY` и политика `tenant_isolation` как в `announcements`.
+3. Другой модуль вызывается только через его `api`, реакция на чужие изменения — через `@ApplicationModuleListener` на его `events`.
+4. Контроллер под `/api/v1/...`: ошибки через `ApiException`, списки через `PageParams` и `CursorPage`, изменение через `ETags.requireMatch`, права через `@PreAuthorize` с ролями из раздела 3 ТЗ (`ROLE_AGT`, `ROLE_ADM` и т. д.).
+5. Чужая или отсутствующая запись — 404. Тесты прав и изоляции обязательны для каждого эндпоинта (NFR-16).
+6. Арендатор в фоновых задачах задаётся явно через `TenantContext.runAs`. Задачи помечаются `@ConditionalOnProperty(name = "easyitsm.worker.enabled", havingValue = "true", matchIfMissing = true)`.
+
+## Новый раздел фронтенда
+
+- Код раздела в `frontend/src/features/<модуль>/`, маршруты добавляются в `src/app/router.tsx`, пункт меню — в `src/app/layout/spaces.ts`.
+- Все тексты в `src/shared/i18n/locales/ru.json` и `en.json`, линтер предупреждает о русском тексте в JSX.
+- Запросы через `src/shared/api/client.ts` и TanStack Query. Каждый список показывает состояния через `ListState` (UI-02).
+- Создание отправляет `Idempotency-Key`, изменение — `If-Match` с ETag записи.
+
+## Вход в режиме разработки
+
+Профиль `dev` принимает заголовки `X-Dev-User`, `X-Dev-Tenant` и `X-Dev-Roles` (через запятую: `AGT,ADM`). В других профилях это запрещено, приложение не стартует. Модуль identity заменит этот механизм.

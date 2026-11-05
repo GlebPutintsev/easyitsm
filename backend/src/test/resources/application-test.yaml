@@ -1,0 +1,14 @@
+# Тесты работают с настоящим PostgreSQL: RLS нельзя проверить на H2.
+# Локально: deploy/compose (docker compose up postgres) или свой PostgreSQL с deploy/compose/postgres/init.sql.
+spring:
+  datasource:
+    url: ${EASYITSM_TEST_DB_URL:jdbc:postgresql://localhost:5432/easyitsm_test}
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
+    clean-disabled: false
+easyitsm:
+  tenancy:
+    mode: MULTI
+  security:
+    dev-auth:
+      enabled: true

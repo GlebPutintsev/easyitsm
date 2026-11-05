@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "label": "Основное меню",
+    "home": "Главная",
+    "catalog": "Каталог услуг",
+    "myTickets": "Мои заявки",
+    "knowledge": "Знания",
+    "queues": "Очереди",
+    "approvals": "Согласования",
+    "majorIncidents": "Крупные инциденты",
+    "problems": "Проблемы",
+    "changes": "Изменения",
+    "cmdb": "CMDB",
+    "assets": "Активы",
+    "reports": "Отчёты",
+    "users": "Пользователи"
+  },
+  "spaces": { "portal": "Портал", "agent": "Рабочее место", "admin": "Управление" },
+  "topbar": {
+    "menu": "Меню",
+    "search": "Поиск",
+    "searchPlaceholder": "Поиск заявок, статей, услуг",
+    "create": "Создать",
+    "approvals": "Согласования",
+    "notifications": "Уведомления",
+    "profile": "Профиль",
+    "toggleTheme": "Сменить тему",
+    "language": "English"
+  },
+  "create": {
+    "incident": "Инцидент",
+    "request": "Запрос",
+    "change": "Изменение",
+    "problem": "Проблема",
+    "article": "Статья"
+  },
+  "states": {
+    "loading": "Загрузка",
+    "empty": "Здесь пока ничего нет",
+    "noResults": "Ничего не найдено по фильтру",
+    "forbidden": "Нет доступа к этому разделу",
+    "errorTitle": "Не удалось загрузить",
+    "errorText": "Проверьте соединение и попробуйте снова",
+    "traceId": "Код трассировки"
+  },
+  "actions": { "retry": "Повторить", "resetFilters": "Сбросить фильтры" },
+  "errors": { "notFound": "Страница не найдена" },
+  "portal": {
+    "searchPlaceholder": "Опишите, что случилось",
+    "reportProblem": "Сообщить о проблеме",
+    "orderService": "Заказать услугу",
+    "announcements": "Объявления",
+    "noAnnouncements": "Плановых работ и сбоев нет",
+    "kind": { "info": "Информация", "maintenance": "Плановые работы", "outage": "Сбой" }
+  },
+  "agent": { "title": "Рабочее место агента", "placeholder": "Очередь и карточка заявки появятся в модуле рабочего места" },
+  "admin": { "title": "Управление", "placeholder": "Мастер настройки и справочники появятся в модуле управления" }
+}
