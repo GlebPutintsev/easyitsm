@@ -1,0 +1,68 @@
+import {
+  IconAlertTriangle,
+  IconBook,
+  IconBox,
+  IconChartBar,
+  IconChecklist,
+  IconClipboardList,
+  IconDeviceDesktop,
+  IconFlame,
+  IconHome,
+  IconListDetails,
+  IconSettings,
+  IconSitemap,
+  IconStack2,
+  IconUsers,
+  type Icon,
+} from '@tabler/icons-react';
+
+export type SpaceId = 'portal' | 'agent' | 'admin';
+
+export interface NavItem {
+  /** Ключ перевода в разделе nav */
+  key: string;
+  to: string;
+  icon: Icon;
+}
+
+/** Левое меню каждого пространства (10.6). Пункты без права скрываются, но сервер всё равно проверяет доступ. */
+export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
+  portal: {
+    home: '/portal',
+    nav: [
+      { key: 'home', to: '/portal', icon: IconHome },
+      { key: 'catalog', to: '/portal/catalog', icon: IconClipboardList },
+      { key: 'myTickets', to: '/portal/tickets', icon: IconListDetails },
+      { key: 'knowledge', to: '/portal/kb', icon: IconBook },
+    ],
+  },
+  agent: {
+    home: '/agent',
+    nav: [
+      { key: 'home', to: '/agent', icon: IconHome },
+      { key: 'myTickets', to: '/agent/my', icon: IconListDetails },
+      { key: 'queues', to: '/agent/queues', icon: IconStack2 },
+      { key: 'approvals', to: '/agent/approvals', icon: IconChecklist },
+      { key: 'majorIncidents', to: '/agent/major', icon: IconFlame },
+      { key: 'problems', to: '/agent/problems', icon: IconAlertTriangle },
+      { key: 'changes', to: '/agent/changes', icon: IconSitemap },
+      { key: 'knowledge', to: '/agent/kb', icon: IconBook },
+      { key: 'cmdb', to: '/agent/cmdb', icon: IconDeviceDesktop },
+      { key: 'assets', to: '/agent/assets', icon: IconBox },
+      { key: 'reports', to: '/agent/reports', icon: IconChartBar },
+    ],
+  },
+  admin: {
+    home: '/admin',
+    nav: [
+      { key: 'home', to: '/admin', icon: IconSettings },
+      { key: 'users', to: '/admin/users', icon: IconUsers },
+    ],
+  },
+};
+
+export function spaceOf(pathname: string): SpaceId {
+  if (pathname.startsWith('/agent')) return 'agent';
+  if (pathname.startsWith('/admin')) return 'admin';
+  return 'portal';
+}

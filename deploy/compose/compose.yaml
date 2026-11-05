@@ -1,0 +1,46 @@
+# Окружение разработки. Запуск: docker compose -f deploy/compose/compose.yaml up -d
+# Не для продуктива: поставка — Helm-чарт в deploy/helm (тред DevSecOps).
+name: easyitsm-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports: ["6379:6379"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: easyitsm
+      MINIO_ROOT_PASSWORD: easyitsm-dev-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio:/data]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports: ["8180:8080"]
+    profiles: [sso]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["1025:1025", "8025:8025"]
+
+volumes:
+  pgdata:
+  minio:

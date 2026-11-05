@@ -1,0 +1,16 @@
+# Java
+backend/target/
+*.class
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+# IDE и ОС
+.idea/
+.vscode/
+*.iml
+.DS_Store
+# Локальные настройки
+.env.local
+*.local
+.refact/

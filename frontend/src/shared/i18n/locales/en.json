@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "label": "Main menu",
+    "home": "Home",
+    "catalog": "Service catalog",
+    "myTickets": "My tickets",
+    "knowledge": "Knowledge",
+    "queues": "Queues",
+    "approvals": "Approvals",
+    "majorIncidents": "Major incidents",
+    "problems": "Problems",
+    "changes": "Changes",
+    "cmdb": "CMDB",
+    "assets": "Assets",
+    "reports": "Reports",
+    "users": "Users"
+  },
+  "spaces": { "portal": "Portal", "agent": "Workspace", "admin": "Administration" },
+  "topbar": {
+    "menu": "Menu",
+    "search": "Search",
+    "searchPlaceholder": "Search tickets, articles, services",
+    "create": "Create",
+    "approvals": "Approvals",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "toggleTheme": "Toggle theme",
+    "language": "Русский"
+  },
+  "create": {
+    "incident": "Incident",
+    "request": "Request",
+    "change": "Change",
+    "problem": "Problem",
+    "article": "Article"
+  },
+  "states": {
+    "loading": "Loading",
+    "empty": "Nothing here yet",
+    "noResults": "No results for this filter",
+    "forbidden": "You don't have access to this section",
+    "errorTitle": "Failed to load",
+    "errorText": "Check your connection and try again",
+    "traceId": "Trace ID"
+  },
+  "actions": { "retry": "Retry", "resetFilters": "Reset filters" },
+  "errors": { "notFound": "Page not found" },
+  "portal": {
+    "searchPlaceholder": "Describe what happened",
+    "reportProblem": "Report a problem",
+    "orderService": "Request a service",
+    "announcements": "Announcements",
+    "noAnnouncements": "No planned work or outages",
+    "kind": { "info": "Info", "maintenance": "Planned work", "outage": "Outage" }
+  },
+  "agent": { "title": "Agent workspace", "placeholder": "Queue and ticket card will arrive with the workspace module" },
+  "admin": { "title": "Administration", "placeholder": "Setup wizard and settings will arrive with the admin module" }
+}
