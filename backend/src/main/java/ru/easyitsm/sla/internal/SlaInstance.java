@@ -164,12 +164,12 @@ class SlaInstance extends TenantEntity {
      * Пересчёт при смене приоритета (SLA-06): новая цель применяется от исходного старта, старый и новый срок
      * записываются в журнал. Нарушение, которое по новой цели ещё не наступило, снимается.
      */
-    void retarget(SlaTarget target, String newPriority, UUID newScheduleId, long newTargetMs, BusinessCalendar cal,
-                  Instant at, Instant now, String reason) {
+    void retarget(SlaTarget target, String newPriority, UUID newScheduleId, long newTargetMs, BusinessCalendar oldCal,
+                  BusinessCalendar cal, Instant at, Instant now, String reason) {
         String oldPriority = priority;
-        Instant oldDue = dueAt;
-        applyTarget(target, newPriority, newScheduleId, newTargetMs);
         Gaps gaps = gaps();
+        Instant oldDue = oldCal.add(startedAt, targetMs, gaps);
+        applyTarget(target, newPriority, newScheduleId, newTargetMs);
         long bound = bound(now);
         Long due = cal.addMs(startedAt.toEpochMilli(), targetMs, gaps);
         firedThresholds.removeIf(p -> {
