@@ -36,7 +36,7 @@ jobs:
             --config p/java --config p/typescript --config p/react --config p/golang \
             --config p/dockerfile --config p/owasp-top-ten \
             --sarif-output=semgrep.sarif
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: semgrep-sarif
@@ -167,7 +167,7 @@ jobs:
           format: cyclonedx-json
           output-file: sbom-${{ matrix.component }}.cdx.json
           upload-artifact: false
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ matrix.component }}
           path: sbom-${{ matrix.component }}.cdx.json
