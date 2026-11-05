@@ -13,4 +13,7 @@ paths = [
   # Тесты детекторов секретов: поддельные пароли и ключи в них — это тестовые данные.
   # Соглашение: такие тесты называются *Secret*Test.java.
   '''backend/src/test/java/.*Secret[A-Za-z]*Test\.java''',
+  # Тест SecretScanner модуля knowledge (поддельные ключи вида AKIAIOSFODNN7EXAMPLE). Уже в main
+  # и в истории, поэтому исключён по пути; новые такие тесты называются по соглашению выше.
+  '''backend/src/test/java/ru/easyitsm/knowledge/internal/KnowledgeUnitTest\.java''',
 ]
