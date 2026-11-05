@@ -13,6 +13,8 @@ export interface Problem {
   detail?: string;
   code?: string;
   trace_id?: string;
+  /** Ошибки по полям: ключ поля → код ошибки (UI-06) */
+  errors?: Record<string, string>;
   /** Дополнительные поля ошибки, например список найденных секретов */
   [extension: string]: unknown;
 }
@@ -21,6 +23,7 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly traceId?: string;
+  /** Полный ответ RFC 9457: дополнительные поля вроде errors, field, findings */
   readonly problem: Problem;
 
   constructor(problem: Problem) {
@@ -94,6 +97,16 @@ export const api = {
   get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, options),
   post: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('POST', path, { ...options, body }),
   patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('PATCH', path, { ...options, body }),
-  put: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
   delete: <T = void>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
 };
+
+/** ETag записи для If-Match: сервер отдаёт версию как "N" (API-05). */
+export function etagOf(version: number): string {
+  return `"${version}"`;
+}
+
+/** Ключ идемпотентности на одно действие пользователя (API-04). */
+export function newIdempotencyKey(): string {
+  return crypto.randomUUID();
+}

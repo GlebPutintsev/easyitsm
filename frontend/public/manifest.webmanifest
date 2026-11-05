@@ -1,0 +1,20 @@
+{
+  "name": "Easy ITSM",
+  "short_name": "Easy ITSM",
+  "description": "Портал самообслуживания: заявки, каталог услуг, согласования",
+  "lang": "ru",
+  "start_url": "/portal",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2b59c3",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Сообщить о проблеме", "url": "/portal/report" },
+    { "name": "Мои заявки", "url": "/portal/tickets" },
+    { "name": "Согласования", "url": "/portal/approvals" }
+  ]
+}

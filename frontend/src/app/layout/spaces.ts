@@ -33,6 +33,7 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
       { key: 'home', to: '/portal', icon: IconHome },
       { key: 'catalog', to: '/portal/catalog', icon: IconClipboardList },
       { key: 'myTickets', to: '/portal/tickets', icon: IconListDetails },
+      { key: 'approvals', to: '/portal/approvals', icon: IconChecklist },
       { key: 'knowledge', to: '/portal/kb', icon: IconBook },
     ],
   },
@@ -57,6 +58,7 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
     nav: [
       { key: 'home', to: '/admin', icon: IconSettings },
       { key: 'users', to: '/admin/users', icon: IconUsers },
+      { key: 'catalogAdmin', to: '/admin/catalog', icon: IconClipboardList },
     ],
   },
 };

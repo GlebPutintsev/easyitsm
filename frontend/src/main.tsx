@@ -14,3 +14,12 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Установка на телефон как PWA (PRT-03). Только в сборке: в разработке кэш мешает горячей перезагрузке.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // без service worker портал работает как обычный сайт
+    });
+  });
+}
