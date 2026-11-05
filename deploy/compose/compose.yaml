@@ -30,11 +30,13 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev
+    # Реалм easyitsm с клиентом приложения и тестовым пользователем sso.user импортируется при старте.
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     ports: ["8180:8080"]
+    volumes: [./keycloak:/opt/keycloak/data/import:ro]
     profiles: [sso]
 
   mailpit:

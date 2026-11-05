@@ -10,6 +10,10 @@ import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
 import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
+import { RequireAuth } from '@/features/auth/RequireAuth';
+import { SecurityPage } from '@/features/profile/SecurityPage';
 import { ArticleEditor } from '@/features/knowledge/ArticleEditor';
 import { ArticleHistory } from '@/features/knowledge/ArticleHistory';
 import { ArticlePage } from '@/features/knowledge/ArticlePage';
@@ -19,13 +23,21 @@ import { NewArticle } from '@/features/knowledge/NewArticle';
 import { NotFound } from './NotFound';
 
 /**
- * Пространства (раздел 10): портал, рабочее место агента, управление. Вход добавит модуль identity.
+ * Пространства (раздел 10): портал, рабочее место агента, управление. Всё, кроме экранов входа,
+ * доступно только после входа (RequireAuth).
  * Каждый модуль добавляет свои маршруты в children нужного пространства.
  */
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <Navigate to="/portal" replace /> },
       { path: 'portal', element: <PortalHome /> },
@@ -47,6 +59,7 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
       { path: 'admin', element: <AdminHome /> },
+      { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

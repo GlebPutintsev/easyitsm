@@ -26,7 +26,8 @@
 # 1. PostgreSQL, Valkey, MinIO, Mailpit (Keycloak: --profile sso)
 docker compose -f deploy/compose/compose.yaml up -d
 
-# 2. Бэкенд на :8080, профиль dev включает демо-арендатора и вход по заголовкам X-Dev-*
+# 2. Бэкенд на :8080, профиль dev включает демо-арендатора и демо-пользователей admin, agent, user
+#    (пароль Demo-ITSM-2026!, подробнее в CONTRIBUTING.md)
 cd backend && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 
 # 3. Фронтенд на :5173, запросы /api проксируются на бэкенд

@@ -41,4 +41,12 @@ backend/src/main/resources/db/migration/<module>/
 
 ## Вход в режиме разработки
 
-Профиль `dev` принимает заголовки `X-Dev-User`, `X-Dev-Tenant` и `X-Dev-Roles` (через запятую: `AGT,ADM`). В других профилях это запрещено, приложение не стартует. Модуль identity заменит этот механизм.
+Интерфейс входит как в поставке: экран входа, кука сессии `__Host-eitsm_session` (по http в dev просто `eitsm_session`) и CSRF-токен из куки `XSRF-TOKEN`, который `client.ts` отправляет в заголовке `X-XSRF-TOKEN`. Демо-пользователи арендатора `demo`, пароль у всех `Demo-ITSM-2026!`:
+
+- `admin` — ADM и SEC, участник группы Service Desk;
+- `agent` — руководитель группы Service Desk (LEAD, группа даёт AGT);
+- `user` — заявитель (REQ).
+
+В dev MFA не обязательна, её можно включить в «Профиль → Безопасность». Вход через Keycloak: `docker compose -f deploy/compose/compose.yaml --profile sso up -d keycloak` и профили `dev,sso`, пользователь `sso.user` с тем же паролем.
+
+Тесты бэкенда и скрипты могут по-прежнему передавать заголовки `X-Dev-User`, `X-Dev-Tenant` и `X-Dev-Roles` (через запятую: `AGT,ADM`) — только в профилях `dev` и `test`, в других приложение не стартует. Такие запросы не требуют CSRF. Опасные действия с `@RequiresRecentAuth` с этими заголовками проходят без повторного входа. Контракт модуля для других модулей: `ru.easyitsm.identity.api` (`UserDirectory`, `AccessDecisions`, `Role`).

@@ -49,7 +49,8 @@
   },
   "actions": {
     "retry": "Retry",
-    "resetFilters": "Reset filters"
+    "resetFilters": "Reset filters",
+    "cancel": "Cancel"
   },
   "errors": {
     "notFound": "Page not found"
@@ -747,6 +748,131 @@
         "overdue": "Breached",
         "all": "All open"
       }
+    }
+  },
+  "auth": {
+    "title": "Sign in to Easy ITSM",
+    "login": "Username or email",
+    "password": "Password",
+    "tenant": "Organization",
+    "submit": "Sign in",
+    "forgot": "Forgot password?",
+    "or": "or",
+    "sso": "Sign in with {{name}}",
+    "passkey": "Sign in with a passkey",
+    "language": "Language",
+    "logout": "Sign out",
+    "back": "Back",
+    "backToLogin": "Back to sign in",
+    "invalid": "Wrong username or password",
+    "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
+    "restart": "Sign-in timed out. Please start over.",
+    "unavailable": "The service is temporarily unavailable. Try again later.",
+    "forgotTitle": "Reset password",
+    "forgotHint": "Enter your username or email. If the account exists, we will send a link to set a new password.",
+    "forgotSubmit": "Send link",
+    "forgotSent": "If the account exists, an email with a link is on its way. The link is valid for one hour.",
+    "resetTitle": "New password",
+    "resetSubmit": "Save password",
+    "resetDone": "Password changed. You can sign in now.",
+    "mfa": {
+      "title": "Confirm sign-in",
+      "enterCode": "Enter the 6-digit code from your authenticator app.",
+      "code": "Code",
+      "confirm": "Confirm",
+      "invalid": "Wrong code",
+      "keyHint": "Touch your security key or confirm on your device.",
+      "useApp": "Authenticator code",
+      "useKey": "Security key",
+      "useRecovery": "Recovery code",
+      "recoveryCode": "Recovery code",
+      "otherMethod": "Use another method",
+      "remember": "Remember this device for {{days}} days"
+    },
+    "setup": {
+      "title": "Turn on two-factor authentication",
+      "hint": "Your role requires a second sign-in factor. Choose a method.",
+      "app": "Authenticator app",
+      "appTitle": "Set up authenticator app",
+      "key": "Security key or passkey"
+    },
+    "totp": {
+      "scan": "Scan the QR code with an authenticator app such as Google Authenticator or FreeOTP.",
+      "qrAlt": "QR code for the authenticator app",
+      "manual": "Can't scan it? Enter the key manually:",
+      "enterCode": "Enter the code shown in the app."
+    },
+    "recovery": {
+      "title": "Recovery codes",
+      "hint": "Store these codes somewhere safe. Each code works once and lets you sign in if your phone or key is unavailable. We won't show them again.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "saved": "I saved the codes"
+    },
+    "reauth": {
+      "title": "Confirm it's you",
+      "hint": "This action requires you to confirm your identity again.",
+      "invalid": "Could not confirm. Check your password or code.",
+      "key": "Confirm with a key"
+    },
+    "ssoError": "Single sign-on failed. Try again or contact your administrator.",
+    "ssoConflict": "An account with this username already exists. Ask your administrator to link it to single sign-on."
+  },
+  "security": {
+    "title": "Security",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat new password",
+    "passwordRules": "At least {{min}} characters. A phrase of several words works best.",
+    "mismatch": "Passwords don't match",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed. Other sessions were signed out.",
+    "mfa": "Two-factor authentication",
+    "mfaRequired": "Required for your role",
+    "app": "Authenticator app",
+    "appOn": "Enabled",
+    "appOff": "Not set up",
+    "setupApp": "Set up",
+    "disable": "Turn off",
+    "keys": "Security keys and passkeys",
+    "keysHint": "USB keys, Touch ID, Windows Hello or a passkey on your phone.",
+    "keyName": "Key name",
+    "addKey": "Add key",
+    "removeKey": "Remove key",
+    "added": "Added {{date}}",
+    "recovery": "Recovery codes",
+    "recoveryLeft_one": "{{count}} code left",
+    "recoveryLeft_other": "{{count}} codes left",
+    "generateCodes": "Generate new codes",
+    "sessions": "Active sessions",
+    "device": "Device",
+    "ip": "IP address",
+    "lastSeen": "Last activity",
+    "current": "This session",
+    "end": "Sign out",
+    "endOthers": "Sign out all others",
+    "history": "Sign-in history",
+    "when": "When",
+    "result": "Result",
+    "method": "Method",
+    "methods": {
+      "password": "Password",
+      "totp": "authenticator code",
+      "webauthn": "security key",
+      "recovery": "recovery code",
+      "passkey": "Passkey",
+      "oidc": "Single sign-on",
+      "ldap": "Directory password"
+    },
+    "results": {
+      "success": "Success",
+      "failure": "Failed",
+      "locked": "Locked",
+      "reset_requested": "Password reset requested",
+      "blocked": "Account blocked",
+      "unknown_user": "Unknown user"
     }
   }
 }

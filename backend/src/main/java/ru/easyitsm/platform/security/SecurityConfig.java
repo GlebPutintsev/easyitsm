@@ -20,8 +20,8 @@ import ru.easyitsm.platform.tenant.TenantResolver;
 /**
  * Базовая цепочка безопасности. Запрет по умолчанию: всё под {@code /api/**} требует входа.
  * <p>
- * Модуль identity заменит вход для разработки на OIDC, SAML, LDAP и локальные учётные записи,
- * включит сессии в куках и CSRF (SEC-01, SEC-06).
+ * Вход, сессии в куках и CSRF добавляет модуль identity через {@link SecurityChainCustomizer} (SEC-01, SEC-06).
+ * Без него CSRF Spring Security включён по умолчанию: изменяющие запросы без токена отклоняются.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableMethodSecurity
@@ -29,7 +29,8 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http, DevAuthProperties devAuth, Environment env,
-                                    List<TenantResolver> tenantResolvers) throws Exception {
+                                    List<TenantResolver> tenantResolvers,
+                                    List<SecurityChainCustomizer> customizers) throws Exception {
         if (devAuth.enabled()) {
             List<String> profiles = Arrays.asList(env.getActiveProfiles());
             if (!profiles.contains("dev") && !profiles.contains("test")) {
@@ -38,9 +39,11 @@ class SecurityConfig {
             http.addFilterBefore(new DevAuthFilter(), AnonymousAuthenticationFilter.class);
         }
         http.addFilterAfter(new TenantFilter(tenantResolvers), AnonymousAuthenticationFilter.class);
+        for (SecurityChainCustomizer customizer : customizers) {
+            customizer.customize(http);
+        }
 
         return http
-                .csrf(csrf -> csrf.disable()) // TODO(identity): включить CSRF вместе с сессией в куках
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .headers(h -> h
