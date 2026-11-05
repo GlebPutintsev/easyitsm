@@ -10,11 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.easyitsm.platform.tenant.TenantContext;
+import ru.easyitsm.tickets.api.TicketCommands;
 
 /**
  * Применяет снимок заявки к её счётчикам SLA: старт по подходящим политикам (SLA-01, 02), паузы (SLA-04),
@@ -33,9 +35,12 @@ class SlaTracker {
     private final Calendars calendars;
     private final JdbcClient jdbc;
     private final ApplicationEventPublisher events;
+    private final ObjectProvider<TicketCommands> tickets;
 
     SlaTracker(SlaInstanceRepository instances, SlaInstanceEventRepository journal, SlaPolicyRepository policies,
-               Calendars calendars, JdbcClient jdbc, ApplicationEventPublisher events) {
+               Calendars calendars, JdbcClient jdbc, ApplicationEventPublisher events,
+               ObjectProvider<TicketCommands> tickets) {
+        this.tickets = tickets;
         this.instances = instances;
         this.journal = journal;
         this.policies = policies;
@@ -117,6 +122,33 @@ class SlaTracker {
             i.evaluate(cals.of(i.scheduleId()), now);
             persist(i);
         }
+        if (!touched.isEmpty()) {
+            publishDue(f.ticketId(), all);
+        }
+    }
+
+    /**
+     * Передаёт ближайший срок в заявку для сортировки очереди: сначала по SLA перед заказчиком, если его нет —
+     * по OLA и UC. Счётчики на паузе срока не имеют.
+     */
+    private void publishDue(UUID ticketId, List<SlaInstance> all) {
+        TicketCommands commands = tickets.getIfAvailable();
+        if (commands == null) {
+            return;
+        }
+        Instant due = nearestDue(all, "sla");
+        if (due == null && all.stream().noneMatch(i -> i.live() && "sla".equals(i.kind()))) {
+            due = nearestDue(all, null);
+        }
+        commands.updateSlaDue(ticketId, due);
+    }
+
+    private static Instant nearestDue(List<SlaInstance> all, String kind) {
+        return all.stream()
+                .filter(i -> i.live() && i.dueAt() != null && (kind == null || kind.equals(i.kind())))
+                .map(SlaInstance::dueAt)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
     }
 
     /** Подбирает политику каждого вида и приводит счётчики к ней. */
@@ -193,8 +225,12 @@ class SlaTracker {
     @Transactional
     public void check(UUID instanceId, Instant now) {
         instances.findById(instanceId).ifPresent(i -> {
+            Instant before = i.dueAt();
             i.evaluate(calendars.load(i.scheduleId()), now);
             persist(i);
+            if (!java.util.Objects.equals(before, i.dueAt())) {
+                publishDue(i.ticketId(), instances.findByTicketIdOrderById(i.ticketId()));
+            }
         });
     }
 
