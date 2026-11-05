@@ -54,6 +54,7 @@ paths:
         - {name: createdFrom, in: query, schema: {type: string, format: date-time}}
         - {name: createdTo, in: query, schema: {type: string, format: date-time}}
         - {name: updatedFrom, in: query, description: Для плашки «Показать N новых», schema: {type: string, format: date-time}}
+        - {name: dueBefore, in: query, description: 'Ближайший срок (slaDueAt или dueAt) раньше этого времени; для «просроченных» передайте now', schema: {type: string, format: date-time}}
         - name: custom
           in: query
           description: Фильтр по настраиваемому полю, `custom=<код>:<значение>`, можно повторять
