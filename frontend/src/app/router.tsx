@@ -3,21 +3,34 @@ import { AppLayout } from './layout/AppLayout';
 import { PortalHome } from '@/features/portal/PortalHome';
 import { AgentHome } from '@/features/agent/AgentHome';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
+import { RequireAuth } from '@/features/auth/RequireAuth';
+import { SecurityPage } from '@/features/profile/SecurityPage';
 import { NotFound } from './NotFound';
 
 /**
- * Пространства (раздел 10): портал, рабочее место агента, управление. Вход добавит модуль identity.
+ * Пространства (раздел 10): портал, рабочее место агента, управление. Всё, кроме экранов входа,
+ * доступно только после входа (RequireAuth).
  * Каждый модуль добавляет свои маршруты в children нужного пространства.
  */
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <Navigate to="/portal" replace /> },
       { path: 'portal', element: <PortalHome /> },
       { path: 'agent', element: <AgentHome /> },
       { path: 'admin', element: <AdminHome /> },
+      { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

@@ -45,23 +45,54 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
-/** Вход для разработки: заголовки X-Dev-*, работают только в профиле dev на сервере. */
-function devAuthHeaders(): Record<string, string> {
-  if (!import.meta.env.DEV) return {};
-  const user = import.meta.env.VITE_DEV_USER as string | undefined;
-  const tenant = import.meta.env.VITE_DEV_TENANT as string | undefined;
-  const roles = import.meta.env.VITE_DEV_ROLES as string | undefined;
-  if (!user || !tenant) return {};
-  return { 'X-Dev-User': user, 'X-Dev-Tenant': tenant, ...(roles ? { 'X-Dev-Roles': roles } : {}) };
+/**
+ * Вход по куке сессии (модуль identity). Кука HttpOnly, браузер отправляет её сам.
+ * Изменяющие запросы несут CSRF-токен: сервер кладёт его в куку XSRF-TOKEN, клиент возвращает в заголовке.
+ */
+export function csrfToken(): string | undefined {
+  const match = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='));
+  return match ? decodeURIComponent(match.slice('XSRF-TOKEN='.length)) : undefined;
+}
+
+/**
+ * Обработчики ответов 401. Модуль входа подписывается на них: при reauth_required показывает окно
+ * повторной аутентификации (SEC-08) и повторяет запрос, при истёкшей сессии отправляет на экран входа.
+ */
+export interface AuthHandlers {
+  /** Возвращает true, если пользователь подтвердил вход и запрос можно повторить. */
+  reauthenticate?: () => Promise<boolean>;
+  sessionExpired?: () => void;
+}
+
+const authHandlers: AuthHandlers = {};
+
+export function setAuthHandlers(handlers: AuthHandlers) {
+  Object.assign(authHandlers, handlers);
 }
 
 export async function request<T>(method: Method, path: string, options: RequestOptions = {}): Promise<T> {
+  try {
+    return await send<T>(method, path, options);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      if (error.code === 'reauth_required' && authHandlers.reauthenticate && (await authHandlers.reauthenticate())) {
+        return send<T>(method, path, options);
+      }
+      if (error.code !== 'reauth_required' && !path.startsWith('/auth/')) authHandlers.sessionExpired?.();
+    }
+    throw error;
+  }
+}
+
+async function send<T>(method: Method, path: string, options: RequestOptions): Promise<T> {
   const url = new URL(`/api/v1${path}`, window.location.origin);
   for (const [key, value] of Object.entries(options.query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
-  const headers: Record<string, string> = { Accept: 'application/json', ...devAuthHeaders() };
+  const headers: Record<string, string> = { Accept: 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  const csrf = method === 'GET' ? undefined : csrfToken();
+  if (csrf) headers['X-XSRF-TOKEN'] = csrf;
   if (options.ifMatch) headers['If-Match'] = options.ifMatch;
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;
 
@@ -83,11 +114,14 @@ export async function request<T>(method: Method, path: string, options: RequestO
     throw new ApiError(problem);
   }
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const api = {
   get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, options),
   post: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('POST', path, { ...options, body }),
   patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('PATCH', path, { ...options, body }),
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
+  delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
 };

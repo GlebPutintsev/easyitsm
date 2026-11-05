@@ -1,0 +1,36 @@
+{
+  "realm": "easyitsm",
+  "enabled": true,
+  "displayName": "Easy ITSM (dev)",
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "easyitsm",
+      "name": "Easy ITSM",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "easyitsm-dev-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/api/v1/auth/oidc/callback/*",
+        "http://localhost:5173/api/v1/auth/oidc/callback/*"
+      ],
+      "webOrigins": ["http://localhost:5173", "http://localhost:8080"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "http://localhost:5173/*" }
+    }
+  ],
+  "users": [
+    {
+      "username": "sso.user",
+      "email": "sso.user@example.ru",
+      "emailVerified": true,
+      "firstName": "Ольга",
+      "lastName": "Единая",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Demo-ITSM-2026!", "temporary": false }]
+    }
+  ]
+}

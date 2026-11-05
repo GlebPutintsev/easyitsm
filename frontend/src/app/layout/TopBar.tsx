@@ -15,13 +15,18 @@ import {
   IconChecklist,
   IconChevronDown,
   IconLanguage,
+  IconLogout,
   IconPlus,
   IconSearch,
+  IconShieldLock,
   IconSunMoon,
   IconUserCircle,
 } from '@tabler/icons-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { api } from '@/shared/api/client';
+import { useMe } from '@/features/auth/api';
 import { spaces, type SpaceId } from './spaces';
 
 interface Props {
@@ -38,6 +43,17 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const me = useMe();
+  const queryClient = useQueryClient();
+
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout', {});
+    } finally {
+      queryClient.clear();
+      navigate('/login', { replace: true });
+    }
+  };
 
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap" gap="sm">
@@ -118,7 +134,10 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
             </ActionIcon>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Label>{t('topbar.profile')}</Menu.Label>
+            <Menu.Label>{me.data?.displayName ?? t('topbar.profile')}</Menu.Label>
+            <Menu.Item leftSection={<IconShieldLock size={16} />} onClick={() => navigate('/profile/security')}>
+              {t('security.title')}
+            </Menu.Item>
             <Menu.Item
               leftSection={<IconSunMoon size={16} />}
               onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}
@@ -130,6 +149,10 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
               onClick={() => void i18n.changeLanguage(i18n.language === 'ru' ? 'en' : 'ru')}
             >
               {t('topbar.language')}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item leftSection={<IconLogout size={16} />} color="red" onClick={() => void logout()}>
+              {t('auth.logout')}
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
