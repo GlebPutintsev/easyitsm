@@ -1,0 +1,14 @@
+# Контекст сборки образов — корень репозитория. В образ не попадает ничего лишнего (SEC-36).
+.git
+.github
+**/node_modules
+**/target
+frontend/dist
+**/*.local
+**/.env*
+!frontend/.env.production
+docs
+deploy/helm
+deploy/offline
+deploy/license
+*.md

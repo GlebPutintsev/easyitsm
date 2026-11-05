@@ -1,0 +1,46 @@
+# Общие настройки Trivy для CI и локального запуска: trivy fs --config trivy.yaml .
+# Порог выпуска (раздел 9.4 ТЗ): нет критичных и высоких проблем, для которых есть исправление.
+severity: [HIGH, CRITICAL]
+exit-code: 1
+ignorefile: .trivyignore
+vulnerability:
+  ignore-unfixed: true
+license:
+  # Категории заменяют списки Trivy по умолчанию. Порог — HIGH, то есть restricted и forbidden.
+  # Сильный копилефт несовместим с коробочной поставкой: такие зависимости требуют решения юриста.
+  forbidden:
+    - AGPL-1.0
+    - AGPL-3.0
+    - AGPL-3.0-only
+    - AGPL-3.0-or-later
+    - SSPL-1.0
+    - CPAL-1.0
+    - Commons-Clause
+  restricted:
+    - GPL-1.0
+    - GPL-2.0
+    - GPL-2.0-only
+    - GPL-2.0-or-later
+    - GPL-3.0
+    - GPL-3.0-only
+    - GPL-3.0-or-later
+  # Слабый копилефт допустим при использовании библиотеки без изменений (MEDIUM, не блокирует):
+  # logback (EPL-1.0 или LGPL-2.1), jakarta.annotation-api (EPL-2.0 или GPL-2.0 с classpath exception).
+  reciprocal:
+    - LGPL-2.0
+    - LGPL-2.0-only
+    - LGPL-2.1
+    - LGPL-2.1-only
+    - LGPL-2.1-or-later
+    - LGPL-3.0
+    - LGPL-3.0-only
+    - LGPL-3.0-or-later
+    - GPL-2.0-with-classpath-exception
+    - Classpath-exception-2.0
+    - EPL-1.0
+    - EPL-2.0
+    - MPL-2.0
+scan:
+  skip-dirs:
+    - backend/target
+    - frontend/dist

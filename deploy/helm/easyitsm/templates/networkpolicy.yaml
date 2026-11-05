@@ -1,0 +1,150 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy -}}
+{{- $fullname := include "easyitsm.fullname" . -}}
+{{- /* SEC-35: всё запрещено, затем точечные разрешения для каждого компонента. */ -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-default-deny
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  {{- if $np.defaultDenyNamespace }}
+  podSelector: {}
+  {{- else }}
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  {{- end }}
+  policyTypes: [Ingress, Egress]
+---
+# DNS нужен всем подам релиза.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-dns
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            {{- toYaml $np.dns.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $np.dns.podSelector | nindent 12 }}
+      ports:
+        - { port: 53, protocol: UDP }
+        - { port: 53, protocol: TCP }
+---
+# Веб-клиент: только входящий трафик от Ingress-контроллера, исходящих соединений нет.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-web
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "web") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml $np.ingressController.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $np.ingressController.podSelector | nindent 12 }}
+      ports:
+        - { port: 8080, protocol: TCP }
+---
+# Ядро (api и worker): HTTP только от Ingress и только для api, метрики — от мониторинга.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-core
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      easyitsm.ru/core: "true"
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml $np.monitoring.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $np.monitoring.podSelector | nindent 12 }}
+      ports:
+        - { port: 8081, protocol: TCP }
+  egress:
+    {{- if .Values.postgresql.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "easyitsm.selector" (list . "postgresql") | nindent 14 }}
+      ports:
+        - { port: 5432, protocol: TCP }
+    {{- else }}
+    {{- if not $np.databaseCidrs }}
+    {{- fail "networkPolicy.databaseCidrs обязателен для внешнего PostgreSQL" }}
+    {{- end }}
+    - to:
+        {{- range $np.databaseCidrs }}
+        - ipBlock: { cidr: {{ . }} }
+        {{- end }}
+      ports:
+        - { port: {{ .Values.database.port }}, protocol: TCP }
+    {{- end }}
+    {{- with $np.coreEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-api-ingress
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "api") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml $np.ingressController.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $np.ingressController.podSelector | nindent 12 }}
+      ports:
+        - { port: 8080, protocol: TCP }
+{{- if .Values.postgresql.enabled }}
+---
+# Встроенный PostgreSQL: входящие только от ядра, исходящих нет.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-postgresql
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "postgresql") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              easyitsm.ru/core: "true"
+      ports:
+        - { port: 5432, protocol: TCP }
+{{- end }}
+{{- end }}
