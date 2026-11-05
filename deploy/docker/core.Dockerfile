@@ -8,7 +8,7 @@
 # Образы указаны прямо в FROM, без ARG: так их видит Dependabot.
 
 
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /src
 COPY backend/pom.xml .
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q dependency:go-offline
