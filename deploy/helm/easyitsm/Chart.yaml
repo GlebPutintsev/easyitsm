@@ -1,0 +1,15 @@
+apiVersion: v2
+name: easyitsm
+description: Easy ITSM — коробочная ITSM-платформа (ядро, фоновый обработчик, веб-клиент)
+type: application
+# Версия чарта и версия приложения совпадают и выставляются при выпуске (release.yml).
+version: 0.1.0
+appVersion: "0.1.0"
+# 1.30+: preStop sleep без оболочки в образе.
+kubeVersion: ">=1.30.0-0"
+home: https://github.com/GlebPutintsev/easyitsm
+sources:
+  - https://github.com/GlebPutintsev/easyitsm
+keywords: [itsm, service-desk, helpdesk]
+annotations:
+  easyitsm.ru/pod-security: restricted

@@ -1,0 +1,21 @@
+Easy ITSM {{ .Chart.AppVersion }} установлен в пространство имён {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+Адрес: http{{ if .Values.ingress.tls.secretName }}s{{ end }}://{{ .Values.ingress.host }}/
+{{- end }}
+
+Проверка готовности:
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "easyitsm.fullname" . }}-api
+
+{{- if .Values.postgresql.enabled }}
+
+Внимание: встроенный PostgreSQL предназначен для пилота, не для персональных данных и не для HA.
+{{- end }}
+{{- if not .Values.license.existingSecret }}
+
+Лицензия не задана: работает пробный режим. Загрузите файл лицензии в «Управление → Лицензия»
+или передайте его секретом: --set license.existingSecret=<имя секрета с ключом license.json>.
+{{- end }}
+
+Пространство имён должно иметь метку профиля Pod Security restricted (SEC-34):
+  kubectl label ns {{ .Release.Namespace }} pod-security.kubernetes.io/enforce=restricted

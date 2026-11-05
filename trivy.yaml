@@ -1,0 +1,21 @@
+# Общие настройки Trivy для CI и локального запуска: trivy fs --config trivy.yaml .
+# Порог выпуска (раздел 9.4 ТЗ): нет критичных и высоких проблем, для которых есть исправление.
+severity: [HIGH, CRITICAL]
+exit-code: 1
+ignorefile: .trivyignore
+vulnerability:
+  ignore-unfixed: true
+license:
+  # Сильный копилефт несовместим с коробочной поставкой: такие зависимости требуют решения юриста.
+  forbidden:
+    - AGPL-1.0
+    - AGPL-3.0
+    - GPL-2.0
+    - GPL-3.0
+    - SSPL-1.0
+    - CPAL-1.0
+    - Commons-Clause
+scan:
+  skip-dirs:
+    - backend/target
+    - frontend/dist

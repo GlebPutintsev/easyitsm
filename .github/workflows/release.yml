@@ -1,0 +1,167 @@
+# Выпуск: подписанные образы и Helm-чарт, SBOM CycloneDX, офлайн-комплект (SEC-38, SEC-39, раздел 12.2 ТЗ).
+# Запуск: тег vX.Y.Z. Нужны секреты репозитория COSIGN_PRIVATE_KEY и COSIGN_PASSWORD
+# (cosign generate-key-pair, см. deploy/offline/README.md).
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/glebputintsev
+  COSIGN_VERSION: v2.6.5
+  TRIVY_IMAGE: aquasec/trivy:0.76.1
+  # Сторонний образ встроенного PostgreSQL зеркалируется, проверяется и подписывается вместе с нашими.
+  POSTGRES_SOURCE: docker.io/library/postgres:17-alpine
+
+jobs:
+  images:
+    name: Образ ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [core, web, postgres]
+    outputs:
+      core: ${{ steps.out.outputs.core }}
+      web: ${{ steps.out.outputs.web }}
+      postgres: ${{ steps.out.outputs.postgres }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Версия
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+
+      - name: Сборка и публикация
+        if: matrix.component != 'postgres'
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/${{ matrix.component }}.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/easyitsm-${{ matrix.component }}:${{ env.VERSION }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            REVISION=${{ github.sha }}
+          provenance: mode=max
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+
+      - name: Зеркало PostgreSQL
+        if: matrix.component == 'postgres'
+        id: mirror
+        run: |
+          target="$REGISTRY/easyitsm-postgres:17-alpine"
+          skopeo copy --all "docker://$POSTGRES_SOURCE" "docker://$target" \
+            --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+          echo "digest=$(skopeo inspect --format '{{.Digest}}' "docker://$target" \
+            --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}")" >> "$GITHUB_OUTPUT"
+
+      - name: Ссылка по digest
+        run: |
+          digest="${{ steps.build.outputs.digest || steps.mirror.outputs.digest }}"
+          echo "IMAGE=$REGISTRY/easyitsm-${{ matrix.component }}@$digest" >> "$GITHUB_ENV"
+          echo "DIGEST=$digest" >> "$GITHUB_ENV"
+
+      - name: Уязвимости (порог выпуска)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker run --rm -v "$HOME/.docker:/root/.docker:ro" -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            image --config trivy.yaml --scanners vuln "$IMAGE"
+
+      - name: SBOM CycloneDX
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.component }}.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      # Ключ вендора, без журнала прозрачности: подпись проверяется в закрытом контуре без интернета.
+      - name: Подпись и аттестация SBOM
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          test -n "$COSIGN_PRIVATE_KEY" || { echo "::error::Нет секрета COSIGN_PRIVATE_KEY"; exit 1; }
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY --tlog-upload=false "$IMAGE"
+          cosign attest --yes --key env://COSIGN_PRIVATE_KEY --tlog-upload=false \
+            --type cyclonedx --predicate "sbom-${{ matrix.component }}.cdx.json" "$IMAGE"
+
+      - id: out
+        run: echo "${{ matrix.component }}=$DIGEST" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.component }}
+          path: sbom-${{ matrix.component }}.cdx.json
+
+  bundle:
+    name: Чарт и офлайн-комплект
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Версия
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.22.1
+      - uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sbom-*
+          merge-multiple: true
+          path: sbom
+      - name: Сборка комплекта
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          CORE_DIGEST: ${{ needs.images.outputs.core }}
+          WEB_DIGEST: ${{ needs.images.outputs.web }}
+          POSTGRES_DIGEST: ${{ needs.images.outputs.postgres }}
+        run: deploy/offline/build-bundle.sh "$VERSION" dist
+      - name: Чарт в OCI-реестр
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          ref=$(helm push "dist/easyitsm-$VERSION.tgz" "oci://$REGISTRY/charts" 2>&1 | awk '/^Digest:/ {print $2}')
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY --tlog-upload=false "$REGISTRY/charts/easyitsm@$ref"
+      - name: Выпуск на GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "Easy ITSM $VERSION" --verify-tag --generate-notes \
+            dist/easyitsm-$VERSION-offline.tar dist/easyitsm-$VERSION-offline.tar.sha256 \
+            dist/easyitsm-$VERSION-offline.tar.sig dist/easyitsm-$VERSION.tgz dist/easyitsm-$VERSION.tgz.sig \
+            dist/cosign.pub sbom/*.cdx.json

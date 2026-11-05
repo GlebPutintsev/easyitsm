@@ -1,0 +1,145 @@
+# Easy ITSM. Значения по умолчанию — пилот на одном узле (раздел 12.1 ТЗ):
+# ядро и фоновый обработчик в одном поде, встроенный PostgreSQL.
+# Промышленная HA-конфигурация: values-ha.yaml.
+
+global:
+  # Реестр-зеркало для офлайн-установки: подменяет реестр во всех образах чарта.
+  imageRegistry: ""
+  imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  pullPolicy: IfNotPresent
+  # digest важнее tag. Установщик офлайн-комплекта подставляет digest проверенных образов.
+  core:
+    repository: ghcr.io/glebputintsev/easyitsm-core
+    tag: ""
+    digest: ""
+  web:
+    repository: ghcr.io/glebputintsev/easyitsm-web
+    tag: ""
+    digest: ""
+
+serviceAccount:
+  name: ""
+
+tenancy:
+  # SINGLE — контур заказчика, MULTI — облако.
+  mode: SINGLE
+  # Арендатор инсталляции в режиме SINGLE (UUID). Создаётся мастером настройки.
+  defaultTenantId: ""
+
+# Ядро в роли api: REST API и WebSocket.
+api:
+  replicas: 1
+  # На пилоте фоновый обработчик работает в том же процессе. В HA — отдельный Deployment worker.
+  workerEnabled: true
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { memory: 2Gi }
+  extraEnv: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  autoscaling:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+# Ядро в роли worker: outbox, таймеры SLA, почта, рассылки.
+worker:
+  enabled: false
+  # Больше одной реплики — после блокировки плановых задач (ShedLock), иначе задачи выполняются дважды.
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1536Mi }
+  extraEnv: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Веб-клиент: статический сервер SPA.
+web:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 32Mi }
+    limits: { memory: 128Mi }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+ingress:
+  enabled: true
+  className: ""
+  host: itsm.example.local
+  annotations: {}
+  tls:
+    # Секрет с сертификатом. Пусто — Ingress без TLS (только для стенда).
+    secretName: ""
+
+database:
+  # Внешний PostgreSQL. Используется, когда postgresql.enabled=false.
+  host: ""
+  port: 5432
+  name: easyitsm
+  # require | verify-full | disable. Для внешней БД в продуктиве — verify-full.
+  sslMode: disable
+  # Секрет с ключами app-username, app-password, owner-username, owner-password.
+  # Пусто при встроенном PostgreSQL — чарт создаст секрет со случайными паролями и сохранит их при обновлениях.
+  existingSecret: ""
+
+# Встроенный PostgreSQL для пилота. Не для персональных данных и не для HA (раздел 12.1 ТЗ).
+postgresql:
+  enabled: true
+  image:
+    repository: docker.io/library/postgres
+    tag: "17-alpine"
+    digest: ""
+  storage:
+    size: 20Gi
+    storageClassName: ""
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { memory: 2Gi }
+
+license:
+  # Секрет с ключом license.json — подписанный файл лицензии (ADM-07). Без него работает пробный режим.
+  existingSecret: ""
+
+networkPolicy:
+  # SEC-35: трафик запрещён по умолчанию, разрешения ниже.
+  enabled: true
+  # Запрет по умолчанию для всего пространства имён, а не только для подов релиза.
+  defaultDenyNamespace: true
+  # Откуда приходит внешний трафик: поды Ingress-контроллера.
+  ingressController:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ingress-nginx
+    podSelector: {}
+  # Кто собирает метрики с порта управления 8081.
+  monitoring:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    podSelector: {}
+  dns:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kube-system
+    podSelector:
+      matchLabels:
+        k8s-app: kube-dns
+  # Сети внешнего PostgreSQL (CIDR), если postgresql.enabled=false.
+  databaseCidrs: []
+  # Прочие исходящие соединения ядра: почта, IdP, S3, SIEM, OpenSearch. Формат — правило egress NetworkPolicy:
+  #   - to: [{ ipBlock: { cidr: 10.0.10.25/32 } }]
+  #     ports: [{ port: 587, protocol: TCP }]
+  coreEgress: []
+
+podDisruptionBudget:
+  enabled: true
