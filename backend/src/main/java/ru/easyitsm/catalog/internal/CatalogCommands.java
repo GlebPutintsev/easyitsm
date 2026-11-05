@@ -57,7 +57,7 @@ final class CatalogCommands {
             @NotNull @Size(min = 1, max = 50) List<@NotNull UUID> approvers,
             Condition condition,
             @Positive @Max(525_600) Integer dueMinutes,
-            boolean allowDelegation) {
+            Boolean allowDelegation) {
     }
 
     record FlowInput(

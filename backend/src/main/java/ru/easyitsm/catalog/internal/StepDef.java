@@ -18,9 +18,13 @@ record StepDef(
         List<UUID> approvers,
         Condition condition,
         Integer dueMinutes,
-        boolean allowDelegation) {
+        Boolean allowDelegation) {
 
     static final List<String> MODES = List.of("all", "any", "quorum");
+
+    boolean delegationAllowed() {
+        return Boolean.TRUE.equals(allowDelegation);
+    }
 
     StepDef withApprovers(List<UUID> list) {
         return new StepDef(name, mode, quorum, list, condition, dueMinutes, allowDelegation);

@@ -15,7 +15,7 @@ public record FormField(
         String label,
         String help,
         String placeholder,
-        boolean required,
+        Boolean required,
         List<FieldOption> options,
         Double min,
         Double max,
@@ -27,6 +27,10 @@ public record FormField(
 
     public static final Set<String> TYPES =
             Set.of("text", "textarea", "number", "select", "multiselect", "checkbox", "date", "email", "section");
+
+    public boolean isRequired() {
+        return Boolean.TRUE.equals(required);
+    }
 
     public boolean hasValue() {
         return !"section".equals(type);

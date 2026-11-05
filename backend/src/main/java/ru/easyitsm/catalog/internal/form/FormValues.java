@@ -39,7 +39,7 @@ public final class FormValues {
             if (f.visibleWhen() != null && !f.visibleWhen().test(clean)) {
                 continue;
             }
-            boolean required = f.required() || (f.requiredWhen() != null && f.requiredWhen().test(clean));
+            boolean required = f.isRequired() || (f.requiredWhen() != null && f.requiredWhen().test(clean));
             Object value = normalize(raw.get(f.key()));
             if (!Condition.filled(value)) {
                 if (required) {

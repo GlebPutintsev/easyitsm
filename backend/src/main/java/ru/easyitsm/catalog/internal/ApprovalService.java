@@ -191,7 +191,7 @@ class ApprovalService implements ApprovalQueries {
         ApprovalRequest request = requests.findById(a.requestId()).orElseThrow();
         requireOpen(a, request);
         StepDef step = json.steps(request.steps()).get(a.stepIndex());
-        if (!step.allowDelegation()) {
+        if (!step.delegationAllowed()) {
             throw new ApiException(HttpStatus.FORBIDDEN, "delegation_not_allowed",
                     "На этом шаге передавать согласование нельзя");
         }
@@ -292,8 +292,8 @@ class ApprovalService implements ApprovalQueries {
         UUID me = Roles.actor();
         KeysetCursor after = page.keyset();
         String filter = "decided".equals(tab)
-                ? "a.decision in ('approved', 'rejected', 'delegated')"
-                : "a.decision = 'pending' and r.state = 'pending'";
+                ? "(a.decision in ('approved', 'rejected', 'delegated')) "
+                : "(a.decision = 'pending' and r.state = 'pending') ";
         List<Row> rows = jdbc.sql("""
                         select a.id, a.ticket_id, r.ticket_number, r.title, r.requester_id, r.created_for_id,
                                a.step_name, a.step_index, a.decision, a.comment, a.info_requested_at, a.due_at,
@@ -315,7 +315,7 @@ class ApprovalService implements ApprovalQueries {
                         rs.getString("step_name"), rs.getInt("step_index"), rs.getString("decision"),
                         rs.getString("comment"), instant(rs, "info_requested_at"), instant(rs, "due_at"),
                         instant(rs, "decided_at"), instant(rs, "created_at"), rs.getObject("delegate_from", UUID.class),
-                        json.steps(rs.getString("steps")).get(rs.getInt("step_index")).allowDelegation())))
+                        json.steps(rs.getString("steps")).get(rs.getInt("step_index")).delegationAllowed())))
                 .list();
         return CursorPage.of(rows, page.limit(), r -> new KeysetCursor(r.view().createdAt().toString(), r.view().id()))
                 .map(Row::view);
@@ -375,7 +375,7 @@ class ApprovalService implements ApprovalQueries {
         StepDef step = json.steps(r.steps()).get(a.stepIndex());
         return new CatalogViews.ApprovalView(a.getId(), a.ticketId(), r.ticketNumber(), r.title(), r.requesterId(),
                 r.createdForId(), a.stepName(), a.stepIndex(), a.decision(), a.comment(), a.infoRequestedAt(),
-                a.dueAt(), a.decidedAt(), a.getCreatedAt(), a.delegateFrom(), step.allowDelegation());
+                a.dueAt(), a.decidedAt(), a.getCreatedAt(), a.delegateFrom(), step.delegationAllowed());
     }
 
     private static Instant instant(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
