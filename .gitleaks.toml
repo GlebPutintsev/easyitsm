@@ -1,0 +1,19 @@
+# Поиск секретов в репозитории (раздел 9.4 ТЗ). Правила gitleaks по умолчанию плюс исключения ниже.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Тестовые и демонстрационные значения, не являющиеся секретами"
+paths = [
+  # Тестовый ключ лицензий: открытый ключ есть только в тестовых ресурсах, в продукт не попадает.
+  '''backend/src/test/resources/licensing/test-2026\.key''',
+  # Пароли окружения разработки (deploy/compose), не используются в поставке.
+  '''deploy/compose/.*''',
+  '''frontend/package-lock\.json''',
+  # Тесты детекторов секретов: поддельные пароли и ключи в них — это тестовые данные.
+  # Соглашение: такие тесты называются *Secret*Test.java.
+  '''backend/src/test/java/.*Secret[A-Za-z]*Test\.java''',
+  # Тест SecretScanner модуля knowledge (поддельные ключи вида AKIAIOSFODNN7EXAMPLE). Уже в main
+  # и в истории, поэтому исключён по пути; новые такие тесты называются по соглашению выше.
+  '''backend/src/test/java/ru/easyitsm/knowledge/internal/KnowledgeUnitTest\.java''',
+]

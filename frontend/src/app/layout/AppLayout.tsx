@@ -33,7 +33,7 @@ export function AppLayout() {
       <AppShell.Navbar p="xs">
         <SideNav space={space} />
       </AppShell.Navbar>
-      <AppShell.Main>
+      <AppShell.Main bg="var(--ei-bg)">
         <Outlet />
       </AppShell.Main>
       {bottomNav && (

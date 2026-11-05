@@ -14,6 +14,8 @@
 | `backend/` | Модульный монолит: Java 21, Spring Boot 4.1, Spring Modulith, PostgreSQL |
 | `frontend/` | Портал, рабочее место агента и управление: React 19, TypeScript, Vite, Mantine, TanStack Query |
 | `deploy/compose/` | Окружение разработки |
+| `deploy/docker/`, `deploy/helm/`, `deploy/offline/` | Образы без оболочки, Helm-чарт, офлайн-комплект и установщик ([как установить](deploy/offline/README.md)) |
+| `deploy/license/` | Выпуск подписанных лицензий ([формат и ключи](deploy/license/README.md)) |
 | `docs/` | ADR, спецификация API |
 
 ## Запуск для разработки

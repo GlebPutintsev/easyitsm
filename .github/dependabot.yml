@@ -1,0 +1,23 @@
+# Обновления зависимостей и базовых образов (SCA, раздел 9.4 ТЗ).
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 10
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 10
+    groups:
+      dev-dependencies:
+        dependency-type: development
+  - package-ecosystem: docker
+    directory: /deploy/docker
+    schedule: { interval: weekly }
+  - package-ecosystem: gomod
+    directory: /deploy/docker/web
+    schedule: { interval: monthly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

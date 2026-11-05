@@ -321,5 +321,32 @@
     "suggestions": {
       "title": "Возможно, ответ уже есть"
     }
+  },
+  "ticket": {
+    "status": {
+      "draft": "Черновик",
+      "new": "Новая",
+      "approval": "Согласование",
+      "assigned": "Назначена",
+      "in_progress": "В работе",
+      "pending": "Ожидание",
+      "resolved": "Решена",
+      "closed": "Закрыта",
+      "cancelled": "Отменена"
+    },
+    "priority": {
+      "P1": "Критический",
+      "P2": "Высокий",
+      "P3": "Средний",
+      "P4": "Низкий"
+    }
+  },
+  "sla": {
+    "paused": "пауза",
+    "pausedLabel": "SLA на паузе",
+    "none": "Без срока SLA",
+    "days": "{{count}} дн",
+    "remainingLabel": "Осталось {{value}}",
+    "breachedLabel": "Срок нарушен на {{value}}"
   }
 }
