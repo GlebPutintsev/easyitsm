@@ -77,7 +77,7 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Подтверждение входа')).toBeInTheDocument();
     const login = calls.find((c) => c.path === '/api/v1/auth/login');
     expect(login?.csrf).toBe('csrf-123');
-    expect(login?.body).toEqual({ login: 'agent', password: 'Demo-ITSM-2026!' });
+    expect(login?.body).toEqual({ login: 'agent', password: 'Demo-ITSM-2026!' }); // gitleaks:allow
 
     const inputs = screen.getAllByRole('textbox');
     '123456'.split('').forEach((digit, i) => fireEvent.change(inputs[i]!, { target: { value: digit } }));

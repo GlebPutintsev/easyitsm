@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import ru.easyitsm.platform.tenant.TenantFilter;
 import ru.easyitsm.platform.tenant.TenantResolver;
 
@@ -51,8 +52,24 @@ class SecurityConfig {
                         .frameOptions(f -> f.deny()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers(managementPortActuator(env)).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll())
                 .build();
+    }
+
+    /**
+     * Метрики Prometheus открыты только на отдельном порту управления ({@code management.server.port}).
+     * Этот порт не публикуется через Ingress, а NetworkPolicy пускает к нему только мониторинг (раздел 12.5).
+     * Без отдельного порта метрики закрыты, как и всё вне {@code /api}.
+     */
+    private static RequestMatcher managementPortActuator(Environment env) {
+        int serverPort = env.getProperty("server.port", Integer.class, 8080);
+        Integer managementPort = env.getProperty("management.server.port", Integer.class);
+        if (managementPort == null || managementPort <= 0 || managementPort == serverPort) {
+            return request -> false;
+        }
+        return request -> request.getLocalPort() == managementPort
+                && request.getRequestURI().startsWith("/actuator/");
     }
 }

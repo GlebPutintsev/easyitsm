@@ -1,0 +1,71 @@
+/*
+ * Токены дизайн-системы «Ясность» (DESIGN.md в корне репозитория).
+ * Имена одинаковы в обеих темах, значения переключаются по атрибуту, который ставит Mantine.
+ * В компонентах используйте var(--ei-…), а не шестнадцатеричные цвета.
+ */
+:root,
+:root[data-mantine-color-scheme='light'] {
+  --ei-bg: #f5f6f8;
+  --ei-surface: #ffffff;
+  --ei-surface-2: #f0f2f5;
+  --ei-hover: #eef1f5;
+  --ei-border: #e3e6eb;
+  --ei-border-strong: #c9ced7;
+  --ei-text: #151922;
+  --ei-text-2: #444c5c;
+  --ei-text-3: #5f6779;
+  --ei-accent: #2b59c3;
+  --ei-accent-hover: #224aa5;
+  --ei-accent-soft: #e9eefb;
+  --ei-accent-text: #2149a6;
+  --ei-on-accent: #ffffff;
+  --ei-note: #fff7e3;
+  --ei-note-border: #edcf7e;
+  --ei-ok: #1a6e45;
+  --ei-ok-soft: #e2f3e9;
+  --ei-warn: #9a5200;
+  --ei-warn-soft: #fdf0dc;
+  --ei-danger: #c2302a;
+  --ei-danger-soft: #fbe8e7;
+  --ei-on-danger: #ffffff;
+  --ei-wait: #6b4fbb;
+  --ei-wait-soft: #efeafb;
+  --ei-neutral-soft: #eceef2;
+  --ei-shadow: 0 1px 2px rgb(21 25 34 / 6%), 0 6px 16px rgb(21 25 34 / 6%);
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  --ei-bg: #0e1117;
+  --ei-surface: #151921;
+  --ei-surface-2: #1b2029;
+  --ei-hover: #212734;
+  --ei-border: #262c38;
+  --ei-border-strong: #364051;
+  --ei-text: #e7eaf0;
+  --ei-text-2: #b3bac7;
+  --ei-text-3: #8e96a5;
+  --ei-accent: #7d9bf4;
+  --ei-accent-hover: #99b1f7;
+  --ei-accent-soft: #1c2745;
+  --ei-accent-text: #a8bdf8;
+  --ei-on-accent: #0e1117;
+  --ei-note: #2a2313;
+  --ei-note-border: #5e4b1b;
+  --ei-ok: #5dc796;
+  --ei-ok-soft: #13281e;
+  --ei-warn: #efa54b;
+  --ei-warn-soft: #2d2112;
+  --ei-danger: #f37c74;
+  --ei-danger-soft: #33191a;
+  --ei-on-danger: #1a0a09;
+  --ei-wait: #b49ef1;
+  --ei-wait-soft: #231c39;
+  --ei-neutral-soft: #232833;
+  --ei-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 16px rgb(0 0 0 / 30%);
+}
+
+/* Номера заявок, таймеры SLA, коды трассировки */
+.ei-mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+}

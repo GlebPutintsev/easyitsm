@@ -27,7 +27,7 @@ class LdapSyncTest extends IdentityTestSupport {
     static final String RUN = Ids.newId().toString().substring(28);
     static final String ALICE = "alice" + RUN;
     static final String BOB = "bob" + RUN;
-    static final String LDAP_PASSWORD = "Ldap-Password-2026";
+    static final String LDAP_PASSWORD = "Ldap-Password-2026"; // gitleaks:allow
     static final InMemoryDirectoryServer SERVER = start();
 
     @Autowired

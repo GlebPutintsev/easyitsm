@@ -15,7 +15,11 @@
     "reports": "Reports",
     "users": "Users"
   },
-  "spaces": { "portal": "Portal", "agent": "Workspace", "admin": "Administration" },
+  "spaces": {
+    "portal": "Portal",
+    "agent": "Workspace",
+    "admin": "Administration"
+  },
   "topbar": {
     "menu": "Menu",
     "search": "Search",
@@ -43,18 +47,309 @@
     "errorText": "Check your connection and try again",
     "traceId": "Trace ID"
   },
-  "actions": { "retry": "Retry", "resetFilters": "Reset filters", "cancel": "Cancel" },
-  "errors": { "notFound": "Page not found" },
+  "actions": {
+    "retry": "Retry",
+    "resetFilters": "Reset filters",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "notFound": "Page not found"
+  },
   "portal": {
     "searchPlaceholder": "Describe what happened",
     "reportProblem": "Report a problem",
     "orderService": "Request a service",
     "announcements": "Announcements",
     "noAnnouncements": "No planned work or outages",
-    "kind": { "info": "Info", "maintenance": "Planned work", "outage": "Outage" }
+    "kind": {
+      "info": "Info",
+      "maintenance": "Planned work",
+      "outage": "Outage"
+    }
   },
-  "agent": { "title": "Agent workspace", "placeholder": "Queue and ticket card will arrive with the workspace module" },
-  "admin": { "title": "Administration", "placeholder": "Setup wizard and settings will arrive with the admin module" },
+  "agent": {
+    "title": "Agent workspace",
+    "placeholder": "Queue and ticket card will arrive with the workspace module"
+  },
+  "admin": {
+    "title": "Administration",
+    "placeholder": "Setup wizard and settings will arrive with the admin module"
+  },
+  "kb": {
+    "title": "Knowledge base",
+    "status": {
+      "draft": "Draft",
+      "review": "In review",
+      "published": "Published",
+      "review_due": "Review due",
+      "archived": "Archived"
+    },
+    "audience": {
+      "all": "All users",
+      "employees": "Employees",
+      "agents": "Agents",
+      "group": "Group"
+    },
+    "tabs": {
+      "all": "All",
+      "mine": "Mine",
+      "awaitingReview": "Awaiting review",
+      "draft": "Drafts",
+      "review": "In review",
+      "published": "Published",
+      "review_due": "Review due",
+      "archived": "Archived"
+    },
+    "templates": {
+      "blank": {
+        "name": "Blank article",
+        "description": "Free text without structure"
+      },
+      "howto": {
+        "name": "How-to",
+        "description": "Purpose, steps and result"
+      },
+      "solution": {
+        "name": "Problem solution",
+        "description": "Symptoms, cause and resolution"
+      },
+      "faq": {
+        "name": "Question and answer",
+        "description": "Short answer to a frequent question"
+      },
+      "known_error": {
+        "name": "Known error",
+        "description": "Error, workaround and fix status"
+      }
+    },
+    "fields": {
+      "title": "Title",
+      "category": "Category",
+      "noCategory": "No category",
+      "audience": "Visible to",
+      "groupId": "Group ID",
+      "groupIdHint": "Group picker will arrive with the users module",
+      "reviewAt": "Review date"
+    },
+    "actions": {
+      "new": "New article",
+      "create": "Create",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "submit": "Submit for review",
+      "publish": "Publish",
+      "reject": "Return for changes",
+      "archive": "Archive",
+      "unarchive": "Restore from archive",
+      "requestReview": "Request review",
+      "confirmReview": "Confirm it is current",
+      "history": "Version history"
+    },
+    "done": {
+      "submitted": "Article submitted for review",
+      "published": "Article published",
+      "rejected": "Article returned to the author",
+      "archived": "Article archived",
+      "unarchived": "Article restored from archive as a draft",
+      "reviewRequested": "Article marked for review",
+      "reviewConfirmed": "Review date extended",
+      "restored": "Version {{no}} created from the selected one"
+    },
+    "errors": {
+      "actionFailed": "Action failed"
+    },
+    "list": {
+      "more": "Show more",
+      "updated": "updated {{date}}",
+      "publishedVersion": "readers see version {{no}}"
+    },
+    "portal": {
+      "searchPlaceholder": "Find an answer, e.g. “VPN does not work”",
+      "allCategories": "All topics",
+      "empty": "No published articles yet"
+    },
+    "workspace": {
+      "searchPlaceholder": "Search by title and text",
+      "empty": "No articles yet. Create the first one"
+    },
+    "new": {
+      "title": "New article",
+      "titlePlaceholder": "For example: How to connect to VPN from home",
+      "template": "Template",
+      "audienceHint": "Can be changed when publishing",
+      "create": "Create draft"
+    },
+    "category": {
+      "create": "New category",
+      "name": "Category name"
+    },
+    "article": {
+      "notFound": "Article not found or not available",
+      "version": "version {{no}}",
+      "publishedAt": "published {{date}}",
+      "notPublished": "not published yet",
+      "hasDraft": "New version {{draft}} is in progress. Readers see published version {{published}}.",
+      "showPublished": "Published",
+      "showDraft": "Draft",
+      "emptyBody": "The article is empty so far",
+      "returned": "Returned for changes",
+      "inReview": "The article is being reviewed by a knowledge editor. Editing reopens after the decision.",
+      "reviewDue": "Review was due {{date}}. Check that the article is still accurate.",
+      "archived": "Archived: hidden from search, links to tickets are kept.",
+      "nextReview": "Next review: {{date}}",
+      "fromTicket": "Created from ticket {{ref}}"
+    },
+    "editor": {
+      "toolbar": "Formatting",
+      "body": "Article text",
+      "bodyPlaceholder": "Write in Markdown or use the toolbar. Tables, code and images are supported.",
+      "write": "Write",
+      "preview": "Preview",
+      "emptyPreview": "Preview appears here",
+      "previewFor": "Preview. Visible to: {{audience}}",
+      "save": "Save",
+      "saving": "Saving…",
+      "unsaved": "Unsaved changes",
+      "savedAt": "Saved at {{time}}",
+      "allSaved": "All changes saved",
+      "back": "To article",
+      "titleRequired": "Enter a title",
+      "readOnly": "The article cannot be edited now",
+      "readOnlyReason": {
+        "review": "The article is in review. Wait for the knowledge editor's decision.",
+        "archived": "The article is archived. A knowledge editor can restore it."
+      },
+      "conflictTitle": "Someone else changed the article",
+      "conflictText": "Your latest edits were not saved. Copy them, reload the article and apply them again.",
+      "reload": "Reload",
+      "newVersionHint": "The article is published. Your first edit creates a new version; readers keep seeing the current one until it is republished.",
+      "tools": {
+        "heading": "Heading",
+        "bold": "Bold",
+        "italic": "Italic",
+        "bulletList": "Bulleted list",
+        "numberedList": "Numbered list",
+        "quote": "Quote",
+        "code": "Inline code",
+        "codeBlock": "Code block",
+        "table": "Table",
+        "link": "Link",
+        "image": "Image by URL"
+      },
+      "placeholder": {
+        "text": "text",
+        "code": "code",
+        "linkText": "link text",
+        "imageAlt": "image description",
+        "column1": "Column 1",
+        "column2": "Column 2"
+      }
+    },
+    "submit": {
+      "title": "Submit for review",
+      "fourEyes": "Another knowledge editor will review and publish the article.",
+      "anyReviewer": "A knowledge editor will review the article.",
+      "comment": "Comment for the reviewer",
+      "secretsTitle": "The text seems to contain secrets",
+      "secretsText": "Remove passwords and keys from the article. If this is a false positive, confirm submission.",
+      "finding": "{{kind}}, line {{line}}",
+      "confirmNoSecrets": "There are no secrets, submit",
+      "findingInTitle": "{{kind}} in the title"
+    },
+    "secret": {
+      "private_key": "Private key",
+      "aws_key": "Cloud key",
+      "github_token": "GitHub token",
+      "slack_token": "Slack token",
+      "jwt": "JWT",
+      "password": "Password",
+      "api_key": "API key or token",
+      "connection_string": "Connection string with password"
+    },
+    "publish": {
+      "title": "Publish article",
+      "reviewHint": "12 months by default. The owner is reminded in advance.",
+      "notes": "What changed",
+      "notesPlaceholder": "Version notes"
+    },
+    "reject": {
+      "title": "Return for changes",
+      "comment": "What needs fixing"
+    },
+    "archive": {
+      "title": "Archive article",
+      "text": "The article disappears from search and the portal. Links to tickets and version history are kept."
+    },
+    "confirmReview": {
+      "title": "Confirm it is current",
+      "text": "The article stays published until the new review date."
+    },
+    "history": {
+      "title": "History: {{title}}",
+      "back": "To article",
+      "from": "From",
+      "to": "To",
+      "version": "Version",
+      "notes": "Notes",
+      "changed": "Changed",
+      "published": "published",
+      "current": "current",
+      "restore": "Restore",
+      "single": "The article has only one version so far",
+      "compare": "Comparing versions {{from}} and {{to}}",
+      "noChanges": "The versions are identical",
+      "unchanged": "unchanged: {{count}} lines",
+      "legendAdded": "added",
+      "legendRemoved": "removed",
+      "restoreTitle": "Restore version {{no}}",
+      "restoreText": "This version's text becomes a new draft version. It has to be reviewed and published again."
+    },
+    "feedback": {
+      "question": "Was this article helpful?",
+      "thanks": "Thanks for your feedback",
+      "helpful": "Helpful",
+      "notHelpful": "Not helpful",
+      "whatWrong": "What was wrong?",
+      "commentPlaceholder": "What was missing",
+      "send": "Send",
+      "createTicket": "Create a request",
+      "stats": "Helpful: {{helpful}} · Not helpful: {{notHelpful}}"
+    },
+    "fromTicket": {
+      "button": "Create article",
+      "needSolution": "Fill in the ticket resolution first"
+    },
+    "suggestions": {
+      "title": "Maybe the answer is already here"
+    }
+  },
+  "ticket": {
+    "status": {
+      "draft": "Draft",
+      "new": "New",
+      "approval": "Approval",
+      "assigned": "Assigned",
+      "in_progress": "In progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "P1": "Critical",
+      "P2": "High",
+      "P3": "Medium",
+      "P4": "Low"
+    }
+  },
+  "sla": {
+    "paused": "paused",
+    "pausedLabel": "SLA paused",
+    "none": "No SLA target",
+    "days": "{{count}} d",
+    "remainingLabel": "{{value}} left",
+    "breachedLabel": "Overdue by {{value}}"
+  },
   "auth": {
     "title": "Sign in to Easy ITSM",
     "login": "Username or email",

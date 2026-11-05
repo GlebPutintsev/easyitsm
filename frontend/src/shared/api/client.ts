@@ -13,18 +13,22 @@ export interface Problem {
   detail?: string;
   code?: string;
   trace_id?: string;
+  /** Дополнительные поля ошибки, например список найденных секретов */
+  [extension: string]: unknown;
 }
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly traceId?: string;
+  readonly problem: Problem;
 
   constructor(problem: Problem) {
     super(problem.detail ?? problem.title ?? `HTTP ${problem.status}`);
     this.status = problem.status;
     this.code = problem.code ?? 'unknown';
     this.traceId = problem.trace_id;
+    this.problem = problem;
   }
 }
 

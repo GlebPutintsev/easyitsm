@@ -33,7 +33,7 @@ class TotpTest {
     void base32AndUri() {
         assertThat(Totp.base32("foobar".getBytes(StandardCharsets.US_ASCII))).isEqualTo("MZXW6YTBOI");
         assertThat(Totp.otpauthUri("Easy ITSM", "ivan@demo", RFC_SECRET))
-                .startsWith("otpauth://totp/Easy%20ITSM:ivan%40demo?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ")
+                .startsWith("otpauth://totp/Easy%20ITSM:ivan%40demo?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ") // gitleaks:allow
                 .contains("issuer=Easy%20ITSM");
     }
 }

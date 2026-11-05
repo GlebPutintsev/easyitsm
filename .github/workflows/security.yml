@@ -1,0 +1,173 @@
+# Проверки безопасности (раздел 9.4 ТЗ): SAST, SCA и лицензии зависимостей, секреты, конфигурация,
+# Helm-чарт, сборка образов с проверкой уязвимостей и SBOM. Порог: нет критичных и высоких проблем.
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Новые CVE появляются без изменений в коде: еженедельная проверка main.
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.76.1
+  SEMGREP_IMAGE: semgrep/semgrep:1.181.1
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.30.1
+
+jobs:
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src "$SEMGREP_IMAGE" semgrep scan \
+            --metrics=off --error --severity ERROR \
+            --config p/java --config p/typescript --config p/react --config p/golang \
+            --config p/dockerfile --config p/owasp-top-ten \
+            --sarif-output=semgrep.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          if-no-files-found: ignore
+
+  secrets:
+    name: Секреты (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Вся история текущей ветки, без чужих веток: checkout с fetch-depth 0 забирает их все.
+      - name: Gitleaks по истории ветки
+        run: |
+          docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" git /repo --config /repo/.gitleaks.toml \
+            --log-opts="HEAD" --redact --verbose
+
+  sca:
+    name: SCA и лицензии (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # node_modules нужны Trivy, чтобы определить лицензии npm-пакетов.
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend
+      # Зависимости Maven из кэша CI: Trivy читает ~/.m2 и не ходит в Maven Central,
+      # который ограничивает частоту запросов (429).
+      - run: mvn -B -q dependency:go-offline
+        working-directory: backend
+      - name: Уязвимости и лицензии зависимостей
+        run: |
+          docker run --rm -v "$PWD:/src" -v "$HOME/.m2:/root/.m2:ro" -w /src "$TRIVY_IMAGE" \
+            fs --config trivy.yaml --scanners vuln,license --offline-scan .
+      - name: Конфигурация (Dockerfile, Helm, workflow)
+        run: docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" config --config trivy.yaml --skip-dirs frontend/node_modules .
+
+  helm:
+    name: Helm-чарт
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.22.1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache: false
+      - run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0
+      - name: Lint и проверка схем Kubernetes для пилота и HA
+        working-directory: deploy/helm/easyitsm
+        run: |
+          set -euo pipefail
+          HA="-f values-ha.yaml --set database.host=db.example --set networkPolicy.databaseCidrs={10.0.0.0/24} --set license.existingSecret=lic"
+          helm lint .
+          helm lint . $HA
+          for kv in 1.30.0 1.33.0; do
+            helm template t . --kube-version "$kv" | kubeconform -strict -summary -kubernetes-version "$kv"
+            helm template t . --kube-version "$kv" $HA | kubeconform -strict -summary -kubernetes-version "$kv"
+          done
+      - name: Профиль Pod Security restricted
+        working-directory: deploy/helm/easyitsm
+        run: |
+          set -euo pipefail
+          helm template t . --kube-version 1.33.0 > /tmp/rendered.yaml
+          docker run --rm -v /tmp:/work "$TRIVY_IMAGE" config --severity HIGH,CRITICAL --exit-code 1 /work/rendered.yaml
+
+  web-server:
+    name: Статический сервер веб-клиента
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/docker/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache: false
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./... && go test -race ./...
+
+  images:
+    name: Образ ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [core, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Сборка
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/${{ matrix.component }}.Dockerfile
+          tags: easyitsm-${{ matrix.component }}:ci
+          load: true
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: В образе нет оболочки и пакетного менеджера (SEC-34)
+        run: |
+          id=$(docker create easyitsm-${{ matrix.component }}:ci)
+          found=$(docker export "$id" | tar -t | grep -E '^(usr/)?s?bin/(sh|bash|dash|ash|busybox|apt|apt-get|dpkg|apk)$' || true)
+          docker rm "$id" >/dev/null
+          if [ -n "$found" ]; then echo "::error::В образе найдено: $found"; exit 1; fi
+      - name: Уязвимости образа
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            image --config trivy.yaml --scanners vuln easyitsm-${{ matrix.component }}:ci
+      - name: SBOM CycloneDX
+        uses: anchore/sbom-action@v0
+        with:
+          image: easyitsm-${{ matrix.component }}:ci
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.component }}.cdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.component }}
+          path: sbom-${{ matrix.component }}.cdx.json

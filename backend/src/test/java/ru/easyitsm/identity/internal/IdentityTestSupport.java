@@ -31,7 +31,7 @@ import ru.easyitsm.platform.tenant.TenantContext;
 abstract class IdentityTestSupport {
 
     static final UUID DEMO = UUID.fromString("01930000-0000-7000-8000-000000000001");
-    static final String PASSWORD = "Correct-Horse-Battery-42";
+    static final String PASSWORD = "Correct-Horse-Battery-42"; // gitleaks:allow
 
     @Autowired
     MockMvc mvc;

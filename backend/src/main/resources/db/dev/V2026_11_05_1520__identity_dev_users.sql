@@ -10,7 +10,7 @@ INSERT INTO user_account (id, tenant_id, login, email, display_name, created_at,
 
 INSERT INTO user_credential (user_id, tenant_id, password_hash, password_changed_at)
 SELECT id, tenant_id,
-       '$argon2id$v=19$m=19456,t=2,p=1$yzugDBtw9qUPmxj4txA1DA$XAZ8Zm3/b8ozixVbHX5aI5KWFXqJ0KakR5a9Qs/LyG8', now()
+       '$argon2id$v=19$m=19456,t=2,p=1$yzugDBtw9qUPmxj4txA1DA$XAZ8Zm3/b8ozixVbHX5aI5KWFXqJ0KakR5a9Qs/LyG8', now() -- gitleaks:allow
   FROM user_account WHERE id IN ('01930000-0000-7000-8000-0000000000aa', '01930000-0000-7000-8000-0000000000ab',
                                  '01930000-0000-7000-8000-0000000000ac');
 
