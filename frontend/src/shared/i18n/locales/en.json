@@ -321,5 +321,405 @@
     "suggestions": {
       "title": "Maybe the answer is already here"
     }
+  },
+  "workspace": {
+    "demo": "Demo data: the tickets module is not connected yet, changes live until the page reloads.",
+    "unassigned": "Unassigned",
+    "confidential": "Confidential ticket",
+    "actions": {
+      "assign": "Assign",
+      "cancel": "Cancel",
+      "clear": "Clear",
+      "close": "Close",
+      "escalate": "Escalate",
+      "more": "More actions",
+      "resolve": "Resolve",
+      "resume": "Resume",
+      "save": "Save",
+      "take": "Take",
+      "undo": "Undo"
+    },
+    "assign": {
+      "away": "Away",
+      "load_one": "{{count}} ticket",
+      "load_other": "{{count}} tickets"
+    },
+    "bulk": {
+      "label": "Bulk actions",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "assignMe": "Take",
+      "assign": "Assign",
+      "status": "Status",
+      "priority": "Priority",
+      "merge": "Merge",
+      "clear": "Clear selection",
+      "title": {
+        "assign_one": "Assign {{count}} ticket",
+        "assign_other": "Assign {{count}} tickets",
+        "priority_one": "Priority for {{count}} ticket",
+        "priority_other": "Priority for {{count}} tickets",
+        "transition_one": "Status for {{count}} ticket",
+        "transition_other": "Status for {{count}} tickets",
+        "merge_one": "Merge {{count}} ticket",
+        "merge_other": "Merge {{count}} tickets"
+      },
+      "preview": "What will change",
+      "noChange": "No change",
+      "apply_zero": "Nothing to change",
+      "apply_one": "Apply to {{count}} ticket",
+      "apply_other": "Apply to {{count}} tickets",
+      "applied_one": "{{count}} ticket changed",
+      "applied_other": "{{count}} tickets changed",
+      "undoHint": "For 10 seconds after applying you can undo from the notification.",
+      "priorityReason": "Reason for manual priority",
+      "priorityReasonHint": "Manual priority overrides the impact and urgency matrix; the reason is logged.",
+      "mergeTarget": "Primary ticket",
+      "mergeHint": "Others close as duplicates; their requesters become watchers of the primary.",
+      "skip": {
+        "transition_not_allowed": "Transition not available",
+        "merge_target": "Primary",
+        "not_open": "Already closed",
+        "already_closed": "Already closed",
+        "forbidden": "No permission",
+        "changed_since": "Changed since",
+        "failed": "Failed"
+      }
+    },
+    "cancel": {
+      "reason": "Cancel reason"
+    },
+    "channel": {
+      "portal": "portal",
+      "email": "email",
+      "api": "API",
+      "chat": "chat",
+      "monitoring": "monitoring",
+      "agent": "created by agent"
+    },
+    "column": {
+      "priority": "Pri.",
+      "number": "Number",
+      "title": "Subject",
+      "requester": "Requester",
+      "status": "Status",
+      "assignee": "Assignee",
+      "group": "Group",
+      "sla": "SLA",
+      "updatedAt": "Updated",
+      "createdAt": "Created",
+      "service": "Service",
+      "type": "Type"
+    },
+    "composer": {
+      "reply": "Reply to requester",
+      "note": "Internal note",
+      "noteHint": "Visible to agents only. The requester is not notified.",
+      "to": "To: {{names}}",
+      "toolbar": "Formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "list": "List",
+      "link": "Link",
+      "code": "Code",
+      "mention": "Mention a colleague",
+      "boldPlaceholder": "bold text",
+      "italicPlaceholder": "italic",
+      "linkPlaceholder": "link text",
+      "templates": "Canned replies",
+      "noTemplates": "No canned replies yet",
+      "replyPlaceholder": "Write a reply to the requester…",
+      "notePlaceholder": "Note for colleagues. @ to mention",
+      "send": "Send",
+      "sendNote": "Add note",
+      "sendAndResolve": "Send and resolve",
+      "more": "More send options",
+      "draftSaved": "Draft saved"
+    },
+    "escalate": {
+      "functional": "To another group",
+      "hierarchical": "To manager",
+      "reason": "Escalation reason"
+    },
+    "feed": {
+      "title": "Activity",
+      "filter": {
+        "all": "All",
+        "conversation": "Conversation",
+        "notes": "Notes",
+        "history": "History"
+      },
+      "internal": "Internal",
+      "public": "Reply",
+      "requester": "Requester",
+      "system": "System",
+      "noteLabel": "Internal note",
+      "replyLabel": "Reply",
+      "event": {
+        "created": "Ticket created via {{channel}}",
+        "merged": "merged duplicate {{source}}",
+        "merged_into": "merged into {{target}}",
+        "escalated": "escalated, level {{level}}",
+        "unknown": "Event"
+      }
+    },
+    "field": {
+      "group": "Group",
+      "assignee": "Assignee",
+      "status": "Status",
+      "priority": "Priority",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "service": "Service",
+      "category": "Category",
+      "title": "Subject"
+    },
+    "filter": {
+      "status": "Status",
+      "priority": "Priority",
+      "type": "Type",
+      "groupId": "Group",
+      "assignee": "Assignee",
+      "sla": "SLA",
+      "serviceId": "Service",
+      "any": "Any",
+      "me": "Me",
+      "remove": "Remove {{value}}",
+      "slaValue": {
+        "breached": "Breached",
+        "at_risk": "Under an hour"
+      }
+    },
+    "help": {
+      "title": "Keyboard shortcuts",
+      "group": {
+        "global": "Everywhere",
+        "queue": "Queue",
+        "ticket": "Ticket",
+        "composer": "Reply editor"
+      },
+      "key": {
+        "global": {
+          "search": "Global search",
+          "queue": "Go to queue",
+          "help": "This help"
+        },
+        "queue": {
+          "moveDown": "Next row",
+          "moveUp": "Previous row",
+          "select": "Select row",
+          "open": "Open ticket",
+          "range": "Select range",
+          "find": "Search queue",
+          "takeNext": "Take next",
+          "clear": "Clear selection"
+        },
+        "ticket": {
+          "reply": "Reply to requester",
+          "note": "Internal note",
+          "take": "Take",
+          "resolve": "Resolve",
+          "assign": "Assign",
+          "next": "Next ticket in queue",
+          "prev": "Previous ticket",
+          "back": "Back to queue"
+        },
+        "composer": {
+          "send": "Send",
+          "sendResolve": "Send and resolve",
+          "bold": "Bold",
+          "link": "Link",
+          "mention": "Mention a colleague"
+        }
+      }
+    },
+    "home": {
+      "openQueue": "Open my queue",
+      "hint": "Press “?” to see keyboard shortcuts. The whole queue works from the keyboard."
+    },
+    "link": {
+      "parent_of": "Parent of",
+      "child_of": "Child of",
+      "duplicate_of": "Duplicate of",
+      "duplicated_by": "Duplicated by",
+      "blocks": "Blocks",
+      "blocked_by": "Blocked by",
+      "caused_by": "Caused by",
+      "causes": "Causes",
+      "relates_to": "Related"
+    },
+    "pause": {
+      "reason": "Pending reason",
+      "until": "Resume at",
+      "untilHint": "The ticket returns to work at this time; SLA is paused until then."
+    },
+    "priority": {
+      "P1": "Critical",
+      "P2": "High",
+      "P3": "Medium",
+      "P4": "Low"
+    },
+    "queue": {
+      "title": "Queue",
+      "tableLabel": "Queue tickets",
+      "selectAll": "Select all on page",
+      "selectRow": "Select {{number}}",
+      "total_one": "{{count}} ticket",
+      "total_other": "{{count}} tickets",
+      "takeNext": "Take next",
+      "takeNextHint": "Assigns you the most urgent unassigned ticket of your groups and opens it. Shift+T",
+      "nothingToTake": "No free tickets in your groups' queues",
+      "searchPlaceholder": "Number, subject or requester",
+      "filter": "Filter",
+      "sort": "Sort",
+      "columns": "Columns",
+      "moveUp": "Up",
+      "moveDown": "Down",
+      "resetColumns": "Default columns",
+      "compact": "Compact list",
+      "comfortable": "Comfortable list",
+      "export": "Export to CSV (selected or loaded)",
+      "showNew_one": "Show {{count}} new ticket",
+      "showNew_other": "Show {{count}} new tickets",
+      "loadMore": "Load more",
+      "end": "That's all tickets in this view",
+      "empty": {
+        "default": "Nothing here",
+        "mine": "No open tickets assigned to you. Take the next one",
+        "unassigned": "Everything is assigned",
+        "overdue": "No breached tickets",
+        "group": "Your groups' queue is empty"
+      }
+    },
+    "resolve": {
+      "code": "Resolution code",
+      "text": "What was done",
+      "textHint": "The requester will see this. Write it so it helps next time.",
+      "createArticle": "Create knowledge article",
+      "createArticleHint": "A draft article with this text opens after resolving",
+      "notice": "The requester gets an email. If they reply, the ticket returns to work."
+    },
+    "secrets": {
+      "title": "Looks like a secret",
+      "text_one": "Found {{count}} value that looks like a password or key. Better mask it.",
+      "text_other": "Found {{count}} values that look like passwords or keys. Better mask them.",
+      "kind": {
+        "password": "Password",
+        "token": "Token",
+        "private_key": "Private key",
+        "card": "Card number"
+      },
+      "edit": "Edit text",
+      "sendAsIs": "Send as is",
+      "mask": "Mask and send"
+    },
+    "side": {
+      "label": "Ticket details",
+      "changed": "“{{field}}” changed",
+      "manual": "manual",
+      "priorityManual": "Priority set manually; the matrix gives {{matrix}}",
+      "pendingUntil": "{{reason}}, resumes {{date}}",
+      "assignMe": "Me",
+      "requester": "Requester",
+      "vip": "VIP requester",
+      "recent": "Recent tickets",
+      "links": "Links",
+      "watchers": "Watchers"
+    },
+    "sla": {
+      "breached": "Breached by {{value}}",
+      "paused": "Paused · {{value}}",
+      "met": "Met",
+      "due": "due",
+      "kind": {
+        "response": "Response",
+        "resolution": "Resolution"
+      }
+    },
+    "sort": {
+      "sla_asc": "Most urgent first",
+      "priority_asc": "By priority",
+      "updatedAt_desc": "Recently updated",
+      "createdAt_desc": "Newest first",
+      "createdAt_asc": "Oldest first"
+    },
+    "status": {
+      "draft": "Draft",
+      "new": "New",
+      "approval": "Awaiting approval",
+      "assigned": "Assigned",
+      "in_progress": "In progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "ticket": {
+      "back": "Back to queue",
+      "position": "{{pos}} of {{total}}",
+      "prev": "Previous",
+      "next": "Next",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "escalated": "Escalated, level {{level}}",
+      "meta": "{{requester}} · {{date}} · {{channel}}",
+      "description": "Description",
+      "resolution": "Resolution: {{code}}",
+      "notFound": "Ticket {{number}} not found or no access",
+      "toQueue": "Back to queue"
+    },
+    "time": {
+      "justNow": "just now",
+      "ago": "{{value}} ago",
+      "min_one": "{{count}} min",
+      "min_other": "{{count}} min",
+      "h_one": "{{count}} h",
+      "h_other": "{{count}} h",
+      "d_one": "{{count}} d",
+      "d_other": "{{count}} d"
+    },
+    "transition": {
+      "comment": "Comment",
+      "commentHint": "Goes to the activity feed and is visible to the requester"
+    },
+    "type": {
+      "incident": "Incident",
+      "request": "Request",
+      "problem": "Problem",
+      "change": "Change",
+      "task": "Task"
+    },
+    "value": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "views": {
+      "label": "Views",
+      "menu": "View actions",
+      "delete": "Delete view",
+      "save": "Save view",
+      "saveTitle": "New view",
+      "name": "Name",
+      "visibility": "Who can see",
+      "saved": "View “{{name}}” saved",
+      "vis": {
+        "personal": "Only me",
+        "group": "My group",
+        "shared": "All agents"
+      },
+      "visHint": {
+        "personal": "Only you will see it.",
+        "group": "Members of your group will see it. Requires team lead role.",
+        "shared": "All agents will see it. Requires administrator role."
+      },
+      "builtin": {
+        "mine": "Mine",
+        "group": "My groups",
+        "unassigned": "Unassigned",
+        "overdue": "Breached",
+        "all": "All open"
+      }
+    }
   }
 }

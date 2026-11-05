@@ -1,0 +1,110 @@
+/* Стили рабочего места агента. Цвета — токены Mantine, поэтому работают в светлой и тёмной теме. */
+
+.ew-unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mantine-primary-color-filled);
+  flex-shrink: 0;
+}
+
+.ew-queue tbody tr[data-selected] {
+  background: var(--mantine-primary-color-light);
+}
+
+.ew-queue tbody tr[data-cursor] {
+  box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
+  background: var(--mantine-color-default-hover);
+}
+
+.ew-queue tbody tr[data-cursor][data-selected] {
+  background: var(--mantine-primary-color-light-hover);
+}
+
+.ew-queue-card[data-selected] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+
+.ew-th-sort:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ew-new-banner {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 56px) + 4px);
+  z-index: 3;
+}
+
+.ew-ticket-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+.ew-ticket-grid > aside {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 56px) + var(--mantine-spacing-md));
+}
+
+@media (max-width: 62em) {
+  .ew-ticket-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ew-ticket-grid > aside {
+    position: static;
+  }
+}
+
+/* Внутренняя заметка — жёлтый фон, публичный ответ — обычный; режим видно сразу (10.7). */
+.ew-note,
+.ew-composer-note {
+  background: light-dark(var(--mantine-color-yellow-0), rgba(250, 176, 5, 0.08));
+  border-color: light-dark(var(--mantine-color-yellow-3), rgba(250, 176, 5, 0.35));
+}
+
+.ew-reply-requester {
+  background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.08));
+  border-color: light-dark(var(--mantine-color-blue-2), rgba(34, 139, 230, 0.3));
+}
+
+.ew-composer-reply {
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.ew-resolution {
+  background: light-dark(var(--mantine-color-green-0), rgba(64, 192, 87, 0.08));
+}
+
+.ew-feed-event strong {
+  font-weight: 600;
+  color: var(--mantine-color-text);
+}
+
+.ew-strike {
+  text-decoration: line-through;
+}
+
+.ew-mention {
+  color: var(--mantine-primary-color-filled);
+  font-weight: 500;
+}
+
+.ew-mention-option {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.ew-mention-option[data-active] {
+  background: var(--mantine-primary-color-light);
+}
+
+.ew-md p:first-child {
+  margin-top: 0;
+}
