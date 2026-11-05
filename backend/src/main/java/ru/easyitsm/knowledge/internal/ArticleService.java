@@ -258,7 +258,7 @@ class ArticleService implements ArticleQueries {
         }
         ArticleVersion v = version(a, a.currentVersionNo());
         var findings = SecretScanner.scan(v.title(), v.body());
-        if (!findings.isEmpty() && !cmd.confirmNoSecrets()) {
+        if (!findings.isEmpty() && !Boolean.TRUE.equals(cmd.confirmNoSecrets())) {
             throw new SecretsDetectedException(findings);
         }
         a.submit(cmd.reviewerId());

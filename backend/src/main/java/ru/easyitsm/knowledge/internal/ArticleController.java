@@ -125,7 +125,7 @@ class ArticleController {
     @PreAuthorize(EDITORS)
     ResponseEntity<ArticleDetails> submit(@PathVariable UUID id, @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
                                           @Valid @RequestBody(required = false) KnowledgeDtos.Submit cmd) {
-        return ok(service.submit(id, ifMatch, cmd == null ? new KnowledgeDtos.Submit(null, null, false) : cmd));
+        return ok(service.submit(id, ifMatch, cmd == null ? new KnowledgeDtos.Submit(null, null, null) : cmd));
     }
 
     @PostMapping("/articles/{id}/publish")

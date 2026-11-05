@@ -51,7 +51,7 @@ final class KnowledgeDtos {
             UUID categoryId) {
     }
 
-    record Submit(UUID reviewerId, @Size(max = 2000) String comment, boolean confirmNoSecrets) {
+    record Submit(UUID reviewerId, @Size(max = 2000) String comment, Boolean confirmNoSecrets) {
     }
 
     record Publish(
