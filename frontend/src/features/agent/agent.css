@@ -1,0 +1,132 @@
+/* Стили рабочего места агента. Цвета — токены дизайн-системы «Ясность» (DESIGN.md), одинаковые в обеих темах. */
+
+.ew-unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ei-accent);
+  flex-shrink: 0;
+}
+
+.ew-queue tbody tr[data-selected] {
+  background: var(--ei-accent-soft);
+}
+
+.ew-queue tbody tr[data-cursor] {
+  box-shadow: inset 3px 0 0 var(--ei-accent);
+  background: var(--ei-hover);
+}
+
+.ew-queue tbody tr[data-cursor][data-selected] {
+  background: var(--ei-accent-soft);
+}
+
+.ew-queue-card[data-selected] {
+  border-color: var(--ei-accent);
+  background: var(--ei-accent-soft);
+}
+
+.ew-th-sort:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ew-new-banner {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 56px) + 4px);
+  z-index: 3;
+}
+
+.ew-ticket-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+.ew-ticket-grid > aside {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 56px) + var(--mantine-spacing-md));
+}
+
+@media (max-width: 62em) {
+  .ew-ticket-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ew-ticket-grid > aside {
+    position: static;
+  }
+}
+
+/* Внутренняя заметка — жёлтый фон, публичный ответ — обычный; режим видно сразу (10.7). */
+.ew-note,
+.ew-composer-note {
+  background: var(--ei-note);
+  border-color: var(--ei-note-border);
+}
+
+.ew-reply-requester {
+  background: var(--ei-surface);
+  border-color: var(--ei-border);
+}
+
+.ew-composer-reply {
+  border-color: var(--ei-accent);
+}
+
+.ew-resolution {
+  background: var(--ei-ok-soft);
+}
+
+.ew-feed-event strong {
+  font-weight: 600;
+  color: var(--ei-text);
+}
+
+.ew-strike {
+  text-decoration: line-through;
+}
+
+.ew-mention {
+  color: var(--ei-accent);
+  font-weight: 500;
+}
+
+.ew-mention-option {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.ew-mention-option[data-active] {
+  background: var(--ei-accent-soft);
+}
+
+.ew-md p:first-child {
+  margin-top: 0;
+}
+
+.ew-sla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ew-sla-kind {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ei-text-3);
+}
+
+.ew-sla-met {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ei-ok);
+}
