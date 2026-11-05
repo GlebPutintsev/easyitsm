@@ -59,6 +59,7 @@ function TransitionForm({
   const need = new Set(transition.requiredFields);
   const isResolve = transition.category === 'resolved';
   const isPending = transition.category === 'pending';
+  const needReason = need.has('reason_code') || need.has('pending_reason');
   const [reasonCode, setReasonCode] = useState<string | null>(null);
   const [until, setUntil] = useState(tomorrowLocal());
   const [resolutionCode, setResolutionCode] = useState<string | null>(null);
@@ -68,7 +69,7 @@ function TransitionForm({
 
   const reasons = isPending ? directory?.pendingReasons : directory?.cancelReasons;
   const invalid =
-    (need.has('reason_code') && !reasonCode) ||
+    (needReason && !reasonCode) ||
     (need.has('resolution') && (!resolutionCode || !resolutionText.trim())) ||
     (need.has('comment') && !comment.trim()) ||
     (need.has('pending_until') && !until);
@@ -102,13 +103,13 @@ function TransitionForm({
       }}
     >
       <Stack>
-        {(need.has('reason_code') || isPending) && (
+        {(needReason || isPending) && (
           <Select
             label={t(isPending ? 'workspace.pause.reason' : 'workspace.cancel.reason')}
             data={(reasons ?? []).map((r) => ({ value: r.id, label: r.name }))}
             value={reasonCode}
             onChange={setReasonCode}
-            required={need.has('reason_code')}
+            required={needReason}
             data-autofocus
             comboboxProps={{ withinPortal: false }}
           />
