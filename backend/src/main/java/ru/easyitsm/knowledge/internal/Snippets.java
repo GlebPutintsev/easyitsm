@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 /** Короткий фрагмент текста статьи без разметки Markdown для списков и подсказок. */
 final class Snippets {
 
+    private static final Pattern HEADING = Pattern.compile("(?m)^\\s{0,3}#{1,6}\\s+(.*?)[.:!?]?\\s*$");
     private static final Pattern CODE_BLOCK = Pattern.compile("```[\\s\\S]*?(```|$)");
     private static final Pattern IMAGE = Pattern.compile("!\\[([^\\]]*)]\\([^)]*\\)");
     private static final Pattern LINK = Pattern.compile("\\[([^\\]]*)]\\([^)]*\\)");
@@ -19,6 +20,7 @@ final class Snippets {
             return "";
         }
         String s = CODE_BLOCK.matcher(markdown).replaceAll(" ");
+        s = HEADING.matcher(s).replaceAll("$1.");
         s = IMAGE.matcher(s).replaceAll("$1");
         s = LINK.matcher(s).replaceAll("$1");
         s = MARKUP.matcher(s).replaceAll(" ");

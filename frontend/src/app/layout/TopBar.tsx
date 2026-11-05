@@ -78,7 +78,9 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
           </Menu.Target>
           <Menu.Dropdown>
             {(['incident', 'request', 'change', 'problem', 'article'] as const).map((kind) => (
-              <Menu.Item key={kind}>{t(`create.${kind}`)}</Menu.Item>
+              <Menu.Item key={kind} onClick={kind === 'article' ? () => navigate('/agent/kb/new') : undefined}>
+                {t(`create.${kind}`)}
+              </Menu.Item>
             ))}
           </Menu.Dropdown>
         </Menu>

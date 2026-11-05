@@ -184,7 +184,7 @@ class KnowledgeApiTest {
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("secrets_detected"))
                 .andExpect(jsonPath("$.findings[0].kind").value("password"))
-                .andExpect(jsonPath("$.findings[0].line").value(3))
+                .andExpect(jsonPath("$.findings[0].line").value(2))
                 .andExpect(jsonPath("$.trace_id").exists());
         kb.action(AGENT, id, "submit", "{\"confirmNoSecrets\":true}").andExpect(status().isOk());
     }

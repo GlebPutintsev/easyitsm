@@ -21,12 +21,14 @@ class KnowledgeUnitTest {
         assertThat(findings).extracting(KnowledgeDtos.SecretFinding::kind)
                 .contains("password", "connection_string", "aws_key", "private_key", "api_key");
         assertThat(findings).filteredOn(f -> f.kind().equals("password"))
-                .extracting(KnowledgeDtos.SecretFinding::line).containsExactly(3);
+                .extracting(KnowledgeDtos.SecretFinding::line).containsExactly(2);
+        assertThat(SecretScanner.scan("token: abcdef0123456789abcdef", ""))
+                .extracting(KnowledgeDtos.SecretFinding::line).containsExactly(0);
     }
 
     @Test
     void secretScannerIgnoresPlaceholdersAndInstructions() {
-        assertThat(SecretScanner.scan("""
+        assertThat(SecretScanner.scan("Как сменить пароль", """
                 Введите пароль: <ваш пароль>
                 Пароль: ******
                 Смените пароль в личном кабинете""")).isEmpty();
@@ -43,7 +45,7 @@ class KnowledgeUnitTest {
                 | a | b |
                 |---|---|
                 См. [инструкцию](https://x) и ![схема](img.png)""", 200);
-        assertThat(s).isEqualTo("Шаги Откройте Настройки a b См. инструкцию и схема");
+        assertThat(s).isEqualTo("Шаги. Откройте Настройки a b См. инструкцию и схема");
         assertThat(Snippets.plain("слово ".repeat(100), 30)).endsWith("…").hasSizeLessThanOrEqualTo(31);
     }
 

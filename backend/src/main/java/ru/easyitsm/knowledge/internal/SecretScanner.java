@@ -28,23 +28,31 @@ final class SecretScanner {
     private SecretScanner() {
     }
 
-    static List<KnowledgeDtos.SecretFinding> scan(String... texts) {
+    /**
+     * Признаки секретов в названии и тексте статьи.
+     *
+     * @return находки с номером строки текста; находка в названии имеет строку 0
+     */
+    static List<KnowledgeDtos.SecretFinding> scan(String title, String body) {
         List<KnowledgeDtos.SecretFinding> findings = new ArrayList<>();
-        int offset = 0;
-        for (String text : texts) {
-            if (text == null) {
-                continue;
-            }
-            String[] lines = text.split("\n", -1);
+        scanLine(title, 0, findings);
+        if (body != null) {
+            String[] lines = body.split("\n", -1);
             for (int i = 0; i < lines.length; i++) {
-                for (Rule rule : RULES) {
-                    if (rule.pattern().matcher(lines[i]).find()) {
-                        findings.add(new KnowledgeDtos.SecretFinding(rule.kind(), offset + i + 1));
-                    }
-                }
+                scanLine(lines[i], i + 1, findings);
             }
-            offset += lines.length;
         }
         return findings;
+    }
+
+    private static void scanLine(String line, int lineNo, List<KnowledgeDtos.SecretFinding> findings) {
+        if (line == null || line.isEmpty()) {
+            return;
+        }
+        for (Rule rule : RULES) {
+            if (rule.pattern().matcher(line).find()) {
+                findings.add(new KnowledgeDtos.SecretFinding(rule.kind(), lineNo));
+            }
+        }
     }
 }
