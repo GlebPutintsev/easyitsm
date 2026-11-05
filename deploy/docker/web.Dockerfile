@@ -4,7 +4,7 @@
 # API (/api) маршрутизирует Ingress напрямую в ядро, этот сервер отдаёт только статику.
 
 
-FROM node:22-bookworm-slim AS spa
+FROM node:25-bookworm-slim AS spa
 WORKDIR /src
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
