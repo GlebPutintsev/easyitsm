@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
+import { useArticleSuggestions } from '@/features/knowledge';
 import { api, type CursorPage } from '@/shared/api/client';
 import type { ItemCard } from '@/features/catalog/api';
 import { StatusBadge } from './StatusBadge';
@@ -28,12 +29,7 @@ export function PortalSearch() {
     enabled,
     retry: false,
   });
-  const articles = useQuery({
-    queryKey: ['search', 'articles', debounced],
-    queryFn: ({ signal }) => api.get<{ items: { id: string; title: string }[] }>('/articles/search', { query: { q: debounced, limit: 5 }, signal }),
-    enabled,
-    retry: false,
-  });
+  const articles = useArticleSuggestions(enabled ? debounced : '');
   const tickets = useQuery({
     queryKey: ['search', 'tickets', debounced],
     queryFn: ({ signal }) => api.get<CursorPage<TicketListItem>>('/tickets', { query: { scope: 'mine', q: debounced, limit: 5 }, signal }),
@@ -43,7 +39,7 @@ export function PortalSearch() {
 
   const loading = services.isFetching || articles.isFetching || tickets.isFetching;
   const s = services.data?.items ?? [];
-  const a = articles.data?.items ?? [];
+  const a = enabled ? (articles.data ?? []) : [];
   const tk = tickets.data?.items ?? [];
   const nothing = enabled && !loading && !s.length && !a.length && !tk.length;
 

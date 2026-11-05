@@ -51,7 +51,6 @@
     "forWhomHint": "The colleague will be notified",
     "title": "Subject",
     "titleLength": "5 to 255 characters",
-    "maybeHelps": "This might help",
     "description": "Description",
     "descriptionHint": "What happened, when it started, what you tried",
     "impact": "Who is affected",

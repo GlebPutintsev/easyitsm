@@ -10,6 +10,12 @@ import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
 import { AgentHome } from '@/features/agent/AgentHome';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { ArticleEditor } from '@/features/knowledge/ArticleEditor';
+import { ArticleHistory } from '@/features/knowledge/ArticleHistory';
+import { ArticlePage } from '@/features/knowledge/ArticlePage';
+import { KnowledgePortal } from '@/features/knowledge/KnowledgePortal';
+import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
+import { NewArticle } from '@/features/knowledge/NewArticle';
 import { NotFound } from './NotFound';
 
 /**
@@ -32,7 +38,14 @@ export const router = createBrowserRouter([
       { path: 'agent/approvals', element: <ApprovalsPage /> },
       { path: 'admin/catalog', element: <CatalogAdminPage /> },
       { path: 'admin/catalog/items/:id', element: <ItemEditorPage /> },
+      { path: 'portal/kb', element: <KnowledgePortal /> },
+      { path: 'portal/kb/:id', element: <ArticlePage space="portal" /> },
       { path: 'agent', element: <AgentHome /> },
+      { path: 'agent/kb', element: <KnowledgeWorkspace /> },
+      { path: 'agent/kb/new', element: <NewArticle /> },
+      { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
+      { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
+      { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
       { path: 'admin', element: <AdminHome /> },
       { path: '*', element: <NotFound /> },
     ],

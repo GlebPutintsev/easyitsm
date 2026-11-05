@@ -28,6 +28,7 @@ import { spaces, type SpaceId } from './spaces';
 const createTarget: Record<string, string | undefined> = {
   incident: '/portal/report',
   request: '/portal/catalog',
+  article: '/agent/kb/new',
 };
 
 interface Props {

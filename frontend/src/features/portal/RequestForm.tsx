@@ -1,13 +1,11 @@
 import {
   Alert,
-  Anchor,
   Badge,
   Button,
   Card,
   Checkbox,
   Code,
   Group,
-  List,
   Modal,
   SegmentedControl,
   Skeleton,
@@ -20,11 +18,10 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconAlertCircle, IconCircleCheck, IconClock, IconLock, IconShieldCheck } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
-import { ApiError, api, newIdempotencyKey } from '@/shared/api/client';
+import { ApiError, newIdempotencyKey } from '@/shared/api/client';
 import { type ItemDetail, type OrderResult, useOrder } from '@/features/catalog/api';
 import { DynamicForm } from '@/features/catalog/form/DynamicForm';
 import { initialValues, validateForm } from '@/features/catalog/form/validate';
@@ -33,6 +30,7 @@ import { ServiceIcon } from '@/features/catalog/icons';
 import { leadTime } from '@/features/catalog/ItemTile';
 import { UserPicker } from '@/features/catalog/UserPicker';
 import { clearDraft, loadDraft, saveDraft, useAutosaveDraft } from './drafts';
+import { ArticleSuggestions } from '@/features/knowledge';
 import { scanSecrets, type SecretFinding, useCreateTicket } from './tickets';
 
 type Impact = 'only_me' | 'department' | 'everyone';
@@ -91,7 +89,6 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
   const dirty = !!(draft.description.trim() || Object.keys(draft.values).length || (draft.title && draft.title !== item?.name));
 
   useAutosaveDraft(draftKey, draft, !created);
-  const suggestions = useArticleSuggestions(draft.title);
 
   const update = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
 
@@ -237,19 +234,7 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
         onChange={(e) => update('title', e.currentTarget.value)}
         error={errors.title ? t(errors.title === 'required' ? 'catalog.form.errors.required' : 'request.titleLength') : undefined}
       />
-      {suggestions.length > 0 && (
-        <Alert variant="light" color="blue" title={t('request.maybeHelps')}>
-          <List size="sm" spacing={4}>
-            {suggestions.map((a) => (
-              <List.Item key={a.id}>
-                <Anchor component={Link} to={`/portal/kb/${a.id}`} target="_blank">
-                  {a.title}
-                </Anchor>
-              </List.Item>
-            ))}
-          </List>
-        </Alert>
-      )}
+      <ArticleSuggestions text={draft.title} />
 
       <Textarea
         label={t('request.description')}
@@ -379,19 +364,6 @@ function Success({ created, onMore }: { created: Created; onMore: () => void }) 
       </Group>
     </Stack>
   );
-}
-
-/** Подсказки статей при вводе темы (10.5). Если модуль знаний недоступен, блок просто не показывается. */
-function useArticleSuggestions(title: string): { id: string; title: string }[] {
-  const q = title.trim();
-  const query = useQuery({
-    queryKey: ['articles', 'suggest', q],
-    queryFn: ({ signal }) => api.get<{ items: { id: string; title: string }[] }>('/articles/search', { query: { q, limit: 3 }, signal }),
-    enabled: q.length >= 5,
-    staleTime: 60_000,
-    retry: false,
-  });
-  return query.data?.items ?? [];
 }
 
 export function RequestFormSkeleton() {

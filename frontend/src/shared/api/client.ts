@@ -15,7 +15,8 @@ export interface Problem {
   trace_id?: string;
   /** Ошибки по полям: ключ поля → код ошибки (UI-06) */
   errors?: Record<string, string>;
-  [extra: string]: unknown;
+  /** Дополнительные поля ошибки, например список найденных секретов */
+  [extension: string]: unknown;
 }
 
 export class ApiError extends Error {
