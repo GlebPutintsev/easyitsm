@@ -1,5 +1,6 @@
 package ru.easyitsm.tickets.api;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -31,4 +32,10 @@ public interface TicketCommands {
 
     /** Эскалация вручную или по правилу SLA (INC-04). Для FUNCTIONAL обязательна группа. */
     TicketRef escalate(UUID ticketId, EscalationKind kind, UUID targetGroupId, String reason, UUID actorId);
+
+    /**
+     * Ближайший срок SLA для сортировки очереди агента ({@code sort=due}). Вызывает модуль sla при каждом
+     * пересчёте целей; null — целей нет или все выполнены. Версия заявки и лента не меняются.
+     */
+    void updateSlaDue(UUID ticketId, Instant slaDueAt);
 }
