@@ -35,6 +35,11 @@ REST: [`tickets.yaml`](tickets.yaml) (OpenAPI 3.1). Java: пакеты `ru.easyi
   приоритет, ключевые слова, язык) → распределение внутри группы (`none`, `round_robin`, `least_loaded`)
   → группа по умолчанию. Подсказка ИИ — позже, модуль ai-client.
 - Настраиваемые поля (TCK-07) хранятся в `ticket.custom` (JSONB) по коду поля и проверяются по определению.
+- Очередь агента: `sort=due` по `slaDueAt` (копия ближайшего срока, её обновляет модуль sla через
+  `TicketCommands.updateSlaDue`), `awaitingAgent` (последняя публичная запись от заявителя),
+  `GET /tickets/count`, `updatedFrom`, несколько `groupId`/`assigneeId` через запятую.
+- Сохранённые представления `/ticket-views` (TCK-16) и готовые ответы `/response-templates` (TCK-09):
+  личные, групповые, общие.
 - Описание и записи ленты — Markdown без HTML; клиент рендерит его без `dangerouslySetInnerHTML`.
 
 ## Права (раздел 3)
@@ -47,7 +52,8 @@ REST: [`tickets.yaml`](tickets.yaml) (OpenAPI 3.1). Java: пакеты `ru.easyi
   наблюдатель; только публичная лента; переходы с псевдоролью `requester`.
 - `AUD` — только чтение, включая заметки. `ADM` — настройки (`/ticket-settings/**`).
 - Конфиденциальная заявка (ACC-04) видна только участникам (заявитель, получатель, исполнитель,
-  наблюдатели) и `SEC`. Чужая или недоступная заявка — 404.
+  наблюдатели) и членам её группы безопасности `securityGroupId`. Правила совпадают с
+  `AccessDecisions` модуля identity и переключатся на него, когда он будет в main. Чужая или недоступная заявка — 404.
 
 ## Java API для модулей
 
@@ -56,6 +62,7 @@ TicketRef     TicketCommands.create(NewTicket)                         // кат
 TicketRef     TicketCommands.applyApprovalOutcome(id, approved, reason) // каталог после согласования
 UUID          TicketCommands.addComment(id, authorId, body, visibility) // почта, мессенджеры
 TicketRef     TicketCommands.escalate(id, kind, groupId, reason, actor) // SLA при нарушении
+void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: срок для sort=due
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
 ```
