@@ -1,67 +1,166 @@
 /*
- * Токены дизайн-системы «Ясность» (DESIGN.md в корне репозитория).
+ * Токены дизайн-системы «Адмирал» (DESIGN.md в корне репозитория).
  * Имена одинаковы в обеих темах, значения переключаются по атрибуту, который ставит Mantine.
  * В компонентах используйте var(--ei-…), а не шестнадцатеричные цвета.
  */
 :root,
 :root[data-mantine-color-scheme='light'] {
-  --ei-bg: #f5f6f8;
+  --ei-bg: #f4f5f8;
   --ei-surface: #ffffff;
-  --ei-surface-2: #f0f2f5;
-  --ei-hover: #eef1f5;
-  --ei-border: #e3e6eb;
-  --ei-border-strong: #c9ced7;
-  --ei-text: #151922;
-  --ei-text-2: #444c5c;
-  --ei-text-3: #5f6779;
-  --ei-accent: #2b59c3;
-  --ei-accent-hover: #224aa5;
-  --ei-accent-soft: #e9eefb;
-  --ei-accent-text: #2149a6;
+  --ei-surface-2: #eef0f4;
+  --ei-hover: #f0f2f6;
+  --ei-border: #e1e4ea;
+  --ei-border-strong: #cbd1dc;
+  --ei-text: #121a2b;
+  --ei-text-2: #3e4759;
+  --ei-text-3: #636c7e;
+  --ei-accent: #14213d;
+  --ei-accent-hover: #1e2e52;
+  --ei-accent-soft: #e7ebf3;
+  --ei-accent-text: #1e2e52;
   --ei-on-accent: #ffffff;
-  --ei-note: #fff7e3;
-  --ei-note-border: #edcf7e;
-  --ei-ok: #1a6e45;
-  --ei-ok-soft: #e2f3e9;
-  --ei-warn: #9a5200;
-  --ei-warn-soft: #fdf0dc;
-  --ei-danger: #c2302a;
-  --ei-danger-soft: #fbe8e7;
+  --ei-link: #1e3a6e;
+  --ei-focus: #3f5f9f;
+  --ei-brass: #c9a66b;
+  --ei-brass-line: #b08d57;
+  --ei-brass-soft: #f3ecdf;
+  --ei-brass-text: #6b4e12;
+  --ei-note: #fbf5e6;
+  --ei-note-border: #e6d3a6;
+  --ei-ok: #1f6440;
+  --ei-ok-soft: #e3f1ea;
+  --ei-warn: #7d4a00;
+  --ei-warn-soft: #fbeedc;
+  --ei-danger: #b3261e;
+  --ei-danger-soft: #fbe9e7;
   --ei-on-danger: #ffffff;
-  --ei-wait: #6b4fbb;
-  --ei-wait-soft: #efeafb;
-  --ei-neutral-soft: #eceef2;
-  --ei-shadow: 0 1px 2px rgb(21 25 34 / 6%), 0 6px 16px rgb(21 25 34 / 6%);
+  --ei-wait: #55409a;
+  --ei-wait-soft: #eee9f7;
+  --ei-neutral-soft: #eef0f4;
+  --ei-shadow: 0 1px 2px rgb(18 26 43 / 6%), 0 8px 24px rgb(18 26 43 / 8%);
+
+  /* Тёмно-синяя «рама»: шапка и левое меню. Внутри неё токены переопределяет .ei-chrome. */
+  --ei-nav-bg: #14213d;
+  --ei-nav-raised: #1e2e52;
+  --ei-nav-active: #22335a;
+  --ei-nav-border: #26365a;
+  --ei-nav-text: #c3cbdb;
+  --ei-nav-text-strong: #ffffff;
+  --ei-nav-text-3: #a9b3c7;
 }
 
 :root[data-mantine-color-scheme='dark'] {
-  --ei-bg: #0e1117;
-  --ei-surface: #151921;
-  --ei-surface-2: #1b2029;
-  --ei-hover: #212734;
-  --ei-border: #262c38;
-  --ei-border-strong: #364051;
-  --ei-text: #e7eaf0;
-  --ei-text-2: #b3bac7;
-  --ei-text-3: #8e96a5;
-  --ei-accent: #7d9bf4;
-  --ei-accent-hover: #99b1f7;
-  --ei-accent-soft: #1c2745;
-  --ei-accent-text: #a8bdf8;
-  --ei-on-accent: #0e1117;
-  --ei-note: #2a2313;
-  --ei-note-border: #5e4b1b;
-  --ei-ok: #5dc796;
-  --ei-ok-soft: #13281e;
-  --ei-warn: #efa54b;
-  --ei-warn-soft: #2d2112;
-  --ei-danger: #f37c74;
-  --ei-danger-soft: #33191a;
+  --ei-bg: #0c1220;
+  --ei-surface: #121a2b;
+  --ei-surface-2: #18223a;
+  --ei-hover: #1c2741;
+  --ei-border: #243150;
+  --ei-border-strong: #33426a;
+  --ei-text: #e8ebf2;
+  --ei-text-2: #b5bdcd;
+  --ei-text-3: #8d97ab;
+  --ei-accent: #a9bceb;
+  --ei-accent-hover: #c0cff2;
+  --ei-accent-soft: #1f2b4a;
+  --ei-accent-text: #b9c8f0;
+  --ei-on-accent: #0c1220;
+  --ei-link: #a9bceb;
+  --ei-focus: #a9bceb;
+  --ei-brass: #c9a66b;
+  --ei-brass-line: #c9a66b;
+  --ei-brass-soft: #2b2618;
+  --ei-brass-text: #e1c38e;
+  --ei-note: #2a2416;
+  --ei-note-border: #5a4a26;
+  --ei-ok: #6cc79a;
+  --ei-ok-soft: #13281f;
+  --ei-warn: #e9ae5c;
+  --ei-warn-soft: #2d2414;
+  --ei-danger: #f2837b;
+  --ei-danger-soft: #351b1c;
   --ei-on-danger: #1a0a09;
-  --ei-wait: #b49ef1;
-  --ei-wait-soft: #231c39;
-  --ei-neutral-soft: #232833;
-  --ei-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 16px rgb(0 0 0 / 30%);
+  --ei-wait: #b7a4ee;
+  --ei-wait-soft: #241e3d;
+  --ei-neutral-soft: #1c2438;
+  --ei-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
+
+  --ei-nav-bg: #0a0f1b;
+  --ei-nav-raised: #141c30;
+  --ei-nav-active: #1a2440;
+  --ei-nav-border: #1c2741;
+  --ei-nav-text: #a9b3c7;
+  --ei-nav-text-strong: #ffffff;
+  --ei-nav-text-3: #8d97ab;
+}
+
+/*
+ * Тёмно-синяя рама (шапка, левое меню). Компоненты внутри берут те же токены,
+ * поэтому здесь они переопределены под тёмный фон: текст светлый, наведение и выбор — оттенки синего.
+ */
+.ei-chrome {
+  --ei-surface: var(--ei-nav-bg);
+  --ei-surface-2: var(--ei-nav-raised);
+  --ei-hover: var(--ei-nav-raised);
+  --ei-border: var(--ei-nav-border);
+  --ei-border-strong: #3a4c76;
+  --ei-text: var(--ei-nav-text-strong);
+  --ei-text-2: var(--ei-nav-text);
+  --ei-text-3: var(--ei-nav-text-3);
+  --ei-accent: var(--ei-brass);
+  --ei-on-accent: #14213d;
+  --ei-accent-soft: var(--ei-nav-active);
+  --ei-accent-text: var(--ei-nav-text-strong);
+  --ei-link: var(--ei-nav-text-strong);
+
+  --mantine-color-body: var(--ei-nav-bg);
+  --mantine-color-text: var(--ei-nav-text-strong);
+  --mantine-color-dimmed: var(--ei-nav-text-3);
+  --mantine-color-placeholder: var(--ei-nav-text-3);
+  --mantine-color-default-border: var(--ei-nav-border);
+  --mantine-color-default-hover: var(--ei-nav-raised);
+  --mantine-primary-color-light: var(--ei-nav-active);
+  --mantine-primary-color-light-hover: var(--ei-nav-active);
+  --mantine-primary-color-light-color: var(--ei-nav-text-strong);
+  --app-shell-border-color: var(--ei-nav-border);
+  /* Палитра акцента внутри рамы: главная кнопка латунная, тихие кнопки и иконки светлые. */
+  --mantine-color-admiral-filled: var(--ei-brass);
+  --mantine-color-admiral-filled-hover: #d4b47d;
+  --mantine-color-admiral-light: var(--ei-nav-active);
+  --mantine-color-admiral-light-hover: var(--ei-nav-raised);
+  --mantine-color-admiral-light-color: var(--ei-nav-text-strong);
+  --mantine-color-admiral-outline: var(--ei-nav-text);
+  --mantine-primary-color-filled: var(--ei-brass);
+  --mantine-primary-color-filled-hover: #d4b47d;
+  --mantine-primary-color-contrast: #14213d;
+  --mantine-color-gray-light-color: var(--ei-nav-text);
+  --mantine-color-gray-light-hover: var(--ei-nav-raised);
+
+  background: var(--ei-nav-bg);
+  color: var(--ei-nav-text-strong);
+}
+
+.ei-chrome .mantine-Input-input {
+  background: var(--ei-nav-raised);
+  border-color: transparent;
+  color: var(--ei-nav-text-strong);
+}
+
+.ei-chrome .mantine-Input-input::placeholder {
+  color: var(--ei-nav-text-3);
+}
+
+.ei-chrome .mantine-Input-input:focus {
+  border-color: var(--ei-brass);
+}
+
+/* Выбранный пункт меню — латунная черта слева. */
+.ei-chrome .mantine-NavLink-root[data-active] {
+  box-shadow: inset 2px 0 0 var(--ei-brass);
+  font-weight: 600;
+}
+
+.ei-chrome .mantine-NavLink-root:not([data-active]) {
+  color: var(--ei-nav-text);
 }
 
 /* Номера заявок, таймеры SLA, коды трассировки */

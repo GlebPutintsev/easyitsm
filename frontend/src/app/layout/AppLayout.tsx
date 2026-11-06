@@ -32,11 +32,11 @@ export function AppLayout() {
       footer={bottomNav ? { height: 60 } : undefined}
       padding={bleed ? 0 : 'md'}
     >
-      <AppShell.Header>
+      <AppShell.Header className="ei-chrome">
         {portal ? <PortalHeader /> : <TopBar space={space} navOpened={navOpened} onToggleNav={toggleNav} />}
       </AppShell.Header>
       {!portal && (
-        <AppShell.Navbar p="xs">
+        <AppShell.Navbar p="xs" className="ei-chrome">
           <SideNav space={space} />
         </AppShell.Navbar>
       )}
