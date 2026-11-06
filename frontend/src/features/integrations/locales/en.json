@@ -1,0 +1,115 @@
+{
+  "actions": {
+    "showMore": "Show more"
+  },
+  "nav": {
+    "integrations": "Integrations"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Monitoring systems open and close incidents on their own: one active alert is one incident",
+    "tabs": {
+      "monitoring": "Monitoring",
+      "events": "Event log"
+    },
+    "kinds": {
+      "zabbix": "Zabbix",
+      "alertmanager": "Alertmanager / Grafana",
+      "generic": "JSON"
+    },
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "levels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "alertStatus": {
+      "firing": "Problem",
+      "resolved": "Resolved"
+    },
+    "outcomes": {
+      "created": "Incident created",
+      "updated": "Repeat",
+      "escalated": "Severity raised",
+      "reopened": "Reopened",
+      "resolved": "Resolved",
+      "ignored": "Skipped",
+      "error": "Error"
+    },
+    "copy": "Copy",
+    "copied": "Copied",
+    "cancel": "Cancel",
+    "save": "Save",
+    "monitoring": {
+      "intro": "Each source gets its own token. Repeated alerts do not create new tickets, higher severity raises impact and urgency, and a recovery resolves the incident.",
+      "add": "Add source",
+      "empty": "No monitoring sources yet",
+      "emptyHint": "Connect Zabbix, Alertmanager or Grafana and incidents will appear in the queue by themselves",
+      "columns": {
+        "name": "Source",
+        "kind": "Kind",
+        "group": "Group",
+        "lastEvent": "Last event",
+        "token": "Token",
+        "enabled": "Enabled"
+      },
+      "asUser": "as “{{name}}”",
+      "routing": "By routing rules",
+      "never": "Not yet",
+      "newTitle": "New monitoring source",
+      "editTitle": "Source “{{name}}”",
+      "name": "Name",
+      "requester": "Create incidents on behalf of",
+      "requesterHint": "Leave empty to create a service user “Monitoring: name”",
+      "group": "Group for new incidents",
+      "minSeverity": "Create an incident from severity",
+      "minSeverityHint": "Less important events are only logged",
+      "mapping": "Impact and urgency by alert severity",
+      "mappingHint": "Incident priority comes from the priority matrix",
+      "severityColumn": "Severity",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "autoResolve": "Resolve the incident when the problem is gone",
+      "autoResolveHint": "If nobody has taken the incident yet, a note is added instead",
+      "resolutionCode": "Resolution code",
+      "enabled": "Source enabled",
+      "activeAlerts": "Active alerts",
+      "noAlerts": "No active alerts",
+      "openJournal": "Event log",
+      "rotate": "Reissue token",
+      "delete": "Delete",
+      "confirmDelete": "Delete source and its log",
+      "create": "Create and get token"
+    },
+    "token": {
+      "title": "Token for “{{name}}”",
+      "once": "Copy the token now: after closing this window it cannot be shown again, only reissued.",
+      "done": "Done"
+    },
+    "setup": {
+      "title": "How to connect",
+      "url": "Endpoint:",
+      "tokenPlaceholder": "<source token>",
+      "zabbixSteps": "In Zabbix: Alerts → Media types → Create, type “Webhook”. Add the parameters from the table, paste the script below and assign the media type to a user in a trigger action (including recovery).",
+      "zabbixMacros": "Define global macros {$EASYITSM.URL} (endpoint), {$EASYITSM.TOKEN} (token) and {$ZABBIX.URL} (Zabbix frontend URL).",
+      "alertmanagerSteps": "Prometheus Alertmanager: add a receiver to alertmanager.yml. send_resolved is required for auto-resolve.",
+      "grafanaSteps": "Grafana Alerting: a Webhook contact point with a Bearer authorization header.",
+      "genericSteps": "Any system that can send an HTTP request: fingerprint groups events of one problem, status is firing or resolved."
+    },
+    "events": {
+      "source": "Source",
+      "allSources": "All sources",
+      "outcome": "Outcome",
+      "allOutcomes": "Any outcome",
+      "time": "Time",
+      "alert": "Alert",
+      "ticket": "Incident",
+      "empty": "No events yet"
+    }
+  }
+}

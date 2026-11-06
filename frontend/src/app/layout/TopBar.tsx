@@ -15,6 +15,7 @@ import {
   IconLogout,
   IconPlus,
   IconShieldLock,
+  IconDeviceLaptop,
   IconSunMoon,
   IconUserCircle,
 } from '@tabler/icons-react';
@@ -161,6 +162,9 @@ export function ProfileMenu({ avatar }: { avatar?: boolean }) {
         <Menu.Label>{name ?? t('topbar.profile')}</Menu.Label>
         <Menu.Item leftSection={<IconShieldLock size={16} />} onClick={() => navigate('/profile/security')}>
           {t('security.title')}
+        </Menu.Item>
+        <Menu.Item leftSection={<IconDeviceLaptop size={16} />} onClick={() => navigate('/portal/assets')}>
+          {t('nav.myAssets')}
         </Menu.Item>
         <Menu.Item leftSection={<IconSunMoon size={16} />} onClick={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}>
           {t('topbar.toggleTheme')}
