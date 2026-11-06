@@ -24,7 +24,9 @@ import { ListState, listStateOf } from '@/shared/ui/ListState';
 import {
   DATA_FIELDS,
   type DataField,
+  DEFAULT_API,
   MESSENGER_KINDS,
+  NEEDS_APP_TOKEN,
   type Messenger,
   type MessengerInput,
   type MessengerKind,
@@ -136,6 +138,8 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
   const [kind, setKind] = useState<MessengerKind>(current?.kind ?? 'telegram');
   const [name, setName] = useState(current?.name ?? '');
   const [token, setToken] = useState('');
+  const [appToken, setAppToken] = useState('');
+  const needsApp = NEEDS_APP_TOKEN.includes(current?.kind ?? kind);
   const [baseUrl, setBaseUrl] = useState(current?.baseUrl ?? '');
   const [allowTickets, setAllowTickets] = useState(current?.allowTickets ?? true);
   const [ticketType, setTicketType] = useState<'incident' | 'request'>(current?.ticketType ?? 'incident');
@@ -157,6 +161,7 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
       dataFields: fields,
       ...(groupId ? { groupId } : { clearGroup: true }),
       ...(token.trim() ? { token: token.trim() } : {}),
+      ...(needsApp && appToken.trim() ? { appToken: appToken.trim() } : {}),
     };
     if (current) update.mutate({ id: current.id, version: current.version, input }, { onSuccess: onClose });
     else create.mutate({ ...input, kind }, { onSuccess: onClose });
@@ -183,10 +188,25 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
           autoComplete="off"
           onChange={(e) => setToken(e.currentTarget.value)}
         />
+        {needsApp && (
+          <PasswordInput
+            label={t('integrations.messengers.appToken')}
+            description={
+              current?.appTokenHint
+                ? t('integrations.messengers.appTokenKeep', { hint: current.appTokenHint })
+                : t('integrations.messengers.appTokenHint')
+            }
+            required={!current}
+            value={appToken}
+            disabled={!canEdit}
+            autoComplete="off"
+            onChange={(e) => setAppToken(e.currentTarget.value)}
+          />
+        )}
         <TextInput
           label={t('integrations.messengers.baseUrl')}
           description={t('integrations.messengers.baseUrlHint')}
-          placeholder={kind === 'telegram' ? 'https://api.telegram.org' : 'https://platform-api.max.ru'}
+          placeholder={DEFAULT_API[current?.kind ?? kind]}
           value={baseUrl}
           disabled={!canEdit}
           onChange={(e) => setBaseUrl(e.currentTarget.value)}
@@ -266,7 +286,7 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
             {canEdit && (
               <Button
                 loading={create.isPending || update.isPending}
-                disabled={pending || !name.trim() || (!current && !token.trim())}
+                disabled={pending || !name.trim() || (!current && (!token.trim() || (needsApp && !appToken.trim())))}
                 onClick={submit}
               >
                 {current ? t('integrations.webhooks.save') : t('integrations.messengers.connect')}

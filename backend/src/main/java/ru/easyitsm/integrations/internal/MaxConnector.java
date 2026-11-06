@@ -33,7 +33,9 @@ class MaxConnector implements MessengerConnector {
     @Override
     public Bot me(Api api) {
         JsonNode r = api.get("/me", auth(api));
-        return new Bot(r.path("user_id").asString(""), r.path("username").asString(null), r.path("name").asString(null));
+        String username = r.path("username").asString(null);
+        return new Bot(r.path("user_id").asString(""), username, r.path("name").asString(null),
+                username == null ? null : "https://max.ru/" + username);
     }
 
     @Override
@@ -92,7 +94,12 @@ class MaxConnector implements MessengerConnector {
     }
 
     @Override
-    public String deepLink(String username, String payload) {
-        return "https://max.ru/" + username + "?start=" + payload;
+    public String deepLink(MessengerStore.Messenger bot, String code) {
+        return "https://max.ru/" + bot.botUsername() + "?start=" + code;
+    }
+
+    @Override
+    public String title() {
+        return "MAX";
     }
 }

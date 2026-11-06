@@ -20,8 +20,8 @@ interface MessengerConnector {
         }
     }
 
-    /** Бот по токену. */
-    record Bot(String id, String username, String name) {
+    /** Бот по токену; {@code url} открывает чат с ботом. */
+    record Bot(String id, String username, String name, String url) {
     }
 
     /**
@@ -40,8 +40,8 @@ interface MessengerConnector {
     record Poll(List<Update> updates, String cursor) {
     }
 
-    /** Подключение к API: адрес, токен и проверка исходящих адресов. */
-    record Api(OutboundHttp http, OutboundGuard guard, String baseUrl, String token, JsonMapper json) {
+    /** Подключение к API: адрес, токен бота, токен приложения (Slack, иначе null) и проверка исходящих адресов. */
+    record Api(OutboundHttp http, OutboundGuard guard, String baseUrl, String token, String appToken, JsonMapper json) {
 
         JsonNode get(String path, Map<String, String> headers) {
             return parse(http.call(guard, URI.create(baseUrl + path), headers, null, MAX_RESPONSE));
@@ -76,8 +76,12 @@ interface MessengerConnector {
             return node;
         }
 
-        private String scrub(String s) {
-            return s == null ? "" : token == null || token.isEmpty() ? s : s.replace(token, "…");
+        String scrub(String s) {
+            if (s == null) {
+                return "";
+            }
+            String out = token == null || token.isEmpty() ? s : s.replace(token, "…");
+            return appToken == null || appToken.isEmpty() ? out : out.replace(appToken, "…");
         }
     }
 
@@ -90,8 +94,18 @@ interface MessengerConnector {
 
     Bot me(Api api);
 
-    /** Подготовка к опросу (Telegram: снять вебхук, иначе getUpdates не работает). */
+    /** Подготовка к опросу (Telegram: снять вебхук, иначе getUpdates не работает; Slack: проверить токен приложения). */
     default void prepare(Api api) {
+    }
+
+    /** false — сообщения приходят по постоянному соединению ({@link SlackSockets}), опрашивать не нужно. */
+    default boolean polls() {
+        return true;
+    }
+
+    /** Нужен ли токен приложения кроме токена бота. */
+    default boolean needsAppToken() {
+        return false;
     }
 
     Poll poll(Api api, String cursor);
@@ -99,7 +113,15 @@ interface MessengerConnector {
     /** @return id отправленного сообщения или null */
     String send(Api api, String chatId, String text, String replyTo);
 
-    /** Ссылка, открывающая бот с кодом привязки. */
-    String deepLink(String username, String payload);
+    /** Ссылка, открывающая бот (с кодом привязки, если мессенджер это умеет). */
+    String deepLink(MessengerStore.Messenger bot, String code);
+
+    /** Что отправить боту вручную, если ссылка не открылась. */
+    default String linkCommand(String code) {
+        return "/start " + code;
+    }
+
+    /** Название мессенджера для текстов. */
+    String title();
 
 }

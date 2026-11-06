@@ -38,7 +38,9 @@ class TelegramConnector implements MessengerConnector {
     @Override
     public Bot me(Api api) {
         JsonNode r = result(api.post(method(api, "getMe"), Map.of(), Map.of()));
-        return new Bot(r.path("id").asString(""), r.path("username").asString(null), r.path("first_name").asString(null));
+        String username = r.path("username").asString(null);
+        return new Bot(r.path("id").asString(""), username, r.path("first_name").asString(null),
+                username == null ? null : "https://t.me/" + username);
     }
 
     @Override
@@ -101,7 +103,12 @@ class TelegramConnector implements MessengerConnector {
     }
 
     @Override
-    public String deepLink(String username, String payload) {
-        return "https://t.me/" + username + "?start=" + payload;
+    public String deepLink(MessengerStore.Messenger bot, String code) {
+        return "https://t.me/" + bot.botUsername() + "?start=" + code;
+    }
+
+    @Override
+    public String title() {
+        return "Telegram";
     }
 }

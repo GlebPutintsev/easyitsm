@@ -21,8 +21,8 @@ import ru.easyitsm.platform.tenant.TenantContext;
 class MessengerStore {
 
     /** Бот без токена. */
-    record Messenger(UUID id, String kind, String name, String tokenHint, String baseUrl, String botUsername,
-                     boolean enabled, boolean allowTickets, String ticketType, UUID groupId, List<String> dataFields,
+    record Messenger(UUID id, String kind, String name, String tokenHint, String appTokenHint, String baseUrl,
+                     String botUsername, String botUrl, boolean enabled, boolean allowTickets, String ticketType, UUID groupId, List<String> dataFields,
                      Instant lastPollAt, String lastError, Instant lastEventAt, int linkedUsers, long version,
                      Instant createdAt, Instant updatedAt) {
 
@@ -43,7 +43,7 @@ class MessengerStore {
     }
 
     private static final String COLUMNS = """
-            m.id, m.kind, m.name, m.token_hint, m.base_url, m.bot_username, m.enabled, m.allow_tickets, m.ticket_type,
+            m.id, m.kind, m.name, m.token_hint, m.app_token_hint, m.base_url, m.bot_username, m.bot_url, m.enabled, m.allow_tickets, m.ticket_type,
             m.group_id, m.data_fields, m.last_poll_at, m.last_error, m.last_event_at, m.version, m.created_at,
             m.updated_at, (select count(*) from integration_messenger_link l where l.messenger_id = m.id) as linked""";
 
@@ -70,40 +70,61 @@ class MessengerStore {
                 .optional();
     }
 
-    UUID insert(String kind, Fields f, String encryptedToken, String tokenHint, String botUsername) {
+    /** Токен приложения (Slack), зашифрованный; пусто — у бота его нет. */
+    Optional<String> appToken(UUID id) {
+        return jdbc.sql("select app_token from integration_messenger where id = :id").param("id", id)
+                .query((rs, n) -> Optional.ofNullable(rs.getString(1))).optional().flatMap(o -> o);
+    }
+
+    /** Токены бота: зашифрованные значения и подсказки; null в {@link #update} — прежние. */
+    record Secrets(String token, String tokenHint, String appToken, String appTokenHint) {
+    }
+
+    /** Что известно о боте после проверки API. */
+    record Verified(String username, String url) {
+    }
+
+    UUID insert(String kind, Fields f, Secrets t, Verified bot) {
         UUID id = Ids.newId();
         var now = SourceStore.now();
         UUID actor = CurrentActor.userId().orElse(null);
         jdbc.sql("""
-                insert into integration_messenger (id, tenant_id, kind, name, token, token_hint, base_url, bot_username,
-                    enabled, allow_tickets, ticket_type, group_id, data_fields, created_at, created_by, updated_at,
-                    updated_by, version)
-                values (:id, :tenant, :kind, :name, :token, :hint, :base, :bot, :enabled, :tickets, :type, :group,
-                    cast(:fields as text[]), :now, :actor, :now, :actor, 0)""")
+                insert into integration_messenger (id, tenant_id, kind, name, token, token_hint, app_token,
+                    app_token_hint, base_url, bot_username, bot_url, enabled, allow_tickets, ticket_type, group_id,
+                    data_fields, created_at, created_by, updated_at, updated_by, version)
+                values (:id, :tenant, :kind, :name, :token, :hint, :app, :appHint, :base, :bot, :url, :enabled, :tickets,
+                    :type, :group, cast(:fields as text[]), :now, :actor, :now, :actor, 0)""")
                 .param("id", id).param("tenant", TenantContext.require()).param("kind", kind).param("name", f.name())
-                .param("token", encryptedToken).param("hint", tokenHint).param("base", f.baseUrl())
-                .param("bot", botUsername).param("enabled", f.enabled()).param("tickets", f.allowTickets())
+                .param("token", t.token()).param("hint", t.tokenHint()).param("app", t.appToken())
+                .param("appHint", t.appTokenHint()).param("base", f.baseUrl())
+                .param("bot", bot.username()).param("url", bot.url()).param("enabled", f.enabled()).param("tickets", f.allowTickets())
                 .param("type", f.ticketType()).param("group", f.groupId()).param("fields", array(f.dataFields()))
                 .param("now", now).param("actor", actor).update();
         return id;
     }
 
-    /** @param encryptedToken null — токен прежний */
-    boolean update(UUID id, long version, Fields f, String encryptedToken, String tokenHint, String botUsername) {
+    /** @param bot null — прежние имя и ссылка бота */
+    boolean update(UUID id, long version, Fields f, Secrets t, Verified bot) {
         return jdbc.sql("""
                 update integration_messenger set name = :name, base_url = :base, enabled = :enabled,
                        allow_tickets = :tickets, ticket_type = :type, group_id = :group,
                        data_fields = cast(:fields as text[]), token = coalesce(cast(:token as text), token),
                        token_hint = coalesce(cast(:hint as text), token_hint),
+                       app_token = coalesce(cast(:app as text), app_token),
+                       app_token_hint = coalesce(cast(:appHint as text), app_token_hint),
                        bot_username = coalesce(cast(:bot as text), bot_username),
+                       bot_url = coalesce(cast(:url as text), bot_url),
                        poll_cursor = case when cast(:token as text) is null then poll_cursor end,
-                       last_error = case when cast(:token as text) is null then last_error end,
+                       last_error = case when cast(:token as text) is null and cast(:app as text) is null
+                                         then last_error end,
                        updated_at = :now, updated_by = :actor, version = version + 1
                  where id = :id and version = :version""")
                 .param("name", f.name()).param("base", f.baseUrl()).param("enabled", f.enabled())
                 .param("tickets", f.allowTickets()).param("type", f.ticketType()).param("group", f.groupId())
-                .param("fields", array(f.dataFields())).param("token", encryptedToken).param("hint", tokenHint)
-                .param("bot", botUsername).param("now", SourceStore.now())
+                .param("fields", array(f.dataFields())).param("token", t.token()).param("hint", t.tokenHint())
+                .param("app", t.appToken()).param("appHint", t.appTokenHint())
+                .param("bot", bot == null ? null : bot.username()).param("url", bot == null ? null : bot.url())
+                .param("now", SourceStore.now())
                 .param("actor", CurrentActor.userId().orElse(null)).param("id", id).param("version", version)
                 .update() == 1;
     }
@@ -113,6 +134,17 @@ class MessengerStore {
     }
 
     /** Все арендаторы: включённые боты (функция SECURITY DEFINER). */
+    /** Все арендаторы: включённые боты с постоянным соединением (Slack) и их версии. */
+    record Streaming(UUID tenantId, UUID id, long version) {
+    }
+
+    List<Streaming> streamingEverywhere() {
+        return jdbc.sql("select tenant_id, id, version from integration_messengers_streaming()")
+                .query((rs, n) -> new Streaming(rs.getObject("tenant_id", UUID.class), rs.getObject("id", UUID.class),
+                        rs.getLong("version")))
+                .list();
+    }
+
     List<SourceStore.TokenMatch> enabledEverywhere() {
         return jdbc.sql("select tenant_id, id from integration_messengers_enabled()")
                 .query((rs, n) -> new SourceStore.TokenMatch(rs.getObject("tenant_id", UUID.class),
@@ -298,8 +330,8 @@ class MessengerStore {
         Array a = rs.getArray("data_fields");
         List<String> fields = a == null ? List.of() : Arrays.stream((Object[]) a.getArray()).map(String::valueOf).toList();
         return new Messenger(rs.getObject("id", UUID.class), rs.getString("kind"), rs.getString("name"),
-                rs.getString("token_hint"), rs.getString("base_url"), rs.getString("bot_username"),
-                rs.getBoolean("enabled"), rs.getBoolean("allow_tickets"), rs.getString("ticket_type"),
+                rs.getString("token_hint"), rs.getString("app_token_hint"), rs.getString("base_url"),
+                rs.getString("bot_username"), rs.getString("bot_url"), rs.getBoolean("enabled"), rs.getBoolean("allow_tickets"), rs.getString("ticket_type"),
                 rs.getObject("group_id", UUID.class), fields, SourceStore.instant(rs, "last_poll_at"),
                 rs.getString("last_error"), SourceStore.instant(rs, "last_event_at"), rs.getInt("linked"),
                 rs.getLong("version"), SourceStore.instant(rs, "created_at"), SourceStore.instant(rs, "updated_at"));

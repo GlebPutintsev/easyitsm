@@ -149,7 +149,7 @@ X-EasyITSM-Signature: sha256=<hex(HMAC-SHA256(ключ, timestamp + "." + тел
 Изменения вебхуков и списка пишутся в журнал версий настроек (`integrations.webhook`,
 `integrations.outbound_policy`, без ключа) и в журнал аудита как настройки раздела `integrations`.
 
-## Мессенджеры Telegram и MAX (раздел 8.2 ТЗ, CHN-04, CHN-06)
+## Мессенджеры Telegram, MAX и Slack (раздел 8.2 ТЗ, CHN-04, CHN-06)
 
 ADM подключает бота на вкладке «Интеграции → Мессенджеры»: токен (хранится зашифрованным, наружу — только
 последние 4 символа), адрес API (пусто — официальный: `api.telegram.org` или `platform-api.max.ru`), можно ли
@@ -160,12 +160,12 @@ ADM подключает бота на вкладке «Интеграции →
 
 ```
 GET    /api/v1/integrations/messengers            ADM, AUD
-POST   /api/v1/integrations/messengers            ADM   {kind, name, token, baseUrl?, allowTickets, ticketType, groupId?, dataFields}
+POST   /api/v1/integrations/messengers            ADM   {kind, name, token, appToken?, baseUrl?, allowTickets, ticketType, groupId?, dataFields}
 PATCH  /api/v1/integrations/messengers/{id}       ADM   If-Match; token — только для замены, clearGroup: true снимает группу
 DELETE /api/v1/integrations/messengers/{id}       ADM   повторный вход; удаляет привязки и очередь
 POST   /api/v1/integrations/messengers/{id}/check ADM   {ok, botUsername, error}
 GET    /api/v1/integrations/my-messengers         любой вошедший: боты и своя привязка
-POST   /api/v1/integrations/my-messengers/{id}/link  {url, code, expiresAt} — одноразовый код на 15 минут
+POST   /api/v1/integrations/my-messengers/{id}/link  {url, code, command, expiresAt} — одноразовый код на 15 минут
 DELETE /api/v1/integrations/my-messengers/{id}    отвязать себя
 ```
 
@@ -194,5 +194,22 @@ DELETE /api/v1/integrations/my-messengers/{id}    отвязать себя
 с записью в журнал сервера. Ошибки опроса видны в «Состоянии» бота. Отправленное сообщение запоминается за заявкой, чтобы ответ на него стал
 комментарием. Очередь, коды и связи сообщений удаляются через `keep-events-days`.
 
-Изменения ботов пишутся в журнал версий (`integrations.messenger`, без токена) и в аудит раздела
+### Slack
+
+Slack подключается через Socket Mode: сервер сам открывает WebSocket к Slack, поэтому входящий доступ из
+интернета не нужен, как и у Telegram и MAX. Кроме токена бота (`xoxb-`, права `chat:write`, `im:history`,
+`im:read`) ADM указывает токен приложения (`xapp-`, право `connections:write`), включает Socket Mode, подписку на
+событие `message.im` и сообщения на вкладке App Home. Оба токена хранятся зашифрованными; при сохранении сервер
+вызывает `auth.test` и `apps.connections.open`.
+
+- Каждый worker держит своё соединение (Slack раздаёт события между соединениями приложения, их до 10).
+  Соединение принимается только по адресу `wss://*.slack.com` с проверкой узла; при ошибке повтор через 30 с,
+  1, 2 … до 10 минут. Состояние соединения видно в «Состоянии» бота.
+- Конверт события подтверждается сразу, затем сообщение обрабатывается в своей транзакции. Повторная
+  доставка того же сообщения (Slack повторяет, опрос после сбоя пода) не создаёт вторую заявку и комментарий.
+- Привязка: в профиле — ссылка на бота в рабочем пространстве и код, который пользователь отправляет боту
+  личным сообщением (`/start` в Slack перехватывает сам Slack). Команды — `help` и `stop` без косой черты.
+- Ответы бота и уведомления о заявке идут в ветке сообщения; ответ в ветке — комментарий к заявке.
+
+Изменения ботов пишутся в журнал версий (`integrations.messenger`, без токенов) и в аудит раздела
 `integrations`.

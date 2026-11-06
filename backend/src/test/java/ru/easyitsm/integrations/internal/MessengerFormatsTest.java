@@ -61,6 +61,39 @@ class MessengerFormatsTest {
     }
 
     @Test
+    void slackDirectMessagesFromPeopleOnlyWithThreads() {
+        var dm = SlackConnector.parse(json.readTree("""
+                {"type": "events_api", "envelope_id": "e1", "payload": {"event": {"type": "message", "channel_type": "im",
+                  "channel": "D01", "user": "U42", "text": "Не работает &lt;VPN&gt; &amp; почта", "ts": "1700000000.000100"}}}"""));
+        assertThat(dm).isNotNull();
+        assertThat(dm.chatId()).isEqualTo("D01");
+        assertThat(dm.messageId()).isEqualTo("1700000000.000100");
+        assertThat(dm.text()).isEqualTo("Не работает <VPN> & почта");
+        assertThat(dm.replyTo()).isNull();
+        var inThread = SlackConnector.parse(json.readTree("""
+                {"payload": {"event": {"type": "message", "channel_type": "im", "channel": "D01", "user": "U42",
+                  "text": "Уже лучше", "ts": "1700000000.000300", "thread_ts": "1700000000.000200"}}}"""));
+        assertThat(inThread.replyTo()).isEqualTo("1700000000.000200");
+        assertThat(SlackConnector.parse(json.readTree("""
+                {"payload": {"event": {"type": "message", "channel_type": "im", "channel": "D01", "bot_id": "B1",
+                  "text": "эхо бота", "ts": "1"}}}"""))).isNull();
+        assertThat(SlackConnector.parse(json.readTree("""
+                {"payload": {"event": {"type": "message", "subtype": "message_changed", "channel_type": "im",
+                  "channel": "D01", "ts": "2"}}}"""))).isNull();
+        assertThat(SlackConnector.parse(json.readTree("""
+                {"payload": {"event": {"type": "message", "channel_type": "channel", "channel": "C01", "user": "U42",
+                  "text": "в канале", "ts": "3"}}}"""))).isNull();
+        assertThat(SlackConnector.escape("a < b & c")).isEqualTo("a &lt; b &amp; c");
+    }
+
+    @Test
+    void slackNoticeAsksForThreadReply() {
+        ExternalNotice n = new ExternalNotice(UUID.randomUUID(), "en", "ticket.comment", "INC-000042: VPN", null,
+                UUID.randomUUID(), "INC-000042", "VPN", null, false);
+        assertThat(MessengerNotices.render(bot("slack", List.of("title")), n)).endsWith("Reply in this message's thread to add a comment.");
+    }
+
+    @Test
     void noticeFollowsDataFields() {
         ExternalNotice n = new ExternalNotice(UUID.randomUUID(), "ru", "ticket.comment", "INC-000042: Не работает VPN",
                 "Перезагрузите ноутбук", UUID.randomUUID(), "INC-000042", "Не работает VPN",
@@ -78,10 +111,15 @@ class MessengerFormatsTest {
         assertThat(MessengerBot.title("\n  Не работает принтер  \nНа 3 этаже", "telegram")).isEqualTo("Не работает принтер");
         assertThat(MessengerBot.title("x".repeat(200), "max")).hasSize(120).endsWith("…");
         assertThat(MessengerBot.title("   ", "max")).isEqualTo("Обращение из MAX");
+        assertThat(MessengerBot.title("   ", "slack")).isEqualTo("Обращение из Slack");
     }
 
     static MessengerStore.Messenger bot(List<String> fields) {
-        return new MessengerStore.Messenger(UUID.randomUUID(), "telegram", "Бот", "…abcd", null, "easy_bot", true, true,
-                "incident", null, fields, null, null, null, 0, 0, Instant.now(), Instant.now());
+        return bot("telegram", fields);
+    }
+
+    static MessengerStore.Messenger bot(String kind, List<String> fields) {
+        return new MessengerStore.Messenger(UUID.randomUUID(), kind, "Бот", "…abcd", null, null, "easy_bot", null, true,
+                true, "incident", null, fields, null, null, null, 0, 0, Instant.now(), Instant.now());
     }
 }

@@ -35,14 +35,16 @@ import tools.jackson.databind.json.JsonMapper;
 class MessengerService {
 
     static final String HISTORY_ENTITY = "integrations.messenger";
-    static final Set<String> KINDS = Set.of("telegram", "max");
+    static final Set<String> KINDS = Set.of("telegram", "max", "slack");
     static final List<String> FIELDS = List.of("title", "text", "link");
     static final Duration CODE_TTL = Duration.ofMinutes(15);
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
-    record MessengerInput(String kind, String name, String token, String baseUrl, Boolean enabled, Boolean allowTickets,
-                          String ticketType, UUID groupId, Boolean clearGroup, List<String> dataFields) {
+    /** {@code appToken} — токен приложения Slack ({@code xapp-}), для других мессенджеров не нужен. */
+    record MessengerInput(String kind, String name, String token, String appToken, String baseUrl, Boolean enabled,
+                          Boolean allowTickets, String ticketType, UUID groupId, Boolean clearGroup,
+                          List<String> dataFields) {
     }
 
     /** Итог проверки бота. */
@@ -54,8 +56,8 @@ class MessengerService {
                        Instant linkedAt) {
     }
 
-    /** Ссылка привязки: открывает бот с одноразовым кодом. */
-    record LinkCode(String url, String code, Instant expiresAt) {
+    /** Ссылка привязки: открывает бот (с одноразовым кодом, если мессенджер умеет); {@code command} — что отправить боту вручную. */
+    record LinkCode(String url, String code, String command, Instant expiresAt) {
     }
 
     private final MessengerStore store;
@@ -96,23 +98,50 @@ class MessengerService {
      * Подключение к API бота. Официальный адрес мессенджера разрешён всегда, свой — только из списка разрешённых
      * адресов «Интеграций»; служебные и собственные адреса сервера запрещены в любом случае.
      */
-    MessengerConnector.Api api(String kind, String baseUrl, String token, List<String> allowedHosts) {
+    MessengerConnector.Api api(String kind, String baseUrl, String token, String appToken, List<String> allowedHosts) {
         MessengerConnector c = connector(kind);
         String base = baseUrl == null ? c.defaultBaseUrl() : baseUrl;
         List<String> allowed = new ArrayList<>(allowedHosts);
         if (baseUrl == null) {
             allowed.add(URI.create(c.defaultBaseUrl()).getHost());
         }
-        return new MessengerConnector.Api(http, http.guard(allowed), base.replaceAll("/+$", ""), token, json);
+        return new MessengerConnector.Api(http, http.guard(allowed), base.replaceAll("/+$", ""), token, appToken, json);
     }
 
     /** Подключение к API сохранённого бота в арендаторе вызывающего; null — ключ не расшифровывается. */
     MessengerConnector.Api api(MessengerStore.Messenger m) {
         String token = store.token(m.id()).map(secrets::decryptOrNull).orElse(null);
-        if (token == null) {
+        String appToken = store.appToken(m.id()).map(secrets::decryptOrNull).orElse(null);
+        if (token == null || connector(m.kind()).needsAppToken() && appToken == null) {
             return null;
         }
-        return api(m.kind(), m.baseUrl(), token, policy.policy().allowedHosts());
+        return api(m.kind(), m.baseUrl(), token, appToken, policy.policy().allowedHosts());
+    }
+
+    /**
+     * Адрес WebSocket Socket Mode для бота Slack. Принимается только {@code wss://*.slack.com}; узел проверяется
+     * так же, как исходящие запросы (служебные и собственные адреса сервера запрещены).
+     */
+    URI socketUrl(MessengerStore.Messenger m) {
+        MessengerConnector.Api api = api(m);
+        if (api == null) {
+            throw new MessengerConnector.Failure("токен не расшифровывается: укажите его заново");
+        }
+        URI uri = ((SlackConnector) connector("slack")).open(api);
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
+        boolean slack = scheme.equals("wss") && host.endsWith(".slack.com");
+        boolean local = scheme.equals("ws") && http.loopbackAllowed() && OutboundGuard.isLiteral(host);
+        if (!slack && !local || uri.getRawUserInfo() != null) {
+            throw new MessengerConnector.Failure("Slack вернул неожиданный адрес соединения");
+        }
+        try {
+            http.guard(List.of(host)).check(new URI(scheme.equals("wss") ? "https" : "http", null, host, uri.getPort(),
+                    "/", null, null));
+        } catch (java.net.URISyntaxException e) {
+            throw new MessengerConnector.Failure("Slack вернул неверный адрес соединения");
+        }
+        return uri;
     }
 
     // ---------------------------------------------------------------- настройка ADM
@@ -128,16 +157,21 @@ class MessengerService {
     MessengerStore.Messenger create(MessengerInput in) {
         String kind = in.kind() == null ? "" : in.kind().strip().toLowerCase(Locale.ROOT);
         if (!KINDS.contains(kind)) {
-            throw invalid("Мессенджер: telegram или max");
+            throw invalid("Мессенджер: telegram, max или slack");
         }
         String token = token(in.token());
         if (token == null) {
             throw invalid("Укажите токен бота");
         }
+        boolean needsApp = connector(kind).needsAppToken();
+        String appToken = needsApp ? token(in.appToken()) : null;
+        if (needsApp && appToken == null) {
+            throw invalid("Укажите токен приложения");
+        }
         MessengerStore.Fields f = fields(in, null);
-        MessengerConnector.Bot bot = verify(kind, f.baseUrl(), token);
+        MessengerStore.Verified bot = verify(kind, f.baseUrl(), token, appToken);
         return tx.execute(s -> {
-            UUID id = store.insert(kind, f, secrets.encrypt(token), Tokens.hint(token), bot.username());
+            UUID id = store.insert(kind, f, secrets(token, appToken), bot);
             MessengerStore.Messenger m = require(id);
             record(m, "create", null);
             return m;
@@ -149,24 +183,28 @@ class MessengerService {
         ETags.requireMatch(ifMatch, current.version());
         MessengerStore.Fields f = fields(in, current);
         String token = token(in.token());
-        MessengerConnector.Bot bot = null;
+        String appToken = connector(current.kind()).needsAppToken() ? token(in.appToken()) : null;
+        MessengerStore.Verified bot = null;
         boolean addressChanged = !java.util.Objects.equals(f.baseUrl(), current.baseUrl());
-        if (token != null || addressChanged) {
+        if (token != null || appToken != null || addressChanged) {
             String check = token != null ? token
                     : tx.execute(s -> store.token(id).map(secrets::decryptOrNull).orElse(null));
-            if (check == null) {
+            String checkApp = appToken != null || !connector(current.kind()).needsAppToken() ? appToken
+                    : tx.execute(s -> store.appToken(id).map(secrets::decryptOrNull).orElse(null));
+            if (check == null || connector(current.kind()).needsAppToken() && checkApp == null) {
                 throw invalid("Токен не расшифровывается: укажите его заново");
             }
-            bot = verify(current.kind(), f.baseUrl(), check);
+            bot = verify(current.kind(), f.baseUrl(), check, checkApp);
         }
-        MessengerConnector.Bot verified = bot;
+        MessengerStore.Verified verified = bot;
         return tx.execute(s -> {
-            if (!store.update(id, current.version(), f, token == null ? null : secrets.encrypt(token),
-                    token == null ? null : Tokens.hint(token), verified == null ? null : verified.username())) {
+            if (!store.update(id, current.version(), f, secrets(token, appToken), verified)) {
                 throw ApiException.conflict("version_conflict", "Бот изменён другим пользователем. Обновите и повторите");
             }
             MessengerStore.Messenger m = require(id);
-            record(m, "update", token == null ? null : "Новый токен бота");
+            record(m, "update", token == null && appToken == null ? null
+                    : token != null && appToken != null ? "Новые токены бота и приложения"
+                    : token != null ? "Новый токен бота" : "Новый токен приложения");
             return m;
         });
     }
@@ -194,9 +232,16 @@ class MessengerService {
         }
     }
 
-    private MessengerConnector.Bot verify(String kind, String baseUrl, String token) {
+    /** Зашифрованные токены; null — не менять. */
+    private MessengerStore.Secrets secrets(String token, String appToken) {
+        return new MessengerStore.Secrets(token == null ? null : secrets.encrypt(token),
+                token == null ? null : Tokens.hint(token), appToken == null ? null : secrets.encrypt(appToken),
+                appToken == null ? null : Tokens.hint(appToken));
+    }
+
+    private MessengerStore.Verified verify(String kind, String baseUrl, String token, String appToken) {
         List<String> allowed = tx.execute(s -> policy.policy().allowedHosts());
-        MessengerConnector.Api api = api(kind, baseUrl, token, allowed);
+        MessengerConnector.Api api = api(kind, baseUrl, token, appToken, allowed);
         MessengerConnector c = connector(kind);
         try {
             MessengerConnector.Bot bot = c.me(api);
@@ -204,7 +249,7 @@ class MessengerService {
                 throw new MessengerConnector.Failure("у бота нет имени пользователя");
             }
             c.prepare(api);
-            return bot;
+            return new MessengerStore.Verified(bot.username(), bot.url());
         } catch (MessengerConnector.Failure e) {
             throw ApiException.badRequest("messenger_unreachable", "Бот не отвечает: " + e.getMessage());
         }
@@ -236,7 +281,8 @@ class MessengerService {
             String code = newCode();
             Instant expires = Instant.now().plus(CODE_TTL);
             store.saveCode(m.id(), me, hash(code), expires);
-            return new LinkCode(connector(m.kind()).deepLink(m.botUsername(), code), code, expires);
+            MessengerConnector c = connector(m.kind());
+            return new LinkCode(c.deepLink(m, code), code, c.linkCommand(code), expires);
         });
     }
 

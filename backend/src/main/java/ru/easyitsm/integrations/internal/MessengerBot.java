@@ -28,6 +28,8 @@ class MessengerBot {
     /** Больше заявок из одного чата за час бот не создаёт. */
     static final int MAX_TICKETS_PER_HOUR = 10;
     static final int MAX_TEXT = 4000;
+    /** Код привязки, отправленный текстом (Slack) или командой {@code /start}. */
+    private static final java.util.regex.Pattern CODE = java.util.regex.Pattern.compile("(?:/start\\s+)?([A-Za-z0-9]{20})");
 
     private final MessengerStore store;
     private final UserDirectory users;
@@ -51,20 +53,25 @@ class MessengerBot {
             text = text.substring(0, MAX_TEXT);
         }
         if (u.startPayload() != null) {
-            return start(m, u);
+            return start(m, u, u.startPayload());
         }
         Optional<UserSummary> user = store.linkByChat(m.id(), u.chatId())
                 .flatMap(l -> users.findUser(l.userId())).filter(UserSummary::active);
         if (user.isEmpty()) {
+            java.util.regex.Matcher code = CODE.matcher(text);
+            if (code.matches()) {
+                return start(m, u, code.group(1));
+            }
             reply(m, u, Texts.NOT_LINKED.of(null), null, null);
             return "not_linked";
         }
         String lang = user.get().locale();
-        if (text.equals("/start") || text.equals("/help")) {
-            reply(m, u, Texts.HELP.of(lang), null, null);
+        String command = text.toLowerCase(java.util.Locale.ROOT);
+        if (command.equals("/start") || command.equals("/help") || command.equals("help")) {
+            reply(m, u, help(m, lang), null, null);
             return "help";
         }
-        if (text.equals("/stop")) {
+        if (command.equals("/stop") || command.equals("stop")) {
             store.unlinkChat(m.id(), u.chatId());
             reply(m, u, Texts.STOPPED.of(lang), null, null);
             return "unlinked";
@@ -72,6 +79,11 @@ class MessengerBot {
         if (text.isEmpty()) {
             reply(m, u, Texts.EMPTY.of(lang), null, null);
             return "empty";
+        }
+        // Повторная доставка того же сообщения (Slack повторяет, опрос после сбоя пода) не дублирует заявку
+        // и комментарий: оба запоминают id сообщения.
+        if (u.messageId() != null && store.ticketOf(m.id(), u.chatId(), u.messageId()).isPresent()) {
+            return "duplicate";
         }
         if (u.replyTo() != null) {
             Optional<UUID> ticketId = store.ticketOf(m.id(), u.chatId(), u.replyTo());
@@ -82,8 +94,8 @@ class MessengerBot {
         return create(m, u, user.get(), text);
     }
 
-    private String start(MessengerStore.Messenger m, MessengerConnector.Update u) {
-        Optional<UUID> owner = store.consumeCode(m.id(), MessengerService.hash(u.startPayload()));
+    private String start(MessengerStore.Messenger m, MessengerConnector.Update u, String payload) {
+        Optional<UUID> owner = store.consumeCode(m.id(), MessengerService.hash(payload));
         Optional<UserSummary> user = owner.flatMap(users::findUser).filter(UserSummary::active);
         if (user.isEmpty()) {
             reply(m, u, Texts.BAD_CODE.of(null), null, null);
@@ -91,7 +103,7 @@ class MessengerBot {
         }
         store.link(m.id(), user.get().id(), u.chatId(), u.fromName());
         reply(m, u, Texts.LINKED.of(user.get().locale()).formatted(user.get().displayName()) + "\n\n"
-                + Texts.HELP.of(user.get().locale()), null, null);
+                + help(m, user.get().locale()), null, null);
         return "linked";
     }
 
@@ -152,7 +164,7 @@ class MessengerBot {
         if (m.shares("link") && !publicUrl.isEmpty()) {
             sb.append("\n").append(publicUrl).append("/portal/tickets/").append(ref.number());
         }
-        sb.append("\n\n").append(Texts.REPLY_HINT.of(lang));
+        sb.append("\n\n").append(replyHint(m.kind(), lang));
         reply(m, u, sb.toString(), ref.id(), ref.number());
         return "created " + ref.number();
     }
@@ -161,9 +173,23 @@ class MessengerBot {
     static String title(String text, String kind) {
         String first = text.lines().map(String::strip).filter(s -> !s.isEmpty()).findFirst().orElse("");
         if (first.isEmpty()) {
-            return "Обращение из " + ("max".equals(kind) ? "MAX" : "Telegram");
+            return "Обращение из " + switch (kind) {
+                case "max" -> "MAX";
+                case "slack" -> "Slack";
+                default -> "Telegram";
+            };
         }
         return first.length() > 120 ? first.substring(0, 119) + "…" : first;
+    }
+
+    /** Подсказка под сообщением о заявке: в Slack ответ — это сообщение в ветке. */
+    static String replyHint(String kind, String lang) {
+        return ("slack".equals(kind) ? Texts.THREAD_HINT : Texts.REPLY_HINT).of(lang);
+    }
+
+    /** Справка: в Slack команды с «/» перехватывает сам Slack, поэтому там {@code stop} без косой черты. */
+    static String help(MessengerStore.Messenger m, String lang) {
+        return Texts.HELP.of(lang).formatted("slack".equals(m.kind()) ? "stop" : "/stop");
     }
 
     private void reply(MessengerStore.Messenger m, MessengerConnector.Update u, String text, UUID ticketId,
@@ -178,8 +204,8 @@ class MessengerBot {
         BAD_CODE("Ссылка подключения устарела или уже использована. Получите новую в профиле: «Профиль → Мессенджеры».",
                 "The connection link has expired or was already used. Get a new one in “Profile → Messengers”."),
         LINKED("Готово, %s: уведомления будут приходить сюда.", "Done, %s: notifications will arrive here."),
-        HELP("Напишите сообщение — создам заявку. Ответьте на сообщение о заявке — добавлю комментарий. /stop — отключить бот.",
-                "Send a message to create a ticket. Reply to a ticket message to add a comment. /stop disconnects the bot."),
+        HELP("Напишите сообщение — создам заявку. Ответьте на сообщение о заявке — добавлю комментарий. %s — отключить бот.",
+                "Send a message to create a ticket. Reply to a ticket message to add a comment. %s disconnects the bot."),
         STOPPED("Бот отключён. Подключить снова можно в профиле.", "The bot is disconnected. You can connect it again in your profile."),
         EMPTY("Пришлите текст: файлы бот пока не принимает.", "Please send text: the bot does not accept files yet."),
         NO_TICKET("Заявка не найдена.", "Ticket not found."),
@@ -195,7 +221,9 @@ class MessengerBot {
                 "This bot does not accept tickets. Please use the portal."),
         TOO_MANY("Слишком много заявок за час. Попробуйте позже.", "Too many tickets in an hour. Please try later."),
         CREATED("Создана заявка %s.", "Ticket %s created."),
-        REPLY_HINT("Ответьте на это сообщение, чтобы добавить комментарий.", "Reply to this message to add a comment.");
+        REPLY_HINT("Ответьте на это сообщение, чтобы добавить комментарий.", "Reply to this message to add a comment."),
+        THREAD_HINT("Ответьте в ветке этого сообщения, чтобы добавить комментарий.",
+                "Reply in this message's thread to add a comment.");
 
         private final String ru;
         private final String en;
