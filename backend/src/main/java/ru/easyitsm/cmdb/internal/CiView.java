@@ -4,7 +4,10 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-/** КЕ в REST. Коды перечислений — строчными буквами, как во всём API. */
+/**
+ * КЕ в REST. Коды перечислений — строчными буквами, как во всём API. {@code mergedInto} — у слитого дубликата
+ * (выведен из эксплуатации): КЕ, в которую он слит.
+ */
 record CiView(
         UUID id,
         String name,
@@ -23,12 +26,13 @@ record CiView(
         UUID createdBy,
         Instant updatedAt,
         UUID updatedBy,
-        long version) {
+        long version,
+        UUID mergedInto) {
 
     static CiView of(CiRow r) {
         return new CiView(r.id(), r.name(), r.classCode(), r.className(), r.layer().code(), r.status().code(),
                 r.environment(), r.criticality().code(), r.ownerGroupId(), r.description(), r.attributes(),
                 r.attributeSources(), r.lastSeenAt(), r.createdAt(), r.createdBy(), r.updatedAt(), r.updatedBy(),
-                r.version());
+                r.version(), r.mergedInto());
     }
 }

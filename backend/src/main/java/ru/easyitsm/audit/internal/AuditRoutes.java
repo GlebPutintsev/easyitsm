@@ -33,6 +33,7 @@ final class AuditRoutes {
             new Rule("/api/v1/automation/rules", "automation", List.of()),
             new Rule("/api/v1/cmdb/classes", "cmdb", List.of()),
             new Rule("/api/v1/cmdb/relation-types", "cmdb", List.of()),
+            new Rule("/api/v1/cmdb/sources", "cmdb", List.of("/batches")),
             new Rule("/api/v1/audit/siem", "audit", List.of("/test")),
             new Rule("/api/v1/integrations/monitoring/", "integrations", List.of()),
             new Rule("/api/v1/mim/templates", "mim", List.of()),
