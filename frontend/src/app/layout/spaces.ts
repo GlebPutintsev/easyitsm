@@ -1,12 +1,15 @@
 import {
   IconAlertTriangle,
   IconBook,
+  IconBook2,
   IconBox,
   IconChartBar,
   IconChecklist,
   IconClipboardList,
   IconDeviceDesktop,
+  IconFileImport,
   IconFlame,
+  IconHistory,
   IconHome,
   IconListDetails,
   IconMail,
@@ -15,6 +18,8 @@ import {
   IconSitemap,
   IconStack2,
   IconUsers,
+  IconUsersGroup,
+  IconWand,
   type Icon,
 } from '@tabler/icons-react';
 
@@ -59,8 +64,13 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
     home: '/admin',
     nav: [
       { key: 'home', to: '/admin', icon: IconSettings },
+      { key: 'setup', to: '/admin/setup', icon: IconWand },
       { key: 'users', to: '/admin/users', icon: IconUsers },
+      { key: 'groups', to: '/admin/groups', icon: IconUsersGroup },
+      { key: 'dictionaries', to: '/admin/dictionaries', icon: IconBook2 },
       { key: 'catalogAdmin', to: '/admin/catalog', icon: IconClipboardList },
+      { key: 'import', to: '/admin/import', icon: IconFileImport },
+      { key: 'journal', to: '/admin/journal', icon: IconHistory },
       { key: 'mail', to: '/admin/mail', icon: IconMail },
       { key: 'notificationTemplates', to: '/admin/notification-templates', icon: IconBellCog },
     ],
