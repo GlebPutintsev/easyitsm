@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '@/app/theme';
-import type { EventEntry, SourceView } from './api';
+import type { Delivery, EventEntry, SourceView, Webhook } from './api';
 import { IntegrationsPage } from './IntegrationsPage';
 import { alertmanagerConfig } from './snippets';
 
@@ -15,6 +15,35 @@ Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 
 // Выданный токен в ответе-заглушке: собирается из частей, чтобы не походить на настоящий секрет для gitleaks.
 const ISSUED = 'eitsm_mon_' + 'x'.repeat(12);
+
+// Ключ подписи в ответе-заглушке: тоже из частей.
+const SIGNING = 'whsec_' + 'y'.repeat(12);
+
+const HOOK: Webhook = {
+  id: '00000000-0000-7000-8000-00000000w001',
+  name: 'Jira',
+  url: 'https://jira.example.ru/hooks/itsm',
+  enabled: true,
+  lastUsedAt: null,
+  version: 1,
+  createdAt: '2026-11-06T10:00:00Z',
+  updatedAt: '2026-11-06T10:00:00Z',
+};
+
+const DEAD: Delivery = {
+  id: 'd1',
+  webhookId: HOOK.id,
+  eventType: 'automation.rule',
+  status: 'dead',
+  attempts: 9,
+  nextAttemptAt: null,
+  lastStatus: 502,
+  lastError: 'ответ HTTP 502',
+  deliveredAt: null,
+  source: 'P1 в Jira',
+  ticketNumber: 'INC-000778',
+  createdAt: '2026-11-06T10:06:00Z',
+};
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -85,6 +114,18 @@ describe('экран интеграций', () => {
         return json({ ...SOURCE, source: { ...SOURCE.source, ...JSON.parse(String(init?.body)), version: 4 } });
       if (url.pathname === '/api/v1/integrations/monitoring/events') return json({ items: [EVENT], nextCursor: null });
       if (url.pathname.endsWith('/alerts')) return json({ items: [], nextCursor: null });
+      if (url.pathname === '/api/v1/integrations/webhooks' && method === 'GET') return json({ items: [HOOK], nextCursor: null });
+      if (url.pathname === '/api/v1/integrations/webhooks' && method === 'POST') {
+        const body = JSON.parse(String(init?.body));
+        return json({ webhook: { ...HOOK, id: 'w2', name: body.name, url: body.url }, secret: SIGNING }, 201);
+      }
+      if (url.pathname === '/api/v1/integrations/outbound-policy' && method === 'GET')
+        return json({ allowedHosts: [], version: 0 });
+      if (url.pathname === '/api/v1/integrations/outbound-policy' && method === 'PUT')
+        return json({ allowedHosts: JSON.parse(String(init?.body)).allowedHosts, version: 1 });
+      if (url.pathname === '/api/v1/integrations/webhook-deliveries') return json({ items: [DEAD], nextCursor: null });
+      if (url.pathname === '/api/v1/integrations/webhook-deliveries/d1/retry')
+        return json({ ...DEAD, status: 'pending', attempts: 0 });
       if (url.pathname === '/api/v1/groups') return json({ items: [], nextCursor: null });
       if (url.pathname === '/api/v1/admin/dictionaries')
         return json([{ kind: 'resolution', version: 0, items: [{ code: 'fixed', name: 'Устранено', active: true }] }]);
@@ -156,5 +197,44 @@ describe('экран интеграций', () => {
     const yaml = alertmanagerConfig('https://itsm.local/api/v1/integrations/events', 'T');
     expect(yaml).toContain('send_resolved: true');
     expect(yaml).toContain('credentials: T');
+  });
+
+  it('вебхуки: пустой список адресов, сохранение с If-Match и ключ подписи один раз', async () => {
+    renderAt('/admin/integrations?tab=webhooks');
+    expect(await screen.findByText('Jira')).toBeInTheDocument();
+    expect(await screen.findByText(/Список пуст: вебхуки никуда не отправляются/)).toBeInTheDocument();
+
+    const hosts = await screen.findByPlaceholderText(/hooks\.example\.ru/);
+    await waitFor(() => expect(hosts).not.toBeDisabled());
+    // Поле выбора Mantine принимает ввод только в фокусе.
+    hosts.focus();
+    fireEvent.change(hosts, { target: { value: 'jira.example.ru' } });
+    fireEvent.keyDown(hosts, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Сохранить список' }));
+    await waitFor(() => expect(calls('PUT', '/outbound-policy')).toHaveLength(1));
+    const [, put] = calls('PUT', '/outbound-policy')[0]!;
+    expect((put?.headers as Record<string, string>)['If-Match']).toBe('"0"');
+    expect(JSON.parse(String(put?.body))).toEqual({ allowedHosts: ['jira.example.ru'] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить вебхук' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Название/), { target: { value: 'ServiceDesk' } });
+    fireEvent.change(within(dialog).getByLabelText(/Адрес/), { target: { value: 'https://sd.example.ru/in' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Создать' }));
+    expect(await screen.findByTestId('issued-secret')).toHaveTextContent(SIGNING);
+    expect(JSON.parse(String(calls('POST', '/integrations/webhooks')[0]![1]?.body))).toEqual({
+      name: 'ServiceDesk',
+      url: 'https://sd.example.ru/in',
+    });
+  });
+
+  it('доставки: неудачную можно повторить', async () => {
+    renderAt('/admin/integrations?tab=deliveries');
+    const table = await screen.findByTestId('deliveries-table');
+    expect(within(table).getByText('Не доставлено')).toBeInTheDocument();
+    expect(within(table).getByText('ответ HTTP 502')).toBeInTheDocument();
+    expect(within(table).getByText('INC-000778')).toBeInTheDocument();
+    fireEvent.click(within(table).getByRole('button', { name: 'Повторить' }));
+    await waitFor(() => expect(calls('POST', '/d1/retry')).toHaveLength(1));
   });
 });

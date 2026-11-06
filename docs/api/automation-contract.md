@@ -28,7 +28,13 @@ AUT-01 и AUT-04 (MVP). Java API и событий у модуля нет: он 
 - **Действия** (до 10, выполняются по порядку в одной транзакции — всё или ничего): `assign` (`groupId`, `assigneeId`),
   `set_priority` (`priority`), `set_status` (`status`, `body` — комментарий, `reasonCode`, `resolutionCode`),
   `add_comment` (`body` с `{{number}} {{title}} {{priority}} {{status}} {{rule}}`, `visibility`), `add_watcher` (`userId`),
-  `escalate` (`kind`, `groupId`, `reason`). Уведомления, вебхуки и скрипты — AUT-05 (1.0).
+  `escalate` (`kind`, `groupId`, `reason`),
+  `notify` (`target`: `requester` | `assignee` | `group` | `watchers` | `user`; `userId` для `user`, `groupId` для
+  `group` — иначе группа заявки; `title` (по умолчанию `{{number}}: {{title}}`), `body`, `email`) — через
+  `notifications.api.Notifier`, не больше 200 получателей; у конфиденциальной заявки `{{title}}` заменяется
+  на «Конфиденциальная заявка» (NTF-05),
+  `webhook` (`webhookId` включённого вебхука «Интеграций») — событие `automation.rule` ставится в очередь
+  доставки, итог действия `queued`; описание заявки наружу не уходит. Скрипты — AUT-05 (2.0).
 - Действие `set_priority:Px` из настройки цели SLA тоже выполняет автоматизация (запись журнала «SLA: …»).
 
 ## Запуск и защита от петель (AUT-04)

@@ -16,7 +16,17 @@ export interface Conditions {
   items: Condition[];
 }
 
-export type ActionType = 'assign' | 'set_priority' | 'set_status' | 'add_comment' | 'add_watcher' | 'escalate';
+export type ActionType =
+  | 'assign'
+  | 'set_priority'
+  | 'set_status'
+  | 'add_comment'
+  | 'add_watcher'
+  | 'escalate'
+  | 'notify'
+  | 'webhook';
+
+export type NotifyTarget = 'requester' | 'assignee' | 'group' | 'watchers' | 'user';
 
 export interface Action {
   type: ActionType;
@@ -31,6 +41,10 @@ export interface Action {
   resolutionCode?: string | null;
   kind?: 'functional' | 'hierarchical' | null;
   reason?: string | null;
+  target?: NotifyTarget | null;
+  title?: string | null;
+  email?: boolean | null;
+  webhookId?: string | null;
 }
 
 export interface Rule {
@@ -165,6 +179,23 @@ export function useGroups() {
     queryFn: ({ signal }) => api.get<CursorPage<GroupOption>>('/groups', { query: { limit: 200 }, signal }),
     select: (page) => page.items,
     staleTime: 5 * 60_000,
+  });
+}
+
+export interface WebhookOption {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+}
+
+/** Вебхуки «Интеграций» для действия «Отправить вебхук». */
+export function useWebhooks() {
+  return useQuery({
+    queryKey: ['automation', 'webhooks'],
+    queryFn: ({ signal }) => api.get<CursorPage<WebhookOption>>('/integrations/webhooks', { signal }),
+    select: (page) => page.items,
+    staleTime: 60_000,
   });
 }
 

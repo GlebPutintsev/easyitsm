@@ -7,10 +7,12 @@
   },
   "integrations": {
     "title": "Integrations",
-    "subtitle": "Monitoring systems open and close incidents on their own: one active alert is one incident",
+    "subtitle": "Monitoring opens and resolves incidents by itself, webhooks pass ticket events to external systems",
     "tabs": {
       "monitoring": "Monitoring",
-      "events": "Event log"
+      "events": "Event log",
+      "webhooks": "Webhooks",
+      "deliveries": "Webhook deliveries"
     },
     "kinds": {
       "zabbix": "Zabbix",
@@ -110,6 +112,52 @@
       "alert": "Alert",
       "ticket": "Incident",
       "empty": "No events yet"
+    },
+    "webhooks": {
+      "intro": "A webhook sends an event to an external system when an automation rule with the “Send webhook” action fires. Requests are signed with HMAC-SHA256 and retried up to 9 times with growing delays.",
+      "receivers": "Receivers",
+      "add": "Add webhook",
+      "empty": "No webhooks yet",
+      "columns": {
+        "name": "Name",
+        "url": "URL",
+        "lastUsed": "Last delivery"
+      },
+      "allowed": "Allowed addresses",
+      "allowedHint": "Host name, *.domain or CIDR network. Internal networks only by exact host or network; the server itself and cloud metadata are always denied.",
+      "allowedEmpty": "The list is empty: webhooks are not sent anywhere. Add receiver hosts.",
+      "saveAllowed": "Save list",
+      "cancel": "Cancel",
+      "newTitle": "New webhook",
+      "urlHint": "https:// or http://. The host must be in the allowed addresses.",
+      "test": "Send test",
+      "testOk": "Receiver answered {{status}}",
+      "testFail": "Not delivered",
+      "rotate": "Rotate key",
+      "delete": "Delete",
+      "confirmDelete": "Delete with delivery log",
+      "save": "Save",
+      "create": "Create",
+      "secretTitle": "Signing key for “{{name}}”",
+      "secretOnce": "The key is shown once. Store it in the receiving system: later it can only be rotated.",
+      "verify": "The receiver checks X-EasyITSM-Signature: HMAC-SHA256 of “X-EasyITSM-Timestamp.body” with this key."
+    },
+    "deliveries": {
+      "webhook": "Webhook",
+      "allWebhooks": "All webhooks",
+      "status": "Result",
+      "allStatuses": "All results",
+      "event": "Event",
+      "empty": "No deliveries yet",
+      "retry": "Retry",
+      "attempts_one": "{{count}} attempt",
+      "attempts_other": "{{count}} attempts",
+      "next": "next {{time}}",
+      "statuses": {
+        "pending": "Queued",
+        "delivered": "Delivered",
+        "dead": "Failed"
+      }
     }
   }
 }

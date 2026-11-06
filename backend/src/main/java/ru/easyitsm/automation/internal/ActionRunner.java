@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 import ru.easyitsm.identity.api.UserDirectory;
+import ru.easyitsm.integrations.api.Webhooks;
+import ru.easyitsm.notifications.api.Notifier;
 import ru.easyitsm.platform.web.ApiException;
 import ru.easyitsm.tickets.api.EscalationKind;
 import ru.easyitsm.tickets.api.Priority;
@@ -28,24 +30,36 @@ class ActionRunner {
     /** Триггер перехода в событии {@code TicketStatusChanged}, когда статус сменило правило. */
     static final String TRIGGER = "automation";
 
+    /** Больше получателей одно уведомление правила не создаёт: защита от рассылки на всю организацию. */
+    static final int MAX_RECIPIENTS = 200;
+
     private final TicketCommands commands;
     private final TicketQueries tickets;
     private final UserDirectory directory;
+    private final Notifier notifier;
+    private final Webhooks webhooks;
+    private final String publicUrl;
 
-    ActionRunner(TicketCommands commands, TicketQueries tickets, UserDirectory directory) {
+    ActionRunner(TicketCommands commands, TicketQueries tickets, UserDirectory directory, Notifier notifier,
+                 Webhooks webhooks,
+                 @org.springframework.beans.factory.annotation.Value("${easyitsm.notifications.public-url:}")
+                 String publicUrl) {
         this.commands = commands;
         this.tickets = tickets;
         this.directory = directory;
+        this.notifier = notifier;
+        this.webhooks = webhooks;
+        this.publicUrl = publicUrl == null ? "" : publicUrl.replaceAll("/+$", "");
     }
 
     /** Выполняет действия по порядку. Ошибка любого — {@link ActionFailed}, вызывающий откатывает транзакцию. */
-    List<Map<String, Object>> apply(String ruleName, List<Action> actions, UUID ticketId) {
+    List<Map<String, Object>> apply(String ruleName, String trigger, List<Action> actions, UUID ticketId) {
         List<Map<String, Object>> results = new ArrayList<>();
         for (int i = 0; i < actions.size(); i++) {
             Action a = actions.get(i);
             try {
                 TicketSnapshot before = current(ticketId);
-                String detail = execute(ruleName, a, before);
+                String detail = execute(ruleName, trigger, a, before);
                 TicketSnapshot after = current(ticketId);
                 boolean changed = after.version() != before.version() || detail != null;
                 results.add(result(a.type(), changed ? "applied" : "unchanged", detail));
@@ -61,7 +75,7 @@ class ActionRunner {
     }
 
     /** @return пояснение для журнала, если действие что-то добавило без смены версии заявки (запись, подписка) */
-    private String execute(String ruleName, Action a, TicketSnapshot t) {
+    private String execute(String ruleName, String trigger, Action a, TicketSnapshot t) {
         String reason = "Правило автоматизации «" + ruleName + "»";
         switch (a.type()) {
             case "assign" -> {
@@ -96,8 +110,99 @@ class ActionRunner {
                         render(a.reason(), t, ruleName), null);
                 return null;
             }
+            case "notify" -> {
+                return notify(ruleName, a, t);
+            }
+            case "webhook" -> {
+                webhooks.enqueue(a.webhookId(), "automation.rule", webhookData(ruleName, trigger, t), ruleName,
+                        t.number());
+                return "queued";
+            }
             default -> throw ApiException.badRequest("invalid_rule", "Неизвестное действие " + a.type());
         }
+    }
+
+    /**
+     * Уведомление через модуль notifications. Название конфиденциальной заявки в текст не попадает (NTF-05):
+     * подстановка {@code {{title}}} заменяется нейтральной.
+     *
+     * @return сколько получателей
+     */
+    private String notify(String ruleName, Action a, TicketSnapshot t) {
+        List<UUID> people = recipients(a, t);
+        String title = renderSafe(a.title() == null || a.title().isBlank() ? "{{number}}: {{title}}" : a.title(), t,
+                ruleName);
+        String body = renderSafe(a.body(), t, ruleName);
+        boolean requesterSide = "requester".equals(a.target());
+        String link = (requesterSide ? "/portal/tickets/" : "/agent/tickets/") + t.number();
+        for (UUID id : people) {
+            notifier.notify(id, "automation", title, body, link, Boolean.TRUE.equals(a.email()));
+        }
+        return people.size() + " получ.";
+    }
+
+    List<UUID> recipients(Action a, TicketSnapshot t) {
+        java.util.LinkedHashSet<UUID> ids = new java.util.LinkedHashSet<>();
+        switch (a.target() == null ? "" : a.target()) {
+            case "requester" -> {
+                ids.add(t.requesterId());
+                if (t.createdForId() != null) {
+                    ids.add(t.createdForId());
+                }
+            }
+            case "assignee" -> {
+                if (t.assigneeId() != null) {
+                    ids.add(t.assigneeId());
+                }
+            }
+            case "group" -> {
+                UUID group = a.groupId() != null ? a.groupId() : t.groupId();
+                if (group != null) {
+                    ids.addAll(directory.activeMembersOf(group));
+                }
+            }
+            case "watchers" -> ids.addAll(tickets.watchers(t.id()));
+            case "user" -> ids.add(a.userId());
+            default -> throw ApiException.badRequest("invalid_rule", "Неизвестный получатель уведомления");
+        }
+        ids.remove(null);
+        return ids.stream().limit(MAX_RECIPIENTS).toList();
+    }
+
+    /** Данные события {@code automation.rule}: снимок заявки без описания (CHN-06), конфиденциальная — без названия. */
+    private Map<String, Object> webhookData(String ruleName, String trigger, TicketSnapshot t) {
+        Map<String, Object> ticket = new LinkedHashMap<>();
+        ticket.put("id", t.id().toString());
+        ticket.put("number", t.number());
+        ticket.put("type", t.type().code());
+        ticket.put("title", t.confidential() ? null : t.title());
+        ticket.put("confidential", t.confidential());
+        ticket.put("status", t.statusCode());
+        ticket.put("status_category", t.statusCategory() == null ? null : t.statusCategory().code());
+        ticket.put("priority", t.priority() == null ? null : t.priority().name());
+        ticket.put("impact", t.impact() == null ? null : t.impact().code());
+        ticket.put("urgency", t.urgency() == null ? null : t.urgency().code());
+        ticket.put("channel", t.channel() == null ? null : t.channel().code());
+        ticket.put("group_id", t.groupId() == null ? null : t.groupId().toString());
+        ticket.put("assignee_id", t.assigneeId() == null ? null : t.assigneeId().toString());
+        ticket.put("requester_id", t.requesterId() == null ? null : t.requesterId().toString());
+        ticket.put("due_at", t.dueAt() == null ? null : t.dueAt().toString());
+        ticket.put("created_at", t.createdAt() == null ? null : t.createdAt().toString());
+        ticket.put("url", publicUrl.isEmpty() ? null : publicUrl + "/agent/tickets/" + t.number());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("rule", ruleName);
+        data.put("trigger", trigger);
+        data.put("ticket", ticket);
+        return data;
+    }
+
+    /** Как {@link #render}, но название конфиденциальной заявки скрыто. */
+    static String renderSafe(String template, TicketSnapshot t, String ruleName) {
+        if (template == null) {
+            return null;
+        }
+        String masked = t.confidential() ? template.replace("{{title}}", "Конфиденциальная заявка") : template;
+        return render(masked, t, ruleName);
     }
 
     /**
@@ -136,11 +241,20 @@ class ActionRunner {
                         : t.priority().name()) ? "no_change" : "change";
                 case "set_status" -> outcome = a.status().equals(t.statusCode()) ? "no_change" : "change";
                 case "add_comment" -> detail = render(a.body(), t, ruleName);
+                case "notify" -> {
+                    int n = recipients(a, t).size();
+                    outcome = n == 0 ? "no_change" : "change";
+                    detail = n + " получ.: " + renderSafe(a.title() == null || a.title().isBlank()
+                            ? "{{number}}: {{title}}" : a.title(), t, ruleName);
+                }
+                case "webhook" -> detail = webhooks.find(a.webhookId()).map(w -> w.enabled() ? w.name()
+                        : w.name() + " (выключен)").orElse("вебхук не найден");
                 case "escalate" -> detail = render(a.reason(), t, ruleName);
                 default -> {
                 }
             }
-            boolean keepsWorking = "add_watcher".equals(a.type())
+            boolean keepsWorking = "add_watcher".equals(a.type()) || "notify".equals(a.type())
+                    || "webhook".equals(a.type())
                     || ("add_comment".equals(a.type()) && !"public".equals(a.visibility()));
             if (t.statusCategory() != null && t.statusCategory().isFinal() && !keepsWorking) {
                 outcome = "error";

@@ -1,8 +1,10 @@
-# Контракт модуля интеграций (integrations): мониторинг
+# Контракт модуля интеграций (integrations): мониторинг и исходящие вебхуки
 
-Java: своего API и событий пока нет, модуль действует через `tickets.api`. REST:
+Java: `integrations.api.Webhooks` — список включённых вебхуков и постановка события в очередь доставки
+(им пользуется автоматизация); входящие события действуют через `tickets.api`. REST:
 `POST /api/v1/integrations/events` (система мониторинга, вход по токену источника),
-`/api/v1/integrations/monitoring/**` (ADM, чтение — ещё AUD). Экран — «Управление → Интеграции».
+`/api/v1/integrations/monitoring/**`, `/webhooks/**`, `/outbound-policy`, `/webhook-deliveries/**`
+(ADM, чтение — ещё AUD). Экран — «Управление → Интеграции».
 
 ## Приём событий (раздел 8.4 ТЗ, INC-01)
 
@@ -86,3 +88,63 @@ GET    /integrations/monitoring/events?sourceId=&outcome=&cursor=&limit=
 - **Alertmanager**: получатель `webhook_configs` с `send_resolved: true` и `http_config.authorization`
   (тип Bearer, токен).
 - **Grafana Alerting**: точка контакта Webhook, заголовок авторизации Bearer.
+
+## Исходящие вебхуки (раздел 8.3 и 8.5 ТЗ, AUT-05)
+
+Вебхук — адрес получателя и ключ подписи. События в него отправляют правила автоматизации действием
+`webhook`, отдельной подписки на события нет.
+
+```
+GET    /integrations/webhooks                       // список, без ключа
+POST   /integrations/webhooks                       // 201 {webhook, secret}: ключ whsec_… показывается один раз
+GET    /integrations/webhooks/{id}                  // ETag
+PATCH  /integrations/webhooks/{id}                  // If-Match: name, url, enabled
+POST   /integrations/webhooks/{id}/secret           // перевыпуск ключа, SEC-08
+DELETE /integrations/webhooks/{id}                  // SEC-08, вместе с журналом доставок
+POST   /integrations/webhooks/{id}/test             // webhook.test сразу, без очереди: {ok, status, error, response}
+GET    /integrations/outbound-policy                // {allowedHosts, version}, ETag
+PUT    /integrations/outbound-policy                // If-Match; 400 invalid_policy
+GET    /integrations/webhook-deliveries?webhookId=&status=pending|delivered|dead&cursor=&limit=
+GET    /integrations/webhook-deliveries/{id}        // {delivery, payload}
+POST   /integrations/webhook-deliveries/{id}/retry  // только dead: попытки сначала; иначе 409 not_failed
+```
+
+Запрос получателю — `POST`, `Content-Type: application/json`:
+
+```
+X-EasyITSM-Event: automation.rule
+X-EasyITSM-Delivery: <id доставки — для защиты от повторной обработки>
+X-EasyITSM-Timestamp: <unix-время, секунды>
+X-EasyITSM-Signature: sha256=<hex(HMAC-SHA256(ключ, timestamp + "." + тело))>
+
+{"id": "…", "type": "automation.rule", "schema_version": 1, "occurred_at": "…", "tenant": "…",
+ "data": {"rule": "…", "trigger": "ticket_created",
+          "ticket": {"id", "number", "type", "title", "confidential", "status", "status_category", "priority",
+                     "impact", "urgency", "channel", "group_id", "assignee_id", "requester_id", "due_at",
+                     "created_at", "url"}}}
+```
+
+У конфиденциальной заявки `title` — `null`. Описание и комментарии не передаются. Получатель проверяет подпись
+и отбрасывает запросы со временем старше 5 минут.
+
+Доставка: ответ 2xx — `delivered`. Иначе повтор через 1, 2, 4 … минуты, всего `outbound.max-attempts` (9)
+попыток, затем `dead`; ADM повторяет вручную. Повтор шлёт те же байты тела. Перенаправления — только 307 и 308,
+не больше трёх, каждый адрес проверяется заново. Таймаут — `outbound.timeout` (10 с). Доставки старше
+`keep-events-days` удаляются вместе с журналом мониторинга.
+
+### Разрешённые адреса (защита от SSRF)
+
+Пока список ADM пуст, вебхуки никуда не отправляются. Правило — имя узла (`hooks.example.ru`), маска
+(`*.example.ru`) или сеть CIDR (`10.20.0.0/16`). Перед каждым запросом адрес узла разрешается и проверяется:
+
+- всегда запрещены служебные адреса (0.0.0.0, link-local 169.254.0.0/16 и fe80::/10 вместе с метаданными
+  облака, multicast) и адреса самого сервера (loopback; для разработки — `outbound.allow-loopback`);
+- внутренние сети (10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7) — только по точному имени узла или сети
+  CIDR, маска `*.домен` туда не пропускает;
+- логин и пароль в адресе не допускаются, схемы — только http и https.
+
+Маска доверяет DNS домена: между проверкой и соединением адрес может смениться. Для внутренних получателей
+указывайте точное имя или сеть, а в Kubernetes дополнительно ограничьте исходящий трафик `NetworkPolicy`.
+
+Изменения вебхуков и списка пишутся в журнал версий настроек (`integrations.webhook`,
+`integrations.outbound_policy`, без ключа) и в журнал аудита как настройки раздела `integrations`.

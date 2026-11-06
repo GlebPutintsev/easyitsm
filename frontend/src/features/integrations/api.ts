@@ -188,3 +188,145 @@ export function useResolutionCodes() {
 export function eventsUrl(): string {
   return `${window.location.origin}/api/v1/integrations/events`;
 }
+
+// ---------------------------------------------------------------- исходящие вебхуки
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  lastUsedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebhookWithSecret {
+  webhook: Webhook;
+  secret: string;
+}
+
+export interface WebhookInput {
+  name?: string;
+  url?: string;
+  enabled?: boolean;
+}
+
+export interface OutboundPolicy {
+  allowedHosts: string[];
+  version: number;
+}
+
+export interface WebhookTestResult {
+  ok: boolean;
+  status: number | null;
+  error: string | null;
+  response: string | null;
+}
+
+export type DeliveryStatus = 'pending' | 'delivered' | 'dead';
+export const DELIVERY_STATUSES: DeliveryStatus[] = ['pending', 'delivered', 'dead'];
+
+export interface Delivery {
+  id: string;
+  webhookId: string;
+  eventType: string;
+  status: DeliveryStatus;
+  attempts: number;
+  nextAttemptAt: string | null;
+  lastStatus: number | null;
+  lastError: string | null;
+  deliveredAt: string | null;
+  source: string | null;
+  ticketNumber: string | null;
+  createdAt: string;
+}
+
+const HOOKS = ['integrations', 'webhooks'] as const;
+const POLICY = ['integrations', 'outbound-policy'] as const;
+const DELIVERIES = ['integrations', 'deliveries'] as const;
+
+export function useWebhooks() {
+  return useQuery({
+    queryKey: HOOKS,
+    queryFn: ({ signal }) => api.get<CursorPage<Webhook>>('/integrations/webhooks', { signal }),
+    select: (page) => page.items,
+  });
+}
+
+function useHookMutation<A, R>(fn: (arg: A) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: HOOKS });
+      void qc.invalidateQueries({ queryKey: ['automation', 'webhooks'] });
+    },
+  });
+}
+
+export function useCreateWebhook() {
+  return useHookMutation((input: WebhookInput) =>
+    api.post<WebhookWithSecret>('/integrations/webhooks', input, { idempotencyKey: newIdempotencyKey() }),
+  );
+}
+
+export function useUpdateWebhook() {
+  return useHookMutation(({ id, version, input }: { id: string; version: number; input: WebhookInput }) =>
+    api.patch<Webhook>(`/integrations/webhooks/${id}`, input, { ifMatch: etagOf(version) }),
+  );
+}
+
+export function useRotateWebhookSecret() {
+  return useHookMutation((id: string) => api.post<WebhookWithSecret>(`/integrations/webhooks/${id}/secret`, {}));
+}
+
+export function useDeleteWebhook() {
+  return useHookMutation((id: string) => api.delete<void>(`/integrations/webhooks/${id}`));
+}
+
+export function useTestWebhook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<WebhookTestResult>(`/integrations/webhooks/${id}/test`, {}),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: HOOKS }),
+  });
+}
+
+export function usePolicy() {
+  return useQuery({
+    queryKey: POLICY,
+    queryFn: ({ signal }) => api.get<OutboundPolicy>('/integrations/outbound-policy', { signal }),
+  });
+}
+
+export function useSavePolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ version, allowedHosts }: { version: number; allowedHosts: string[] }) =>
+      api.put<OutboundPolicy>('/integrations/outbound-policy', { allowedHosts }, { ifMatch: etagOf(version) }),
+    onSuccess: (p) => qc.setQueryData(POLICY, p),
+  });
+}
+
+export function useDeliveries(webhookId?: string, status?: string) {
+  return useInfiniteQuery({
+    queryKey: [...DELIVERIES, webhookId, status],
+    queryFn: ({ pageParam, signal }) =>
+      api.get<CursorPage<Delivery>>('/integrations/webhook-deliveries', {
+        query: { webhookId, status, cursor: pageParam ?? undefined, limit: 50 },
+        signal,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+  });
+}
+
+export function useRetryDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<Delivery>(`/integrations/webhook-deliveries/${id}/retry`, {}),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: DELIVERIES }),
+  });
+}

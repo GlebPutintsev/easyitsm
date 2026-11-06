@@ -40,3 +40,8 @@ easyitsm:
       enabled: false
   notifications:
     push-initial-delay: PT1H
+  integrations:
+    # Тестовый получатель вебхуков слушает 127.0.0.1; доставку тесты вызывают сами.
+    outbound:
+      allow-loopback: true
+    delivery-initial-delay: PT1H

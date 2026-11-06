@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 import ru.easyitsm.identity.api.UserDirectory;
+import ru.easyitsm.integrations.api.Webhooks;
 import ru.easyitsm.platform.web.ApiException;
 
 /**
@@ -41,8 +42,10 @@ class RuleValidator {
             Map.entry("slaMetric", Set.of("response", "resolution")));
 
     private final UserDirectory directory;
+    private final Webhooks webhooks;
 
-    RuleValidator(UserDirectory directory) {
+    RuleValidator(UserDirectory directory, Webhooks webhooks) {
+        this.webhooks = webhooks;
         this.directory = directory;
     }
 
@@ -200,6 +203,39 @@ class RuleValidator {
                         throw invalid(at + "укажите причину эскалации");
                     }
                     requireLength(at, a.reason());
+                }
+                case "notify" -> {
+                    if (a.target() == null || !Action.TARGETS.contains(a.target())) {
+                        throw invalid(at + "получатель: заявитель, исполнитель, группа, наблюдатели или пользователь");
+                    }
+                    if ("user".equals(a.target())) {
+                        if (a.userId() == null) {
+                            throw invalid(at + "укажите пользователя");
+                        }
+                        requireUser(at, a.userId());
+                    }
+                    if ("group".equals(a.target())) {
+                        requireGroup(at, a.groupId());
+                    }
+                    if (a.title() != null && a.title().length() > 200) {
+                        throw invalid(at + "заголовок не длиннее 200 символов");
+                    }
+                    if (a.body() == null || a.body().isBlank()) {
+                        throw invalid(at + "укажите текст уведомления");
+                    }
+                    requireLength(at, a.body());
+                }
+                case "webhook" -> {
+                    if (a.webhookId() == null) {
+                        throw invalid(at + "выберите вебхук");
+                    }
+                    var hook = webhooks.find(a.webhookId());
+                    if (hook.isEmpty()) {
+                        throw invalid(at + "вебхук не найден");
+                    }
+                    if (!hook.get().enabled()) {
+                        throw invalid(at + "вебхук выключен");
+                    }
                 }
                 default -> throw invalid(at + "неизвестный тип");
             }
