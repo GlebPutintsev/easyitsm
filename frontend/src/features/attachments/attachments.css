@@ -1,0 +1,115 @@
+/* Панель файлов заявки и статьи. Только токены «Адмирала» (DESIGN.md). */
+
+.ea-drop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--ei-border-strong);
+  border-radius: 8px;
+  background: var(--ei-surface-2);
+  color: var(--ei-text-2);
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.ea-drop:hover,
+.ea-drop[data-over] {
+  border-color: var(--ei-accent);
+  background: var(--ei-accent-soft);
+}
+
+.ea-drop:focus-visible {
+  outline: 2px solid var(--ei-focus);
+  outline-offset: 2px;
+}
+
+.ea-drop-icon {
+  flex: none;
+  color: var(--ei-accent);
+}
+
+.ea-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ea-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--ei-border);
+  border-radius: 8px;
+  background: var(--ei-surface);
+}
+
+.ea-item[data-quarantine] {
+  border-color: var(--ei-danger);
+  background: var(--ei-danger-soft);
+}
+
+.ea-thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--ei-surface-2);
+  border: 1px solid var(--ei-border);
+}
+
+.ea-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--ei-neutral-soft);
+  color: var(--ei-text-2);
+}
+
+.ea-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ea-name a,
+.ea-name span.ea-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ei-text);
+}
+
+.ea-name a {
+  color: var(--ei-link);
+  text-decoration: none;
+}
+
+.ea-name a:hover {
+  text-decoration: underline;
+}
+
+.ea-meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ei-text-3);
+}
+
+.ea-meta[data-danger] {
+  color: var(--ei-danger);
+}

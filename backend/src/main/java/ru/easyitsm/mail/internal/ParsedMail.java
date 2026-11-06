@@ -8,7 +8,7 @@ import java.util.Map;
  *
  * @param headers      все заголовки в исходном порядке (имя в нижнем регистре → значения)
  * @param text         текст письма: text/plain или очищенный HTML, без цитаты предыдущей переписки
- * @param attachments  имена вложений (сами файлы — тред «Поиск и вложения»)
+ * @param attachments  вложения с содержимым; сохраняет их модуль attachments через карантин и антивирус
  * @param report       письмо-отчёт о доставке (multipart/report, DSN)
  */
 record ParsedMail(
@@ -21,7 +21,7 @@ record ParsedMail(
         String subject,
         String text,
         Map<String, List<String>> headers,
-        List<String> attachments,
+        List<MailFile> attachments,
         boolean report,
         byte[] raw) {
 
@@ -33,6 +33,10 @@ record ParsedMail(
     List<String> headerAll(String name) {
         List<String> v = headers.get(name.toLowerCase());
         return v == null ? List.of() : v;
+    }
+
+    /** Вложение письма. {@code contentType} — заявленный, без параметров; настоящий определяет проверка. */
+    record MailFile(String name, String contentType, byte[] content) {
     }
 
     String fromDomain() {

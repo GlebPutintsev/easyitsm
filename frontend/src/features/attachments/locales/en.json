@@ -1,0 +1,41 @@
+{
+  "attachments": {
+    "title": "Files",
+    "add": "Attach file",
+    "drop": "Drop files here or choose from your computer",
+    "hint": "Up to 100 MB. Files are checked by antivirus before they can be downloaded.",
+    "internal": "Internal file (visible to support only)",
+    "internalBadge": "Internal",
+    "empty": "No files",
+    "download": "Download {{name}}",
+    "delete": "Delete {{name}}",
+    "deleteConfirm": "Delete file “{{name}}”?",
+    "uploading": "Uploading {{name}}",
+    "tooLarge": "File “{{name}}” is larger than 100 MB",
+    "uploadFailed": "Could not upload “{{name}}”",
+    "status": {
+      "awaiting_upload": "Uploading",
+      "scanning": "Checking",
+      "clean": "Checked",
+      "infected": "Quarantine: malware found",
+      "blocked": "Quarantine: file rejected"
+    },
+    "reasons": {
+      "executable": "executable file",
+      "blocked_extension": "forbidden file type",
+      "archive_depth": "archives nested too deep",
+      "archive_entries": "too many files in archive",
+      "archive_size": "archive too large when unpacked",
+      "archive_ratio": "suspicious compression ratio",
+      "archive_encrypted": "encrypted archive cannot be checked",
+      "archive_executable": "executable inside archive",
+      "archive_blocked_file": "forbidden file inside archive",
+      "archive_corrupt": "corrupted archive",
+      "size_mismatch": "size does not match",
+      "scan_failed": "antivirus could not check the file",
+      "deleted": "deleted before the check"
+    },
+    "notScanned": "Antivirus is not connected",
+    "preview": "Preview {{name}}"
+  }
+}

@@ -209,6 +209,38 @@ class MailChannelTest {
     }
 
     @Test
+    void attachmentsOfEmailGoToTicketFiles() throws Exception {
+        String id = "<files-" + suffix + "@corp.example>";
+        String b64 = java.util.Base64.getMimeEncoder().encodeToString("журнал ошибок".getBytes(StandardCharsets.UTF_8));
+        String raw = "From: " + requesterEmail + "\nTo: " + boxAddress + "\nSubject: Ошибка в 1С\nMessage-ID: " + id
+                + "\nDate: Fri, 06 Nov 2026 08:00:00 +0300\nMIME-Version: 1.0\n"
+                + "Content-Type: multipart/mixed; boundary=\"b1\"\n\n"
+                + "--b1\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nЛог во вложении.\n"
+                + "--b1\nContent-Type: text/plain; charset=UTF-8; name=\"=?UTF-8?B?"
+                + java.util.Base64.getEncoder().encodeToString("лог.txt".getBytes(StandardCharsets.UTF_8))
+                + "?=\"\nContent-Disposition: attachment\nContent-Transfer-Encoding: base64\n\n" + b64 + "\n--b1--\n";
+        receive(raw);
+        Logged created = logged(id);
+        assertThat(created.verdict()).isEqualTo("ticket_created");
+        var files = inDemo(() -> jdbc.sql("""
+                        select file_name, status, visibility, created_by::text from attachment
+                         where owner_type = 'ticket' and owner_id = :t""")
+                .param("t", created.ticketId())
+                .query((rs, n) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4)})
+                .list());
+        if (System.getenv("EASYITSM_TEST_S3_ENDPOINT") != null) {
+            // Файл в карантине на проверке; скачать его можно будет после антивируса (AttachmentApiTest).
+            assertThat(files).hasSize(1);
+            assertThat(files.getFirst()).containsExactly("лог.txt", "scanning", "public", requester);
+            assertThat(created.detail()).doesNotContain("вложения");
+        } else {
+            // Без хранилища заявка всё равно создаётся, а журнал письма говорит, что файлы не сохранены.
+            assertThat(files).isEmpty();
+            assertThat(created.detail()).contains("вложения не сохранены (1)");
+        }
+    }
+
+    @Test
     void autoRepliesUnknownSendersAndDmarcAreFiltered() throws Exception {
         String auto = "<auto-" + suffix + "@corp.example>";
         receive(mail(requesterEmail, auto, "Нет на месте", "Auto-Submitted: auto-replied\n", "Я в отпуске"));

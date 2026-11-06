@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AttachmentsPanel } from '@/features/attachments';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { ListState } from '@/shared/ui/ListState';
@@ -282,6 +283,14 @@ function TicketView({ ticket }: { ticket: Ticket }) {
                 <Markdown text={ticket.resolutionText} />
               </Paper>
             )}
+            <Box mt="md">
+              <AttachmentsPanel
+                ownerType="ticket"
+                ownerId={ticket.id}
+                canUpload={ticket.permissions.comment && ticket.status.category !== 'closed' && ticket.status.category !== 'cancelled'}
+                canUploadInternal={ticket.permissions.internalNotes}
+              />
+            </Box>
           </Paper>
           <ActivityFeed ticket={ticket} />
           {ticket.permissions.comment && ticket.status.category !== 'closed' && ticket.status.category !== 'cancelled' && (

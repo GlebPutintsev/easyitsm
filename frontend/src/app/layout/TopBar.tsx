@@ -1,11 +1,11 @@
 import {
   ActionIcon,
+  Box,
   Burger,
   Button,
   Group,
   Menu,
   Text,
-  TextInput,
   UnstyledButton,
   useMantineColorScheme,
 } from '@mantine/core';
@@ -14,7 +14,6 @@ import {
   IconLanguage,
   IconLogout,
   IconPlus,
-  IconSearch,
   IconShieldLock,
   IconSunMoon,
   IconUserCircle,
@@ -26,6 +25,7 @@ import { api } from '@/shared/api/client';
 import { clearPeopleCache, initials } from '@/shared/api/people';
 import { useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
+import { GlobalSearchBox } from '@/features/search';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { spaces, type SpaceId } from './spaces';
 
@@ -70,15 +70,9 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
         </Text>
       </Group>
 
-      <TextInput
-        id="global-search"
-        placeholder={t('topbar.searchPlaceholder')}
-        leftSection={<IconSearch size={16} />}
-        rightSection={<Text size="xs" c="dimmed">/</Text>}
-        aria-label={t('topbar.search')}
-        style={{ flex: 1, maxWidth: 520 }}
-        visibleFrom="xs"
-      />
+      <Box visibleFrom="xs" style={{ flex: 1, maxWidth: 560, display: 'flex' }}>
+        <GlobalSearchBox space={space === 'portal' ? 'portal' : 'agent'} />
+      </Box>
 
       <Group gap={6} wrap="nowrap">
         <Menu position="bottom-end">

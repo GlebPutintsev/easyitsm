@@ -22,6 +22,8 @@ public interface TicketQueries {
      */
     Optional<TicketSnapshot> findVisible(UUID ticketId);
 
+    /** Видимая текущему пользователю заявка и его права на ленту; невидимая — пусто (404). */
+    Optional<TicketPermissions> permissions(UUID ticketId);
     /**
      * Запись ленты по id из {@code TicketCommentAdded.activityId} — текст ответа для письма заявителю.
      * Без проверки прав: вызывающий сам решает, кому можно показать запись (внутреннюю — только поддержке,

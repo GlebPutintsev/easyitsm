@@ -88,6 +88,15 @@ class ArticleService implements ArticleQueries {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<ru.easyitsm.knowledge.api.ArticlePermissions> permissions(UUID articleId) {
+        Reader r = Reader.current();
+        return articles.findById(articleId).filter(a -> ArticleAccess.canRead(r, a))
+                .map(a -> new ru.easyitsm.knowledge.api.ArticlePermissions(a.getId(), a.key(), true,
+                        ArticleAccess.canEdit(r, a)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ArticleSummaryView> findReadable(UUID articleId) {
         Reader r = Reader.current();
         return articles.findById(articleId)
@@ -379,6 +388,8 @@ class ArticleService implements ArticleQueries {
         }
         a.unarchive();
         a = articles.save(a);
+        events.publishEvent(new ru.easyitsm.knowledge.events.ArticleUnarchived(a.getTenantId(), a.getId(), a.key(),
+                r.userId()));
         return details(r, a, version(a, a.currentVersionNo()), true);
     }
 

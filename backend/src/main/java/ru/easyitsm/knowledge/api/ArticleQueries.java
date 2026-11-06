@@ -17,4 +17,7 @@ public interface ArticleQueries {
 
     /** Опубликованная статья, если она видна текущему пользователю. */
     Optional<ArticleSummaryView> findReadable(UUID articleId);
+
+    /** Права на статью, которую пользователь может хотя бы читать (в любом статусе); иначе пусто (404). */
+    Optional<ArticlePermissions> permissions(UUID articleId);
 }

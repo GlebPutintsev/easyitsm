@@ -22,8 +22,8 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
-        <jsoup.version>1.23.2</jsoup.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
+        <awssdk.version>2.57.0</awssdk.version>
         <jsoup.version>1.24.1</jsoup.version>
         <subethasmtp.version>7.2.2</subethasmtp.version>
         <greenmail.version>2.1.15</greenmail.version>
@@ -36,6 +36,13 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${awssdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -66,7 +73,7 @@
             <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
-            <!-- Очистка HTML по разрешённому списку тегов на сервере (SEC-24) -->
+            <!-- Очистка HTML по разрешённому списку тегов на сервере (SEC-24) и входящих писем до текста (поток 6.4) -->
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>${jsoup.version}</version>
@@ -83,15 +90,29 @@
             <artifactId>spring-ldap-core</artifactId>
         </dependency>
         <dependency>
+            <!-- Вложения в S3-совместимом хранилище, подписанные ссылки (TCK-04, SEC-25). Только синхронный
+                 HTTP-клиент JDK: без Netty и Apache HttpClient. -->
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+        </dependency>
+        <dependency>
             <!-- Канал почты: отправка SMTP, приём IMAP (CHN-01) -->
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <dependency>
-            <!-- Очистка HTML входящих писем до текста (поток 6.4) -->
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>${jsoup.version}</version>
         </dependency>
         <dependency>
             <!-- Входящий SMTP (CHN-01): письма от почтового сервера заказчика без IMAP -->

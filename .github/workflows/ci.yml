@@ -19,9 +19,32 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+      # Живые проверки поиска и вложений: морфология и права в OpenSearch, подписанные ссылки S3, EICAR в ClamAV.
+      opensearch:
+        image: opensearchproject/opensearch:2.19.2
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        ports: ["9200:9200"]
+        options: >-
+          --health-cmd "curl -fs http://localhost:9200/_cluster/health" --health-interval 10s --health-timeout 5s
+          --health-retries 30
+      s3:
+        # Не ниже 5.2: старые версии не подменяют Content-Disposition по параметрам подписанной ссылки.
+        image: motoserver/moto:5.2.5
+        ports: ["5000:5000"]
+      clamav:
+        image: clamav/clamav:1.4
+        env:
+          CLAMD_CONF_StreamMaxLength: 110M
+        ports: ["3310:3310"]
+        options: >-
+          --health-interval 10s --health-timeout 5s --health-retries 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -33,6 +56,10 @@ jobs:
       - name: Сборка и тесты (границы модулей, RLS, API)
         working-directory: backend
         run: mvn -B verify
+        env:
+          EASYITSM_TEST_OPENSEARCH_URL: http://localhost:9200
+          EASYITSM_TEST_S3_ENDPOINT: http://localhost:5000
+          EASYITSM_TEST_CLAMD_HOST: localhost
 
   frontend:
     runs-on: ubuntu-latest
