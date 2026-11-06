@@ -106,7 +106,7 @@ class AutomationEngine {
             }
             RunChain.within(chainId, () -> tx.execute(status -> {
                 runs.limitLockWait();
-                List<Map<String, Object>> results = actions.apply(name, ruleActions, ticketId);
+                List<Map<String, Object>> results = actions.apply(name, o.trigger().code(), ruleActions, ticketId);
                 runs.insert(new Run(RunLog.newId(), ruleId, name, version, o.trigger().code(), ticketId,
                         o.ticket().number(), depth, chain, "success", null, results, null, null, started, millis(t0)),
                         runKey);

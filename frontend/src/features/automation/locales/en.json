@@ -138,6 +138,13 @@
       "slaMetric": {
         "response": "Response",
         "resolution": "Resolution"
+      },
+      "target": {
+        "requester": "Requester",
+        "assignee": "Assignee",
+        "group": "Group",
+        "watchers": "Watchers",
+        "user": "User"
       }
     },
     "editor": {
@@ -183,7 +190,19 @@
       "visibility": "Visibility",
       "kind": "Escalation kind",
       "reason": "Reason",
-      "loopNote": "Loop protection: a rule chain is at most 5 deep, a rule never re-triggers itself through other rules and acts on one ticket at most 10 times in 5 minutes."
+      "loopNote": "Loop protection: a rule chain is at most 5 deep, a rule never re-triggers itself through other rules and acts on one ticket at most 10 times in 5 minutes.",
+      "target": "Recipient",
+      "groupOfTicket": "Empty — ticket group",
+      "notifyTitle": "Title",
+      "notifyTitleHint": "Empty — ticket number and subject. Same placeholders as the text",
+      "email": "Also send by email",
+      "notifyNote": "Goes to the notification center and push. The subject of a confidential ticket is never included.",
+      "webhook": "Webhook",
+      "webhookOff": "disabled",
+      "webhookMissing": "Webhook deleted",
+      "webhookNone": "No webhooks yet",
+      "webhookNote": "The receiver gets an automation.rule event with ticket data, without the description.",
+      "webhookManage": "Manage webhooks"
     },
     "actionTypes": {
       "assign": "Assign",
@@ -191,7 +210,9 @@
       "set_status": "Move to status",
       "add_comment": "Add feed entry",
       "add_watcher": "Add watcher",
-      "escalate": "Escalate"
+      "escalate": "Escalate",
+      "notify": "Send notification",
+      "webhook": "Send webhook"
     },
     "test": {
       "title": "Test on a ticket",

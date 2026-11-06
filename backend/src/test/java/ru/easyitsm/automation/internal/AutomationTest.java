@@ -125,6 +125,14 @@ class AutomationTest {
                         "[{\"type\":\"assign\",\"groupId\":\"" + Ids.newId() + "\"}]", true), "группа не найдена"},
                 {ruleJson("Сравнение текста", "ticket_created", cond("title", "gte", "5"), "[" + priority("P1") + "]", true),
                         "только для чисел"},
+                {ruleJson("Уведомление без текста", "ticket_created", "null",
+                        "[{\"type\":\"notify\",\"target\":\"assignee\"}]", true), "текст уведомления"},
+                {ruleJson("Уведомление никому", "ticket_created", "null",
+                        "[{\"type\":\"notify\",\"target\":\"all\",\"body\":\"x\"}]", true), "получатель"},
+                {ruleJson("Уведомление без пользователя", "ticket_created", "null",
+                        "[{\"type\":\"notify\",\"target\":\"user\",\"body\":\"x\"}]", true), "пользователя"},
+                {ruleJson("Вебхук без адреса", "ticket_created", "null", "[{\"type\":\"webhook\"}]", true),
+                        "выберите вебхук"},
         };
         for (String[] c : cases) {
             String detail = JsonPath.read(body(perform(asAdmin(post("/api/v1/automation/rules")).content(c[0]))
@@ -134,6 +142,51 @@ class AutomationTest {
     }
 
     // ------------------------------------------------------------------ запуск по событиям
+
+    @Test
+    void notifyActionReachesUserAndGroupWithTicketLink() throws Exception {
+        String person = Ids.newId().toString();
+        user(person);
+        String member = Ids.newId().toString();
+        user(member);
+        String group = newGroup();
+        inDemo(() -> jdbc.sql("""
+                insert into group_member (group_id, user_id, tenant_id)
+                values (cast(:g as uuid), cast(:u as uuid), cast(:t as uuid))""")
+                .param("g", group).param("u", member).param("t", DEMO).update());
+        createRule(ruleJson("Уведомить " + marker, "ticket_created", titleContains(marker),
+                "[{\"type\":\"notify\",\"target\":\"user\",\"userId\":\"" + person
+                        + "\",\"title\":\"Новая {{number}}\",\"body\":\"{{title}} по правилу {{rule}}\"},"
+                        + "{\"type\":\"notify\",\"target\":\"group\",\"groupId\":\"" + group
+                        + "\",\"body\":\"Для группы\"}]", true));
+        TicketRef ref = create("Принтер " + marker);
+        Map<String, Object> n = inDemo(() -> jdbc.sql("""
+                select title, body, link from notification where user_id = cast(:u as uuid)""")
+                .param("u", person).query().singleRow());
+        assertThat(n.get("title")).isEqualTo("Новая " + ref.number());
+        assertThat(n.get("body")).isEqualTo("Принтер " + marker + " по правилу Уведомить " + marker);
+        assertThat((String) n.get("link")).endsWith("/agent/tickets/" + ref.number());
+        // Без заголовка — номер и тема заявки.
+        assertThat(inDemo(() -> jdbc.sql("select title from notification where user_id = cast(:u as uuid)")
+                .param("u", member).query(String.class).single())).isEqualTo(ref.number() + ": Принтер " + marker);
+        String runs = body(perform(asAdmin(get("/api/v1/automation/runs?ticket=" + ref.number()))));
+        assertThat((List<String>) JsonPath.read(runs, "$.items[0].results[*].detail"))
+                .containsExactly("1 получ.", "1 получ.");
+    }
+
+    @Test
+    void confidentialTicketTitleIsHiddenInNotifications() throws Exception {
+        TicketRef ref = create("Тайна " + marker);
+        TicketSnapshot t = inDemo(() -> queries.find(ref.id())).orElseThrow();
+        TicketSnapshot secret = new TicketSnapshot(t.id(), t.number(), t.type(), t.title(), t.statusCode(),
+                t.statusCategory(), t.priority(), t.impact(), t.urgency(), t.requesterId(), t.createdForId(),
+                t.organizationId(), t.groupId(), t.assigneeId(), t.serviceId(), t.ciId(), t.categoryId(),
+                t.catalogItemId(), t.channel(), true, t.parentId(), t.dueAt(), t.createdAt(), t.firstResponseAt(),
+                t.resolvedAt(), t.closedAt(), t.version());
+        assertThat(ActionRunner.renderSafe("{{number}}: {{title}}", secret, "r"))
+                .isEqualTo(t.number() + ": Конфиденциальная заявка");
+        assertThat(ActionRunner.renderSafe("{{number}}: {{title}}", t, "r")).isEqualTo(t.number() + ": Тайна " + marker);
+    }
 
     @Test
     void ruleRunsOnTicketCreatedAndJournalRecordsIt() throws Exception {

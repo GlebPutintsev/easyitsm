@@ -41,6 +41,16 @@ const RULE: Rule = {
   updatedBy: null,
 };
 
+const NOTIFY_RULE: Rule = {
+  ...RULE,
+  id: '00000000-0000-7000-8000-0000000000r2',
+  name: 'Сообщить в Jira',
+  actions: [
+    { type: 'notify', target: 'group', groupId: null, title: '', body: 'Новая {{number}}', email: true },
+    { type: 'webhook', webhookId: 'w1' },
+  ],
+};
+
 describe('модель конструктора', () => {
   it('поля события зависят от триггера, операции — от вида поля', () => {
     expect(fieldsFor('status_changed').map((f) => f.key)).toContain('fromStatusCategory');
@@ -69,6 +79,9 @@ describe('экраны автоматизации', () => {
       const method = init?.method ?? 'GET';
       if (url.pathname === '/api/v1/automation/rules' && method === 'GET') return json({ items: [RULE], nextCursor: null });
       if (url.pathname === `/api/v1/automation/rules/${RULE.id}` && method === 'GET') return json(RULE);
+      if (url.pathname === `/api/v1/automation/rules/${NOTIFY_RULE.id}` && method === 'GET') return json(NOTIFY_RULE);
+      if (url.pathname === '/api/v1/integrations/webhooks')
+        return json({ items: [{ id: 'w1', name: 'Jira', url: 'https://jira.example.ru/h', enabled: true }], nextCursor: null });
       if (url.pathname === `/api/v1/automation/rules/${RULE.id}` && method === 'PATCH') {
         return json({ ...RULE, ...JSON.parse(String(init?.body)), version: RULE.version + 1 });
       }
@@ -145,5 +158,19 @@ describe('экраны автоматизации', () => {
     await waitFor(() => expect(screen.queryByTestId('condition-1')).not.toBeInTheDocument());
     expect(screen.getByTestId('condition-0')).toBeInTheDocument();
     expect(screen.getByText('Есть несохранённые изменения')).toBeInTheDocument();
+  });
+
+  it('действия «уведомление» и «вебхук»: получатель, письмо и выбор вебхука', async () => {
+    renderAt(`/admin/automation/rules/${NOTIFY_RULE.id}`);
+    expect(await screen.findByRole('heading', { name: 'Сообщить в Jira' })).toBeInTheDocument();
+    const notify = screen.getByTestId('action-0');
+    expect(within(notify).getByDisplayValue('Отправить уведомление')).toBeInTheDocument();
+    expect(within(notify).getByDisplayValue('Группе')).toBeInTheDocument();
+    expect(within(notify).getByText('Пусто — группа заявки')).toBeInTheDocument();
+    expect(within(notify).getByRole('checkbox', { name: 'Ещё и письмом на почту' })).toBeChecked();
+    const hook = screen.getByTestId('action-1');
+    expect(within(hook).getByDisplayValue('Отправить вебхук')).toBeInTheDocument();
+    await waitFor(() => expect(within(hook).getByDisplayValue('Jira')).toBeInTheDocument());
+    expect(within(hook).getByRole('link', { name: 'Настроить вебхуки' })).toHaveAttribute('href', '/admin/integrations?tab=webhooks');
   });
 });

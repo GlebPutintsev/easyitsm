@@ -1,11 +1,23 @@
-import { ActionIcon, Group, SegmentedControl, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { ActionIcon, Anchor, Checkbox, Group, SegmentedControl, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
 import { IconArrowDown, IconArrowUp, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { PersonPicker } from '@/shared/ui/PersonPicker';
-import { type Action, type ActionType, useGroups, useStatuses } from './api';
+import { type Action, type ActionType, type NotifyTarget, useGroups, useStatuses, useWebhooks } from './api';
 import css from './automation.module.css';
 
-export const ACTION_TYPES: ActionType[] = ['assign', 'set_priority', 'set_status', 'add_comment', 'add_watcher', 'escalate'];
+export const ACTION_TYPES: ActionType[] = [
+  'assign',
+  'set_priority',
+  'set_status',
+  'add_comment',
+  'add_watcher',
+  'escalate',
+  'notify',
+  'webhook',
+];
+
+export const NOTIFY_TARGETS: NotifyTarget[] = ['assignee', 'group', 'requester', 'watchers', 'user'];
 
 /** Действие с параметрами по умолчанию для выбранного типа. */
 export function newAction(type: ActionType): Action {
@@ -16,6 +28,8 @@ export function newAction(type: ActionType): Action {
       return { type, body: '', visibility: 'internal' };
     case 'escalate':
       return { type, kind: 'hierarchical', reason: '' };
+    case 'notify':
+      return { type, target: 'assignee', title: '', body: '', email: false };
     default:
       return { type };
   }
@@ -159,6 +173,100 @@ export function ActionCard({ action, index, count, onChange, onMove, onRemove }:
           </Group>
         </Stack>
       )}
+
+      {action.type === 'notify' && <NotifyFields action={action} groupData={groupData} set={set} />}
+
+      {action.type === 'webhook' && <WebhookField value={action.webhookId ?? null} onChange={(v) => set({ webhookId: v })} />}
+    </Stack>
+  );
+}
+
+function NotifyFields({
+  action,
+  groupData,
+  set,
+}: {
+  action: Action;
+  groupData: { value: string; label: string }[];
+  set: (patch: Partial<Action>) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Stack gap="xs">
+      <Group grow align="flex-start">
+        <Select
+          label={t('automation.editor.target')}
+          data={NOTIFY_TARGETS.map((v) => ({ value: v, label: t(`automation.values.target.${v}`) }))}
+          value={action.target ?? 'assignee'}
+          onChange={(v) => set({ target: (v as NotifyTarget) ?? 'assignee', userId: null, groupId: null })}
+          allowDeselect={false}
+        />
+        {action.target === 'user' && (
+          <PersonPicker label={t('automation.editor.user')} value={action.userId ?? null} onChange={(v) => set({ userId: v })} />
+        )}
+        {action.target === 'group' && (
+          <Select
+            label={t('automation.editor.group')}
+            description={t('automation.editor.groupOfTicket')}
+            searchable
+            clearable
+            data={groupData}
+            value={action.groupId ?? null}
+            onChange={(v) => set({ groupId: v })}
+          />
+        )}
+      </Group>
+      <TextInput
+        label={t('automation.editor.notifyTitle')}
+        description={t('automation.editor.notifyTitleHint')}
+        maxLength={200}
+        value={action.title ?? ''}
+        onChange={(e) => set({ title: e.currentTarget.value || null })}
+      />
+      <Textarea
+        label={t('automation.editor.body')}
+        description={t('automation.editor.bodyHint')}
+        autosize
+        minRows={2}
+        maxLength={10000}
+        value={action.body ?? ''}
+        onChange={(e) => set({ body: e.currentTarget.value })}
+      />
+      <Checkbox label={t('automation.editor.email')} checked={!!action.email} onChange={(e) => set({ email: e.currentTarget.checked })} />
+      <Text size="xs" c="dimmed">
+        {t('automation.editor.notifyNote')}
+      </Text>
+    </Stack>
+  );
+}
+
+function WebhookField({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const { t } = useTranslation();
+  const hooks = useWebhooks();
+  const data = (hooks.data ?? []).map((h) => ({
+    value: h.id,
+    label: h.enabled ? h.name : `${h.name} (${t('automation.editor.webhookOff')})`,
+    disabled: !h.enabled,
+  }));
+  if (value && !data.some((d) => d.value === value)) {
+    data.push({ value, label: t('automation.editor.webhookMissing'), disabled: true });
+  }
+  return (
+    <Stack gap={4}>
+      <Select
+        label={t('automation.editor.webhook')}
+        placeholder={hooks.data?.length === 0 ? t('automation.editor.webhookNone') : undefined}
+        searchable
+        data={data}
+        value={value}
+        onChange={onChange}
+      />
+      <Text size="xs" c="dimmed">
+        {t('automation.editor.webhookNote')}{' '}
+        <Anchor component={Link} to="/admin/integrations?tab=webhooks" size="xs">
+          {t('automation.editor.webhookManage')}
+        </Anchor>
+      </Text>
     </Stack>
   );
 }

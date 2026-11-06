@@ -74,3 +74,17 @@ export function curlExample(url: string, token: string): string {
   -H 'Content-Type: application/json' \\
   -d '{"fingerprint":"disk-db1","status":"firing","severity":"high","title":"Мало места на db-1","host":"db-1"}'`;
 }
+
+/** Проверка подписи вебхука на стороне получателя (Node.js). */
+export const SIGNATURE_EXAMPLE = `const crypto = require('crypto');
+
+// rawBody — тело запроса байтами, как пришло; key — ключ подписи вебхука.
+function verify(headers, rawBody, key) {
+  const ts = headers['x-easyitsm-timestamp'];
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false; // старше 5 минут
+  const expected = 'sha256=' + crypto.createHmac('sha256', key)
+    .update(ts + '.').update(rawBody).digest('hex');
+  const got = String(headers['x-easyitsm-signature'] || '');
+  return got.length === expected.length
+    && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+}`;

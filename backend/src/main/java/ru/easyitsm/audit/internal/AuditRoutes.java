@@ -38,7 +38,7 @@ final class AuditRoutes {
             new Rule("/api/v1/change-templates", "changes", List.of()),
             new Rule("/api/v1/change-freezes", "changes", List.of()),
             new Rule("/api/v1/change-settings", "changes", List.of()),
-            new Rule("/api/v1/integrations/monitoring/", "integrations", List.of()),
+            new Rule("/api/v1/integrations/", "integrations", List.of("/integrations/events", "/test", "/retry")),
             new Rule("/api/v1/mim/templates", "mim", List.of()),
             new Rule("/api/v1/mim/chains", "mim", List.of()));
 
