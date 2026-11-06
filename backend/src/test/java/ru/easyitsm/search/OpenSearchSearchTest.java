@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -32,6 +33,8 @@ import ru.easyitsm.platform.tenant.TenantContext;
  * Глобальный поиск через настоящий OpenSearch: индексация по событиям, морфология, права, внутренние заметки,
  * перепроверка устаревшего индекса. Запускается, если задан {@code EASYITSM_TEST_OPENSEARCH_URL}.
  */
+// Свой контекст с особыми настройками: закрываем после класса, чтобы не держать соединения с БД (их 100 на всех).
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

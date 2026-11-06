@@ -43,8 +43,12 @@ class AttachmentIntakeService implements AttachmentIntake {
         this.clock = clock.orElse(Clock.systemUTC());
     }
 
+    /**
+     * Сначала объект в S3, потом запись: при недоступном хранилище в БД ничего не меняется, и транзакция
+     * вызывающего (письмо уже создало заявку) не помечается к откату.
+     */
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AttachmentIntake.StorageUnavailable.class)
     public Accepted accept(IncomingFile file) {
         String ownerType = file.ownerType().strip().toLowerCase(Locale.ROOT);
         if (!OWNERS.contains(ownerType)) {
@@ -70,8 +74,8 @@ class AttachmentIntakeService implements AttachmentIntake {
         } else if (store.countByOwner(ownerType, file.ownerId()) >= props.maxPerOwner()) {
             reason = "too_many_attachments";
         }
-        store.insert(row);
         if (reason != null) {
+            store.insert(row);
             store.finishScan(id, AttachmentRow.BLOCKED, declared, null, "policy", reason, now);
             events.publishEvent(new AttachmentQuarantined(tenant, id, ownerType, file.ownerId(), name,
                     AttachmentRow.BLOCKED, reason, file.uploadedBy()));
@@ -81,9 +85,9 @@ class AttachmentIntakeService implements AttachmentIntake {
         try {
             storage.putQuarantine(key, file.content(), declared);
         } catch (ObjectStorage.StorageUnavailable e) {
-            // Транзакция откатится вместе с записью: файла нет нигде.
             throw new AttachmentIntake.StorageUnavailable(e.getMessage(), e);
         }
+        store.insert(row);
         store.markScanning(id, file.uploadedBy(), now);
         return new Accepted(id, AttachmentRow.SCANNING, null);
     }

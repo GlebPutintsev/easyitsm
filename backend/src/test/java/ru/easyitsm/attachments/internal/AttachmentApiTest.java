@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -37,6 +38,8 @@ import ru.easyitsm.platform.tenant.TenantContext;
  * Вложения на настоящем S3 (MinIO или moto из {@code EASYITSM_TEST_S3_ENDPOINT}): загрузка по подписанной
  * ссылке, карантин, проверка, скачивание, права по заявке, внутренние файлы, удаление, лимиты.
  */
+// Свой контекст с особыми настройками: закрываем после класса, чтобы не держать соединения с БД (их 100 на всех).
+@DirtiesContext
 @SpringBootTest(properties = "easyitsm.attachments.uploads-per-minute=1000")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

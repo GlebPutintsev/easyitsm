@@ -99,8 +99,9 @@ IncomingFile.ticketMail(ticketId, fileName, contentType, byte[] content, senderU
 Ответ — `{id, status: scanning | blocked, reason}`: файл больше 100 МБ или 201-й у записи не хранится, остаётся
 отметка `blocked` (`file_too_large`, `too_many_attachments`), чтобы агент видел, что в письме был файл.
 Имя очищается (путь, управляющие символы, RLO), пустое — `attachment`. Хранилище недоступно —
-`AttachmentIntake.StorageUnavailable`, запись не создаётся; повторять ли, решает вызывающий (почта может
-оставить письмо в очереди на повтор).
+`AttachmentIntake.StorageUnavailable`, запись не создаётся. Сначала объект кладётся в S3, потом
+пишется запись, а `accept` объявлен с `noRollbackFor = StorageUnavailable`: сбой хранилища не откатывает
+транзакцию вызывающего. Почта в этом случае создаёт заявку без файлов и пишет отметку в журнал письма.
 
 ## Развёртывание
 

@@ -89,14 +89,19 @@ class MimeParser {
     private static final class Body {
         String plain;
         String html;
-        final List<String> attachments = new ArrayList<>();
+        final List<ParsedMail.MailFile> attachments = new ArrayList<>();
     }
 
     private static void collect(Part part, Body body) throws MessagingException, IOException {
         String disposition = part.getDisposition();
         String filename = decodedFilename(part);
         if (Part.ATTACHMENT.equalsIgnoreCase(disposition) || (filename != null && !part.isMimeType("multipart/*"))) {
-            body.attachments.add(filename == null ? "attachment" : filename);
+            byte[] content;
+            try (InputStream in = part.getInputStream()) {
+                content = in.readAllBytes();
+            }
+            body.attachments.add(new ParsedMail.MailFile(filename == null ? "attachment" : filename,
+                    baseType(part), content));
             return;
         }
         if (part.isMimeType("multipart/*")) {
@@ -128,6 +133,19 @@ class MimeParser {
             }
         }
         return "";
+    }
+
+    private static String baseType(Part part) {
+        try {
+            String type = part.getContentType();
+            if (type == null) {
+                return "application/octet-stream";
+            }
+            int semi = type.indexOf(';');
+            return (semi < 0 ? type : type.substring(0, semi)).strip().toLowerCase(Locale.ROOT);
+        } catch (MessagingException e) {
+            return "application/octet-stream";
+        }
     }
 
     private static String decodedFilename(Part part) {

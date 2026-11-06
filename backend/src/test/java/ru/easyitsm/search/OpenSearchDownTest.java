@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,6 +19,8 @@ import ru.easyitsm.platform.tenant.TenantContext;
  * AT-08: OpenSearch настроен, но недоступен. Заявки создаются, поиск отвечает из PostgreSQL и помечает
  * ответ {@code degraded}, чтобы интерфейс показал предупреждение.
  */
+// Свой контекст с особыми настройками: закрываем после класса, чтобы не держать соединения с БД (их 100 на всех).
+@DirtiesContext
 @SpringBootTest(properties = {
         "easyitsm.search.opensearch.enabled=true",
         "easyitsm.search.opensearch.urls=http://127.0.0.1:1",
