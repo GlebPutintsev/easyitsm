@@ -31,6 +31,67 @@ paths:
             application/json:
               schema: {type: array, items: {$ref: '#/components/schemas/CiClass'}}
         '403': {$ref: '#/components/responses/Problem'}
+    post:
+      tags: [classes]
+      summary: Создать свой класс (CFG, ADM); подкласс наследует уровень и атрибуты родителя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code: {type: string, pattern: '^[a-z][a-z0-9_]{1,62}$'}
+                name: {type: string}
+                parentCode: {type: string}
+                layer: {$ref: '#/components/schemas/Layer'}
+                isAbstract: {type: boolean}
+                attributes: {type: array, items: {$ref: '#/components/schemas/AttributeDef'}}
+                identificationRules: {type: array, items: {type: array, items: {type: string}}}
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CiClass'}
+        '400':
+          description: '`unknown_class`, `invalid_attribute_def`, `duplicate_attribute`, `invalid_rule`, `secret_not_allowed`'
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/classes/{code}:
+    patch:
+      tags: [classes]
+      summary: Изменить класс (CFG, ADM); attributes — собственные атрибуты целиком
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+        - {$ref: '#/components/parameters/IfMatch'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                active: {type: boolean}
+                isAbstract: {type: boolean}
+                attributes: {type: array, items: {$ref: '#/components/schemas/AttributeDef'}}
+                identificationRules: {type: array, items: {type: array, items: {type: string}}}
+      responses:
+        '200':
+          description: Изменён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CiClass'}
+        '400':
+          description: 'Как при создании, а также `system_attribute`, `system_class`, `class_in_use`'
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
 
   /cmdb/relation-types:
     get:
@@ -42,6 +103,52 @@ paths:
           content:
             application/json:
               schema: {type: array, items: {$ref: '#/components/schemas/RelationType'}}
+    post:
+      tags: [relations]
+      summary: Создать тип связи (CFG, ADM)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, inverseName, impactDirection]
+              properties:
+                code: {type: string}
+                name: {type: string}
+                inverseName: {type: string}
+                impactDirection: {type: string, enum: [target_to_source, source_to_target, none]}
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RelationType'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/relation-types/{code}:
+    patch:
+      tags: [relations]
+      summary: Изменить тип связи; у стандартного — только названия
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                inverseName: {type: string}
+                impactDirection: {type: string, enum: [target_to_source, source_to_target, none]}
+                active: {type: boolean}
+      responses:
+        '200':
+          description: Изменён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RelationType'}
 
   /cmdb/cis:
     get:
@@ -104,8 +211,7 @@ paths:
       parameters:
         - name: at
           in: query
-          x-status: planned
-          description: Состояние на момент времени (CFG-06)
+          description: Состояние на момент времени (CFG-06), ответ без ETag
           schema: {type: string, format: date-time}
       responses:
         '200':
@@ -210,6 +316,127 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Impact'}
         '404': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/cis/{id}/history:
+    get:
+      tags: [cis]
+      summary: История КЕ (CFG-06), новые первыми
+      parameters:
+        - {$ref: '#/components/parameters/CiId'}
+        - {$ref: '#/components/parameters/Cursor'}
+        - {$ref: '#/components/parameters/Limit'}
+      responses:
+        '200':
+          description: Страница истории
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string, format: uuid}
+                        field: {type: string, description: 'created, name, class, status, environment, criticality, owner_group, description, attr.<код>, relation'}
+                        oldValue: {}
+                        newValue: {}
+                        source: {type: string}
+                        actorId: {type: [string, 'null'], format: uuid}
+                        at: {type: string, format: date-time}
+                  nextCursor: {type: [string, 'null']}
+
+  /cmdb/cis/{id}/map:
+    get:
+      tags: [relations]
+      summary: Карта связей (CFG-03) в обе стороны
+      parameters:
+        - {$ref: '#/components/parameters/CiId'}
+        - {name: depth, in: query, schema: {type: integer, minimum: 1, maximum: 5, default: 2}}
+        - {name: type, in: query, description: Коды типов связи через запятую, schema: {type: string}}
+      responses:
+        '200':
+          description: Узлы и рёбра, до 300 КЕ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rootId: {type: string, format: uuid}
+                  nodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ci: {$ref: '#/components/schemas/CiRef'}
+                        depth: {type: integer}
+                        openIncidents: {type: integer}
+                        openChanges: {type: integer}
+                  edges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string, format: uuid}
+                        sourceId: {type: string, format: uuid}
+                        targetId: {type: string, format: uuid}
+                        typeCode: {type: string}
+                        name: {type: string}
+                        impactDirection: {type: string}
+                  depth: {type: integer}
+                  truncated: {type: boolean}
+
+  /cmdb/quality:
+    get:
+      tags: [cis]
+      summary: Показатели качества (CFG-07)
+      responses:
+        '200':
+          description: Сводка
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: {type: integer}
+                  incomplete: {type: integer}
+                  stale: {type: integer}
+                  orphans: {type: integer}
+                  duplicateGroups: {type: integer}
+                  duplicates: {type: integer}
+                  score: {type: integer, minimum: 0, maximum: 100}
+
+  /cmdb/quality/issues:
+    get:
+      tags: [cis]
+      summary: КЕ с замечанием, до 200
+      parameters:
+        - {name: kind, in: query, required: true, schema: {type: string, enum: [incomplete, stale, orphan]}}
+      responses:
+        '200':
+          description: КЕ
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/CiRef'}}
+
+  /cmdb/quality/duplicates:
+    get:
+      tags: [cis]
+      summary: Группы дубликатов, до 200
+      responses:
+        '200':
+          description: Группы
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key: {type: string, description: Атрибут идентификации или name}
+                    value: {type: string}
+                    cis: {type: array, items: {$ref: '#/components/schemas/CiRef'}}
 
   /cmdb/sources/{source}/batches:
     post:

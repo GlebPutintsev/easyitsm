@@ -58,14 +58,17 @@ class RelationService {
     }
 
     @Transactional(readOnly = true)
-    public List<RelationView> list(UUID ciId) {
+    public List<RelationView> list(UUID ciId, Instant at) {
         cis.require(ciId);
         Map<UUID, CiClasses.RelationType> types = typesById();
         List<Edge> edges = jdbc.sql("""
                         select id, type_id, source_id, target_id, origin, valid_from from ci_relation
-                         where valid_to is null and (source_id = :id or target_id = :id)
+                         where (source_id = :id or target_id = :id)
+                           and (cast(:at as timestamptz) is null and valid_to is null
+                             or valid_from <= cast(:at as timestamptz)
+                                and (valid_to is null or valid_to > cast(:at as timestamptz)))
                          order by valid_from, id""")
-                .param("id", ciId)
+                .param("id", ciId).param("at", Sql.ts(at))
                 .query((rs, n) -> new Edge(Sql.uuid(rs, "id"), Sql.uuid(rs, "type_id"), Sql.uuid(rs, "source_id"),
                         Sql.uuid(rs, "target_id"), rs.getString("origin"), Sql.instant(rs, "valid_from")))
                 .list();

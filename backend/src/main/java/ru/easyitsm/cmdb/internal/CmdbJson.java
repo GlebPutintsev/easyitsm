@@ -33,6 +33,11 @@ class CmdbJson {
         return json == null || json.isBlank() ? new LinkedHashMap<>() : mapper.readValue(json, MAP);
     }
 
+    /** Любое JSON-значение: строка, число, логическое, объект. */
+    Object read(String json) {
+        return json == null ? null : mapper.readValue(json, Object.class);
+    }
+
     List<AttributeDef> readAttributes(String json) {
         return json == null || json.isBlank() ? new ArrayList<>() : mapper.readValue(json, ATTRIBUTES);
     }

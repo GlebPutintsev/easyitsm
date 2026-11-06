@@ -31,6 +31,8 @@ final class AuditRoutes {
             new Rule("/api/v1/directory/", "identity", List.of()),
             new Rule("/api/v1/admin/", "platform", List.of()),
             new Rule("/api/v1/automation/rules", "automation", List.of()),
+            new Rule("/api/v1/cmdb/classes", "cmdb", List.of()),
+            new Rule("/api/v1/cmdb/relation-types", "cmdb", List.of()),
             new Rule("/api/v1/audit/siem", "audit", List.of("/test")));
 
     private AuditRoutes() {
