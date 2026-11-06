@@ -333,15 +333,21 @@ export function useRetryDelivery() {
 
 // ---------------------------------------------------------------- мессенджеры
 
-export type MessengerKind = 'telegram' | 'max' | 'slack';
-export const MESSENGER_KINDS: MessengerKind[] = ['telegram', 'max', 'slack'];
+export type MessengerKind = 'telegram' | 'max' | 'slack' | 'teams';
+export const MESSENGER_KINDS: MessengerKind[] = ['telegram', 'max', 'slack', 'teams'];
 /** Мессенджеры, которым кроме токена бота нужен токен приложения (Slack Socket Mode). */
 export const NEEDS_APP_TOKEN: MessengerKind[] = ['slack'];
 export const DEFAULT_API: Record<MessengerKind, string> = {
   telegram: 'https://api.telegram.org',
   max: 'https://platform-api.max.ru',
   slack: 'https://slack.com/api',
+  teams: '',
 };
+
+/** Адрес приёма сообщений Teams: его указывают как Messaging endpoint бота в Azure. */
+export function teamsEndpoint(id: string): string {
+  return `${window.location.origin}/api/v1/integrations/teams/${id}/messages`;
+}
 export type DataField = 'title' | 'text' | 'link';
 export const DATA_FIELDS: DataField[] = ['title', 'text', 'link'];
 
@@ -354,6 +360,8 @@ export interface Messenger {
   baseUrl: string | null;
   botUsername: string | null;
   botUrl: string | null;
+  appId: string | null;
+  appTenant: string | null;
   enabled: boolean;
   allowTickets: boolean;
   ticketType: 'incident' | 'request';
@@ -373,6 +381,8 @@ export interface MessengerInput {
   name?: string;
   token?: string;
   appToken?: string;
+  appId?: string;
+  appTenant?: string;
   baseUrl?: string;
   enabled?: boolean;
   allowTickets?: boolean;

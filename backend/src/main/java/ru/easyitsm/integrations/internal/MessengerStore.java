@@ -22,7 +22,7 @@ class MessengerStore {
 
     /** Бот без токена. */
     record Messenger(UUID id, String kind, String name, String tokenHint, String appTokenHint, String baseUrl,
-                     String botUsername, String botUrl, boolean enabled, boolean allowTickets, String ticketType, UUID groupId, List<String> dataFields,
+                     String botUsername, String botUrl, String appId, String appTenant, boolean enabled, boolean allowTickets, String ticketType, UUID groupId, List<String> dataFields,
                      Instant lastPollAt, String lastError, Instant lastEventAt, int linkedUsers, long version,
                      Instant createdAt, Instant updatedAt) {
 
@@ -31,8 +31,9 @@ class MessengerStore {
         }
     }
 
+    /** Настройки бота; {@code appId} и {@code appTenant} — только у Teams. */
     record Fields(String name, String baseUrl, boolean enabled, boolean allowTickets, String ticketType, UUID groupId,
-                  List<String> dataFields) {
+                  List<String> dataFields, String appId, String appTenant) {
     }
 
     record Link(UUID id, UUID messengerId, UUID userId, String chatId, String externalName, Instant linkedAt) {
@@ -43,7 +44,8 @@ class MessengerStore {
     }
 
     private static final String COLUMNS = """
-            m.id, m.kind, m.name, m.token_hint, m.app_token_hint, m.base_url, m.bot_username, m.bot_url, m.enabled, m.allow_tickets, m.ticket_type,
+            m.id, m.kind, m.name, m.token_hint, m.app_token_hint, m.base_url, m.bot_username, m.bot_url, m.app_id, m.app_tenant,
+            m.enabled, m.allow_tickets, m.ticket_type,
             m.group_id, m.data_fields, m.last_poll_at, m.last_error, m.last_event_at, m.version, m.created_at,
             m.updated_at, (select count(*) from integration_messenger_link l where l.messenger_id = m.id) as linked""";
 
@@ -90,10 +92,11 @@ class MessengerStore {
         UUID actor = CurrentActor.userId().orElse(null);
         jdbc.sql("""
                 insert into integration_messenger (id, tenant_id, kind, name, token, token_hint, app_token,
-                    app_token_hint, base_url, bot_username, bot_url, enabled, allow_tickets, ticket_type, group_id,
-                    data_fields, created_at, created_by, updated_at, updated_by, version)
-                values (:id, :tenant, :kind, :name, :token, :hint, :app, :appHint, :base, :bot, :url, :enabled, :tickets,
-                    :type, :group, cast(:fields as text[]), :now, :actor, :now, :actor, 0)""")
+                    app_token_hint, base_url, bot_username, bot_url, app_id, app_tenant, enabled, allow_tickets,
+                    ticket_type, group_id, data_fields, created_at, created_by, updated_at, updated_by, version)
+                values (:id, :tenant, :kind, :name, :token, :hint, :app, :appHint, :base, :bot, :url, :appId, :appTenant,
+                    :enabled, :tickets, :type, :group, cast(:fields as text[]), :now, :actor, :now, :actor, 0)""")
+                .param("appId", f.appId()).param("appTenant", f.appTenant())
                 .param("id", id).param("tenant", TenantContext.require()).param("kind", kind).param("name", f.name())
                 .param("token", t.token()).param("hint", t.tokenHint()).param("app", t.appToken())
                 .param("appHint", t.appTokenHint()).param("base", f.baseUrl())
@@ -107,6 +110,7 @@ class MessengerStore {
     boolean update(UUID id, long version, Fields f, Secrets t, Verified bot) {
         return jdbc.sql("""
                 update integration_messenger set name = :name, base_url = :base, enabled = :enabled,
+                       app_id = :appId, app_tenant = :appTenant,
                        allow_tickets = :tickets, ticket_type = :type, group_id = :group,
                        data_fields = cast(:fields as text[]), token = coalesce(cast(:token as text), token),
                        token_hint = coalesce(cast(:hint as text), token_hint),
@@ -120,6 +124,7 @@ class MessengerStore {
                        updated_at = :now, updated_by = :actor, version = version + 1
                  where id = :id and version = :version""")
                 .param("name", f.name()).param("base", f.baseUrl()).param("enabled", f.enabled())
+                .param("appId", f.appId()).param("appTenant", f.appTenant())
                 .param("tickets", f.allowTickets()).param("type", f.ticketType()).param("group", f.groupId())
                 .param("fields", array(f.dataFields())).param("token", t.token()).param("hint", t.tokenHint())
                 .param("app", t.appToken()).param("appHint", t.appTokenHint())
@@ -143,6 +148,13 @@ class MessengerStore {
                 .query((rs, n) -> new Streaming(rs.getObject("tenant_id", UUID.class), rs.getObject("id", UUID.class),
                         rs.getLong("version")))
                 .list();
+    }
+
+    /** Включённый бот Teams по id из адреса приёма (функция SECURITY DEFINER); version не нужна и равна 0. */
+    Optional<Streaming> teamsBot(UUID id) {
+        return jdbc.sql("select tenant_id, id from integration_teams_bot(:id)").param("id", id)
+                .query((rs, n) -> new Streaming(rs.getObject("tenant_id", UUID.class), rs.getObject("id", UUID.class), 0))
+                .optional();
     }
 
     List<SourceStore.TokenMatch> enabledEverywhere() {
@@ -320,6 +332,28 @@ class MessengerStore {
                 .param("m", messengerId).param("c", chatId).query(Integer.class).single();
     }
 
+    // ---------------------------------------------------------------- разговоры Teams
+
+    /** Запомнить, куда отвечать в разговор: serviceUrl из проверенного запроса Bot Framework. */
+    void conversation(UUID messengerId, String chatId, String serviceUrl) {
+        var now = SourceStore.now();
+        jdbc.sql("""
+                insert into integration_messenger_conversation (id, tenant_id, messenger_id, chat_id, service_url,
+                    created_at, updated_at, version)
+                values (:id, :tenant, :m, :c, :url, :now, :now, 0)
+                on conflict (messenger_id, chat_id) do update set service_url = excluded.service_url,
+                    updated_at = excluded.updated_at, version = integration_messenger_conversation.version + 1
+                 where integration_messenger_conversation.service_url <> excluded.service_url""")
+                .param("id", Ids.newId()).param("tenant", TenantContext.require()).param("m", messengerId)
+                .param("c", chatId).param("url", serviceUrl).param("now", now).update();
+    }
+
+    Optional<String> serviceUrl(UUID messengerId, String chatId) {
+        return jdbc.sql("""
+                select service_url from integration_messenger_conversation where messenger_id = :m and chat_id = :c""")
+                .param("m", messengerId).param("c", chatId).query(String.class).optional();
+    }
+
     // ---------------------------------------------------------------- разбор строк
 
     static String array(List<String> values) {
@@ -331,7 +365,8 @@ class MessengerStore {
         List<String> fields = a == null ? List.of() : Arrays.stream((Object[]) a.getArray()).map(String::valueOf).toList();
         return new Messenger(rs.getObject("id", UUID.class), rs.getString("kind"), rs.getString("name"),
                 rs.getString("token_hint"), rs.getString("app_token_hint"), rs.getString("base_url"),
-                rs.getString("bot_username"), rs.getString("bot_url"), rs.getBoolean("enabled"), rs.getBoolean("allow_tickets"), rs.getString("ticket_type"),
+                rs.getString("bot_username"), rs.getString("bot_url"), rs.getString("app_id"), rs.getString("app_tenant"),
+                rs.getBoolean("enabled"), rs.getBoolean("allow_tickets"), rs.getString("ticket_type"),
                 rs.getObject("group_id", UUID.class), fields, SourceStore.instant(rs, "last_poll_at"),
                 rs.getString("last_error"), SourceStore.instant(rs, "last_event_at"), rs.getInt("linked"),
                 rs.getLong("version"), SourceStore.instant(rs, "created_at"), SourceStore.instant(rs, "updated_at"));

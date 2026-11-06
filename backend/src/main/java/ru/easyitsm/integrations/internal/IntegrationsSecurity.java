@@ -6,8 +6,8 @@ import org.springframework.http.HttpMethod;
 import ru.easyitsm.platform.security.SecurityChainCustomizer;
 
 /**
- * Приём событий мониторинга открыт без входа: системы мониторинга предъявляют токен источника, который
- * проверяет сам контроллер. Куки сессии у них нет, поэтому CSRF к запросу не применяется.
+ * Приём событий мониторинга и сообщений Teams открыт без входа: системы мониторинга предъявляют токен
+ * источника, Bot Framework — подписанный JWT; их проверяют сами контроллеры. Куки сессии у них нет, поэтому CSRF к запросу не применяется.
  */
 @Configuration(proxyBeanMethods = false)
 class IntegrationsSecurity {
@@ -15,6 +15,7 @@ class IntegrationsSecurity {
     @Bean
     SecurityChainCustomizer integrationsSecurityCustomizer() {
         return http -> http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, InboundEventsController.PATH).permitAll());
+                .requestMatchers(HttpMethod.POST, InboundEventsController.PATH).permitAll()
+                .requestMatchers(HttpMethod.POST, TeamsController.PATH).permitAll());
     }
 }

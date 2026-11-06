@@ -149,7 +149,7 @@ X-EasyITSM-Signature: sha256=<hex(HMAC-SHA256(ключ, timestamp + "." + тел
 Изменения вебхуков и списка пишутся в журнал версий настроек (`integrations.webhook`,
 `integrations.outbound_policy`, без ключа) и в журнал аудита как настройки раздела `integrations`.
 
-## Мессенджеры Telegram, MAX и Slack (раздел 8.2 ТЗ, CHN-04, CHN-06)
+## Мессенджеры Telegram, MAX, Slack и Teams (раздел 8.2 ТЗ, CHN-04, CHN-06)
 
 ADM подключает бота на вкладке «Интеграции → Мессенджеры»: токен (хранится зашифрованным, наружу — только
 последние 4 символа), адрес API (пусто — официальный: `api.telegram.org` или `platform-api.max.ru`), можно ли
@@ -160,7 +160,7 @@ ADM подключает бота на вкладке «Интеграции →
 
 ```
 GET    /api/v1/integrations/messengers            ADM, AUD
-POST   /api/v1/integrations/messengers            ADM   {kind, name, token, appToken?, baseUrl?, allowTickets, ticketType, groupId?, dataFields}
+POST   /api/v1/integrations/messengers            ADM   {kind, name, token, appToken?, appId?, appTenant?, baseUrl?, allowTickets, ticketType, groupId?, dataFields}
 PATCH  /api/v1/integrations/messengers/{id}       ADM   If-Match; token — только для замены, clearGroup: true снимает группу
 DELETE /api/v1/integrations/messengers/{id}       ADM   повторный вход; удаляет привязки и очередь
 POST   /api/v1/integrations/messengers/{id}/check ADM   {ok, botUsername, error}
@@ -211,5 +211,30 @@ Slack подключается через Socket Mode: сервер сам от�
   личным сообщением (`/start` в Slack перехватывает сам Slack). Команды — `help` и `stop` без косой черты.
 - Ответы бота и уведомления о заявке идут в ветке сообщения; ответ в ветке — комментарий к заявке.
 
-Изменения ботов пишутся в журнал версий (`integrations.messenger`, без токенов) и в аудит раздела
-`integrations`.
+### Microsoft Teams
+
+Teams работает через Azure Bot Service. В отличие от остальных мессенджеров, сообщения присылает сам Bot
+Framework, поэтому серверу нужен **публичный HTTPS-адрес**; за NAT без публикации Teams не работает.
+
+ADM регистрирует бота в Azure (Azure Bot, тип Single Tenant), включает канал Microsoft Teams и указывает в
+Easy ITSM Microsoft App ID, арендатора Entra (ID или домен) и секрет клиента. При сохранении сервер получает
+токен приложения в Microsoft Entra (`{tenant}/oauth2/v2.0/token`, client credentials); неверный секрет не
+сохраняется. После сохранения экран показывает Messaging endpoint для Azure:
+
+```
+POST /api/v1/integrations/teams/{id}/messages     без входа; Authorization: Bearer <JWT Bot Framework>
+```
+
+- JWT проверяется: подпись ключом из `login.botframework.com` (ключи кешируются), издатель
+  `https://api.botframework.com`, аудитория — App ID бота, срок. Неизвестный или выключенный бот — тот же 401,
+  чтобы не раскрывать, какие боты есть. Тело — до 256 КБ, частота ограничена, как у мониторинга.
+- `serviceUrl` запроса должен совпадать с утверждением в JWT и вести на узел Bot Framework
+  (`smba.trafficmanager.net`, `*.botframework.com`, `*.botframework.us`, `*.teams.microsoft.com`) по https.
+  Он запоминается за разговором, туда уходят ответы и уведомления с токеном Entra (кешируется до истечения).
+- Принимаются только личные разговоры. Упоминания и HTML из текста убираются.
+- Привязка — кодом из профиля в сообщении боту; команды `help` и `stop` без косой черты.
+- Комментарий — ответ с цитатой сообщения бота (Teams передаёт id цитаты) или сообщение, которое начинается
+  с номера заявки: `INC-000123: текст`. Номер в начале работает во всех мессенджерах.
+
+Изменения ботов пишутся в журнал версий (`integrations.messenger`, без токенов и секретов) и в аудит раздела
+`integrations`; приём сообщений Teams в аудит настроек не попадает.

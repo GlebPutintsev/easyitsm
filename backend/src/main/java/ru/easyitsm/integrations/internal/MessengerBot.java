@@ -2,6 +2,7 @@ package ru.easyitsm.integrations.internal;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ class MessengerBot {
     static final int MAX_TICKETS_PER_HOUR = 10;
     static final int MAX_TEXT = 4000;
     /** Код привязки, отправленный текстом (Slack) или командой {@code /start}. */
+    /** Комментарий по номеру заявки в начале сообщения: «INC-000123: текст» — там, где нет ответов на сообщения. */
+    private static final java.util.regex.Pattern NUMBERED =
+            java.util.regex.Pattern.compile("(?s)#?([A-Z]{2,6}-\\d{3,10})[:\\s]\\s*(\\S.*)");
     private static final java.util.regex.Pattern CODE = java.util.regex.Pattern.compile("(?:/start\\s+)?([A-Za-z0-9]{20})");
 
     private final MessengerStore store;
@@ -89,6 +93,13 @@ class MessengerBot {
             Optional<UUID> ticketId = store.ticketOf(m.id(), u.chatId(), u.replyTo());
             if (ticketId.isPresent()) {
                 return comment(m, u, user.get(), ticketId.get(), text);
+            }
+        }
+        java.util.regex.Matcher numbered = NUMBERED.matcher(text);
+        if (numbered.matches()) {
+            Optional<TicketSnapshot> t = tickets.findByNumber(numbered.group(1));
+            if (t.isPresent()) {
+                return comment(m, u, user.get(), t.get().id(), numbered.group(2).strip());
             }
         }
         return create(m, u, user.get(), text);
@@ -176,6 +187,7 @@ class MessengerBot {
             return "Обращение из " + switch (kind) {
                 case "max" -> "MAX";
                 case "slack" -> "Slack";
+                case "teams" -> "Microsoft Teams";
                 default -> "Telegram";
             };
         }
@@ -189,7 +201,7 @@ class MessengerBot {
 
     /** Справка: в Slack команды с «/» перехватывает сам Slack, поэтому там {@code stop} без косой черты. */
     static String help(MessengerStore.Messenger m, String lang) {
-        return Texts.HELP.of(lang).formatted("slack".equals(m.kind()) ? "stop" : "/stop");
+        return Texts.HELP.of(lang).formatted(Set.of("slack", "teams").contains(m.kind()) ? "stop" : "/stop");
     }
 
     private void reply(MessengerStore.Messenger m, MessengerConnector.Update u, String text, UUID ticketId,
@@ -204,8 +216,8 @@ class MessengerBot {
         BAD_CODE("Ссылка подключения устарела или уже использована. Получите новую в профиле: «Профиль → Мессенджеры».",
                 "The connection link has expired or was already used. Get a new one in “Profile → Messengers”."),
         LINKED("Готово, %s: уведомления будут приходить сюда.", "Done, %s: notifications will arrive here."),
-        HELP("Напишите сообщение — создам заявку. Ответьте на сообщение о заявке — добавлю комментарий. %s — отключить бот.",
-                "Send a message to create a ticket. Reply to a ticket message to add a comment. %s disconnects the bot."),
+        HELP("Напишите сообщение — создам заявку. Ответьте на сообщение о заявке или начните сообщение с её номера (INC-000123: …) — добавлю комментарий. %s — отключить бот.",
+                "Send a message to create a ticket. Reply to a ticket message or start a message with its number (INC-000123: …) to add a comment. %s disconnects the bot."),
         STOPPED("Бот отключён. Подключить снова можно в профиле.", "The bot is disconnected. You can connect it again in your profile."),
         EMPTY("Пришлите текст: файлы бот пока не принимает.", "Please send text: the bot does not accept files yet."),
         NO_TICKET("Заявка не найдена.", "Ticket not found."),

@@ -87,6 +87,28 @@ class MessengerFormatsTest {
     }
 
     @Test
+    void teamsPersonalMessagesWithQuotedReplyAndTrustedServiceUrl() {
+        var m = TeamsConnector.parse(json.readTree("""
+                {"type": "message", "id": "1700", "conversation": {"conversationType": "personal", "id": "a:1xyz"},
+                 "from": {"name": "Анна"}, "text": "<at>Бот</at> Уже <b>лучше</b>&nbsp;&amp; быстрее",
+                 "attachments": [{"contentType": "text/html",
+                   "content": "<blockquote itemscope itemtype=\\"http://schema.skype.com/Reply\\" itemid=\\"1690\\">…</blockquote>"}]}"""));
+        assertThat(m.chatId()).isEqualTo("a:1xyz");
+        assertThat(m.text()).isEqualTo("Уже лучше & быстрее");
+        assertThat(m.replyTo()).isEqualTo("1690");
+        assertThat(TeamsConnector.parse(json.readTree("""
+                {"type": "message", "id": "1", "conversation": {"conversationType": "channel", "id": "19:c"}, "text": "x"}""")))
+                .isNull();
+        assertThat(TeamsConnector.parse(json.readTree("{\"type\": \"conversationUpdate\"}"))).isNull();
+        assertThat(TeamsConnector.serviceUri("https://smba.trafficmanager.net/emea/", false)).isNotNull();
+        assertThat(TeamsConnector.serviceUri("https://europe.botframework.com/", false)).isNotNull();
+        assertThat(TeamsConnector.serviceUri("https://evil.example.com/", false)).isNull();
+        assertThat(TeamsConnector.serviceUri("http://smba.trafficmanager.net/", false)).isNull();
+        assertThat(TeamsConnector.serviceUri("http://127.0.0.1:8080/", false)).isNull();
+        assertThat(TeamsConnector.serviceUri("https://smba.trafficmanager.net.evil.ru/", false)).isNull();
+    }
+
+    @Test
     void slackNoticeAsksForThreadReply() {
         ExternalNotice n = new ExternalNotice(UUID.randomUUID(), "en", "ticket.comment", "INC-000042: VPN", null,
                 UUID.randomUUID(), "INC-000042", "VPN", null, false);
@@ -119,7 +141,7 @@ class MessengerFormatsTest {
     }
 
     static MessengerStore.Messenger bot(String kind, List<String> fields) {
-        return new MessengerStore.Messenger(UUID.randomUUID(), kind, "Бот", "…abcd", null, null, "easy_bot", null, true,
+        return new MessengerStore.Messenger(UUID.randomUUID(), kind, "Бот", "…abcd", null, null, "easy_bot", null, null, null, true,
                 true, "incident", null, fields, null, null, null, 0, 0, Instant.now(), Instant.now());
     }
 }
