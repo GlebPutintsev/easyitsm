@@ -21,6 +21,7 @@ import {
   type Asset,
   type AssetAction,
   type AssetEvent,
+  type CiInfo,
   useAsset,
   useAssetAction,
   useAssetHistory,
@@ -93,7 +94,7 @@ export function AssetPage() {
                   [t('assets.field.location'), a.location?.name ?? '—'],
                   [
                     t('assets.field.ci'),
-                    a.ci ? (a.ci.name ?? <span className="ei-mono">{t('assets.card.ciUnknown', { id: a.ci.id.slice(0, 8) })}</span>) : '—',
+                    a.ci ? <CiValue ci={a.ci} /> : '—',
                   ],
                 ]}
               />
@@ -423,4 +424,21 @@ function eventText(t: (key: string, opts?: Record<string, unknown>) => string, e
     to: e.toHolder?.name ?? '—',
     ticket,
   });
+}
+
+/** КЕ в карточке: имя, класс и пометка о выводе из эксплуатации. */
+function CiValue({ ci }: { ci: CiInfo }) {
+  const { t } = useTranslation();
+  if (!ci.name) return <span className="ei-mono">{t('assets.card.ciUnknown', { id: ci.id.slice(0, 8) })}</span>;
+  return (
+    <span>
+      {ci.name}
+      {ci.className && (
+        <Text span size="xs" className={classes.muted} display="block">
+          {ci.className}
+          {ci.status === 'retired' ? ` · ${t('assets.card.ciRetired')}` : ''}
+        </Text>
+      )}
+    </span>
+  );
 }

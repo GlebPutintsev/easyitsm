@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { ASSET_KINDS, type Asset, type AssetFields, type AssetKind, useContracts, useCreateAsset, useLocations, useUpdateAsset, useVendors } from './api';
+import { CiPicker } from './CiPicker';
 import { patchOf } from './ui';
 
 interface Props {
@@ -177,7 +178,7 @@ function Body({ asset, onClose, onSaved }: Omit<Props, 'opened'>) {
         />
         <Select label={t('assets.field.currency')} value={v.currency} onChange={(x) => set('currency')(x ?? 'RUB')} data={['RUB', 'USD', 'EUR', 'CNY', 'KZT', 'BYN']} allowDeselect={false} />
       </SimpleGrid>
-      <TextInput label={t('assets.field.ci')} description={t('assets.field.ciHint')} {...text('ciId')} classNames={{ input: 'ei-mono' }} />
+      <CiPicker value={v.ciId} current={asset?.ci ?? null} onChange={set('ciId')} />
       <Textarea label={t('assets.field.notes')} autosize minRows={2} maxRows={6} {...text('notes')} />
       <ErrorLine error={mutation.error} />
       <Group justify="flex-end" gap="xs">

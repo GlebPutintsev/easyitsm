@@ -58,7 +58,9 @@
       "serial": "Serial number",
       "location": "Location",
       "ci": "Configuration item",
-      "ciHint": "CI identifier. Picking from the CMDB will be available once the CMDB module is connected.",
+      "ciHint": "Search CMDB by CI name",
+      "ciPlaceholder": "Start typing a CI name",
+      "ciNotFound": "No CI found",
       "vendor": "Vendor",
       "contract": "Contract",
       "purchasedOn": "Purchase date",
@@ -92,6 +94,7 @@
       "endOfLifeReached": "Service life is over",
       "retired": "Retired on {{date}}: {{reason}}",
       "edit": "Edit",
+      "ciRetired": "retired",
       "ciUnknown": "CI {{id}}"
     },
     "action": {
