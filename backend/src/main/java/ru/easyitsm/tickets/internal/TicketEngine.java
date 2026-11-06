@@ -67,8 +67,11 @@ class TicketEngine {
     private final Feed feed;
     private final SettingsStore settings;
     private final ApplicationEventPublisher events;
+    private final TicketAccess access;
 
-    TicketEngine(TicketStore store, Feed feed, SettingsStore settings, ApplicationEventPublisher events) {
+    TicketEngine(TicketStore store, Feed feed, SettingsStore settings, ApplicationEventPublisher events,
+                 TicketAccess access) {
+        this.access = access;
         this.store = store;
         this.feed = feed;
         this.settings = settings;
@@ -89,7 +92,10 @@ class TicketEngine {
         return settings.workflow(type);
     }
 
-    /** Может ли пользователь выполнить ручной переход (роли и псевдороли requester, assignee). */
+    /**
+     * Может ли пользователь выполнить ручной переход (роли и псевдороли requester, assignee). Переход по роли
+     * поддержки требует права работать с заявкой: агент чужой группы её не решает и не закрывает.
+     */
     boolean allowed(Workflow.Transition tr, TicketRow t, Actor actor) {
         if (actor.system()) {
             return true;
@@ -109,7 +115,7 @@ class TicketEngine {
                 case "system" -> {
                 }
                 default -> {
-                    if (actor.has(role)) {
+                    if (actor.has(role) && (!Actor.SUPPORT_ROLES.contains(role) || access.canWork(t, actor))) {
                         return true;
                     }
                 }

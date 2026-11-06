@@ -162,6 +162,7 @@ class TicketService implements TicketCommands, TicketQueries {
                 || req.priority() != null || Boolean.TRUE.equals(req.confidential()) || req.organizationId() != null)) {
             throw ApiException.forbidden();
         }
+        access.requireValidAssignment(req.groupId(), req.assigneeId(), actor);
         String text = req.title() + "\n" + (req.description() == null ? "" : req.description());
         String policy = secretsPolicy(req.secrets(), actor);
         String title = req.title();
@@ -270,7 +271,7 @@ class TicketService implements TicketCommands, TicketQueries {
     @Transactional
     TicketRow update(String ref, String ifMatch, TicketRequests.Update req, Actor actor) {
         access.requireSupport(actor);
-        TicketRow before = forUpdate(ref, actor, ifMatch);
+        TicketRow before = access.requireWork(forUpdate(ref, actor, ifMatch), actor);
         requireActive(before);
         TicketRow t = before.copy();
         ChangeContext ctx = new ChangeContext(actor);
@@ -331,6 +332,7 @@ class TicketService implements TicketCommands, TicketQueries {
         if (req.custom() != null) {
             t.custom = customFields.apply(t.type, t.custom, req.custom(), false);
         }
+        access.requireValidAssignment(before, t, actor);
         if (t.groupId != null && !Objects.equals(before.groupId, t.groupId)) {
             engine.onGroupAssigned(t, ctx);
         }
@@ -361,7 +363,7 @@ class TicketService implements TicketCommands, TicketQueries {
     @Transactional
     TicketRow take(String ref, String ifMatch, Actor actor) {
         access.requireSupport(actor);
-        TicketRow before = forUpdate(ref, actor, ifMatch);
+        TicketRow before = access.requireWork(forUpdate(ref, actor, ifMatch), actor);
         return takeLocked(before, actor);
     }
 
@@ -382,17 +384,21 @@ class TicketService implements TicketCommands, TicketQueries {
         return engine.commit(before, t, ctx).ticket();
     }
 
-    /** «Взять следующую»: самая срочная неназначенная заявка доступных групп. */
+    /**
+     * «Взять следующую»: самая срочная неназначенная заявка групп, где состоит пользователь (или одной из них).
+     * Чужая группа — 403, даже если её заявки видны (MIM): из чужой очереди берут конкретную заявку.
+     */
     @Transactional
     Optional<TicketRow> takeNext(UUID groupId, Actor actor) {
         access.requireSupport(actor);
-        Map<String, Object> params = new LinkedHashMap<>();
-        String where = "where t.assignee_id is null and t.status_category in ('new', 'assigned') and "
-                + access.filter(actor, params);
-        if (groupId != null) {
-            where += " and t.group_id = :group";
-            params.put("group", groupId);
+        Set<UUID> groups = access.myGroups(actor);
+        if (groupId != null && !groups.contains(groupId)) {
+            throw ApiException.forbidden();
         }
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("groups", Sql.array(groupId != null ? Set.of(groupId) : groups));
+        String where = "where t.assignee_id is null and t.status_category in ('new', 'assigned')"
+                + " and t.group_id = any(cast(:groups as uuid[])) and " + access.filter(actor, params);
         List<TicketRow> rows = store.query(where + " " + """
                  order by t.priority, t.sla_due_at nulls last, t.due_at nulls last, t.created_at, t.id
                  limit 1 for update of t skip locked""", params);
@@ -411,7 +417,7 @@ class TicketService implements TicketCommands, TicketQueries {
     @Transactional
     TicketRow escalate(String ref, String ifMatch, EscalationKind kind, UUID groupId, String reason, Actor actor) {
         access.requireSupport(actor);
-        TicketRow before = forUpdate(ref, actor, ifMatch);
+        TicketRow before = access.requireWork(forUpdate(ref, actor, ifMatch), actor);
         requireActive(before);
         requireReason(reason, "reason", "Укажите причину эскалации");
         TicketRow t = before.copy();
@@ -422,6 +428,7 @@ class TicketService implements TicketCommands, TicketQueries {
                 throw TicketProblem.fieldRequired("groupId", "Укажите группу для функциональной эскалации");
             }
             if (!groupId.equals(t.groupId)) {
+                access.requireValidAssignment(groupId, null, actor);
                 t.groupId = groupId;
                 t.assigneeId = routing.dispatch(groupId).orElse(null);
             }
@@ -439,8 +446,7 @@ class TicketService implements TicketCommands, TicketQueries {
     /** INC-10: проверку личности отмечает поддержка, но не сам заявитель. */
     @Transactional
     TicketRow verifyIdentity(String ref, TicketRequests.IdentityCheck req, Actor actor) {
-        access.requireSupport(actor);
-        TicketRow before = access.requireRead(resolve(ref, true), actor);
+        TicketRow before = access.requireWork(resolve(ref, true), actor);
         requireActive(before);
         if (before.isRequesterSide(actor.userId())) {
             throw ApiException.forbidden();

@@ -96,6 +96,106 @@ class TicketAccessTest extends TicketApiSupport {
     }
 
     @Test
+    void agentSeesOnlyTicketsOfOwnGroups() throws Exception {
+        String id = read(createIncident("Очередь своей группы"), "$.id");
+        String outsider = Ids.newId().toString();
+        perform(asAgent(get("/api/v1/tickets/" + id))).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), agent2, "AGT")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isNotFound());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT,CHG,KNW")).andExpect(status().isNotFound());
+        String list = body(perform(as(get("/api/v1/tickets").param("q", "Очередь своей группы"), outsider, "AGT")));
+        assertThat(TicketLifecycleTest.JsonPathList.of(list, "$.items[*].id")).doesNotContain(id);
+        perform(as(get("/api/v1/tickets/count").param("groupId", supportGroup), outsider, "AGT"))
+                .andExpect(jsonPath("$.count").value(0));
+        // Менеджер крупных инцидентов видит все неконфиденциальные
+        perform(as(get("/api/v1/tickets/" + id), outsider, "MIM")).andExpect(status().isOk());
+        // Членство в группе без роли поддержки ничего не даёт
+        String member = Ids.newId().toString();
+        String group = newGroup(member);
+        patchAs(id, agent, "AGT", "{\"groupId\":\"" + group + "\"}").andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), member, "REQ")).andExpect(status().isNotFound());
+        perform(as(get("/api/v1/tickets/" + id), member, "AGT")).andExpect(status().isOk());
+        // Прежняя группа заявку больше не видит
+        perform(asAgent(get("/api/v1/tickets/" + id))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void unroutedTicketIsVisibleToEveryAgent() throws Exception {
+        String id = read(body(perform(asReq(post("/api/v1/tickets"))
+                .content("{\"type\":\"incident\",\"title\":\"Без группы\"}"))), "$.id");
+        String outsider = Ids.newId().toString();
+        perform(as(get("/api/v1/tickets/" + id), Ids.newId().toString(), "REQ")).andExpect(status().isNotFound());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "LEAD")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), Ids.newId().toString(), "KNW")).andExpect(status().isNotFound());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.assign").value(true));
+        // Любой агент распределяет: назначает группу, дальше заявка — её
+        patchAs(id, outsider, "AGT", "{\"groupId\":\"" + supportGroup + "\"}").andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isNotFound());
+        perform(asAgent(get("/api/v1/tickets/" + id))).andExpect(status().isOk());
+    }
+
+    @Test
+    void agentSeesTicketRegisteredForSomeoneElse() throws Exception {
+        String outsider = Ids.newId().toString();
+        String id = read(body(perform(as(post("/api/v1/tickets"), outsider, "AGT")
+                .content("{\"type\":\"incident\",\"title\":\"По телефону\",\"requesterId\":\"" + stranger + "\"}"))
+                .andExpect(status().isCreated())), "$.id");
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), stranger, "REQ")).andExpect(status().isOk());
+    }
+
+    @Test
+    void watcherFromOtherGroupReadsAndCommentsButCannotWork() throws Exception {
+        String id = read(createIncident("Посмотри со стороны"), "$.id");
+        String outsider = Ids.newId().toString();
+        perform(asAgent(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/v1/tickets/" + id + "/watchers/" + outsider))).andExpect(status().isNoContent());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.edit").value(false))
+                .andExpect(jsonPath("$.permissions.comment").value(true))
+                .andExpect(jsonPath("$.transitions").isEmpty());
+        patchAs(id, outsider, "AGT", "{\"title\":\"Моё\"}").andExpect(status().isForbidden());
+        perform(as(post("/api/v1/tickets/" + id + "/take"), outsider, "AGT").header("If-Match", etagAs(id, outsider, "AGT")))
+                .andExpect(status().isForbidden());
+        perform(as(post("/api/v1/tickets/" + id + "/activity"), outsider, "AGT")
+                .content("{\"body\":\"Похоже на сеть\",\"visibility\":\"internal\"}")).andExpect(status().isCreated());
+        // Сделать заявку своей через подписку других нельзя
+        perform(as(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/v1/tickets/" + id + "/watchers/" + stranger), outsider, "AGT")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void assigneeMustBelongToTicketGroup() throws Exception {
+        String id = read(createIncident("Назначение"), "$.id");
+        String outsider = Ids.newId().toString();
+        patchAs(id, agent, "AGT", "{\"assigneeId\":\"" + outsider + "\"}")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("invalid_assignment"))
+                .andExpect(jsonPath("$.field").value("assigneeId"));
+        patchAs(id, agent, "AGT", "{\"groupId\":\"" + Ids.newId() + "\"}")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.field").value("groupId"));
+        patchAs(id, agent, "AGT", "{\"assigneeId\":\"" + agent2 + "\"}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.assigneeId").value(agent2));
+        String other = newGroup(outsider);
+        patchAs(id, agent, "AGT", "{\"groupId\":\"" + other + "\",\"assigneeId\":\"" + outsider + "\"}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.assigneeId").value(outsider));
+    }
+
+    @Test
+    void securityGroupMemberSeesConfidentialTicket() throws Exception {
+        String id = read(createIncident("Расследование"), "$.id");
+        String officer = Ids.newId().toString();
+        String security = newGroup(officer);
+        patchAs(id, agent, "AGT", "{\"assigneeId\":\"" + agent + "\"}").andExpect(status().isOk());
+        patchAs(id, agent, "AGT", "{\"confidential\":true,\"confidentialReason\":\"ИБ\",\"securityGroupId\":\""
+                + security + "\"}").andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), officer, "AGT")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), agent2, "AGT")).andExpect(status().isNotFound());
+        String list = body(perform(as(get("/api/v1/tickets").param("q", "Расследование"), officer, "AGT")));
+        assertThat(TicketLifecycleTest.JsonPathList.of(list, "$.items[*].id")).contains(id);
+    }
+
+    @Test
     void settingsAreAdminOnly() throws Exception {
         perform(asAgent(get("/api/v1/ticket-settings/workflows/incident"))).andExpect(status().isOk());
         perform(asReq(get("/api/v1/ticket-settings/workflows/incident"))).andExpect(status().isForbidden());

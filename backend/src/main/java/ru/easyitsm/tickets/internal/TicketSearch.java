@@ -136,8 +136,8 @@ class TicketSearch {
         inList(w, p, "t.status", "statuses", f.status(), v -> v);
         inList(w, p, "t.status_category", "cats", f.statusCategory(), v -> StatusCategory.fromCode(v).code());
         inList(w, p, "t.priority", "prios", f.priority(), v -> Priority.fromCode(v).code());
-        uuidList(w, p, "t.group_id", "groups", f.groupId());
-        uuidList(w, p, "t.assignee_id", "assignees", f.assigneeId());
+        uuidList(w, p, "t.group_id", "groups", f.groupId(), access.myGroups(actor));
+        uuidList(w, p, "t.assignee_id", "assignees", f.assigneeId(), Set.of());
         if (f.requesterId() != null) {
             p.put("requester", f.requesterId());
             w.append(" and t.requester_id = :requester");
@@ -207,7 +207,9 @@ class TicketSearch {
         w.append(" and ").append(column).append(" = any(cast(:").append(name).append(" as text[]))");
     }
 
-    private static void uuidList(StringBuilder w, Map<String, Object> p, String column, String name, String csv) {
+    /** Список UUID через запятую; {@code none} — пусто, {@code mine} — группы пользователя (только для групп). */
+    private static void uuidList(StringBuilder w, Map<String, Object> p, String column, String name, String csv,
+                                 Set<UUID> mine) {
         if (csv == null || csv.isBlank()) {
             return;
         }
@@ -217,6 +219,8 @@ class TicketSearch {
             String s = v.trim();
             if (s.equals("none")) {
                 none = true;
+            } else if (s.equals("mine") && column.equals("t.group_id")) {
+                ids.addAll(mine);
             } else if (!s.isEmpty()) {
                 UUID id = TicketService.parseUuid(s);
                 if (id == null) {
