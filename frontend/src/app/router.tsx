@@ -26,6 +26,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { SecurityPage } from '@/features/profile/SecurityPage';
+import { MyMessengersPage } from '@/features/integrations/MyMessengersPage';
 import { ArticleEditor } from '@/features/knowledge/ArticleEditor';
 import { ArticleHistory } from '@/features/knowledge/ArticleHistory';
 import { ArticlePage } from '@/features/knowledge/ArticlePage';
@@ -118,6 +119,7 @@ export const router = createBrowserRouter([
       { path: 'admin/integrations', element: <IntegrationsPage /> },
       { path: 'admin/notification-templates', element: <TemplatesPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
+      { path: 'profile/messengers', element: <MyMessengersPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

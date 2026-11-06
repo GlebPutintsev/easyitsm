@@ -41,6 +41,49 @@ class OutboundHttp {
                 .build();
     }
 
+    /** Ответ запроса к API (мессенджеры): тело целиком, но не больше {@code maxBytes}. */
+    record Response(int status, String error, byte[] body) {
+
+        boolean ok() {
+            return status >= 200 && status < 300;
+        }
+
+        String text() {
+            return body == null ? "" : new String(body, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Запрос к API внешней системы без перенаправлений. {@code body} null — GET. Текст ошибки не содержит адреса:
+     * в пути бывает токен (Telegram).
+     */
+    Response call(OutboundGuard guard, URI uri, Map<String, String> headers, byte[] body, int maxBytes) {
+        try {
+            guard.check(uri);
+        } catch (OutboundGuard.Denied e) {
+            return new Response(0, "адрес запрещён: " + e.getMessage(), null);
+        }
+        HttpRequest.Builder req = HttpRequest.newBuilder(uri).timeout(props.outbound().timeout());
+        if (body == null) {
+            req.GET();
+        } else {
+            req.POST(HttpRequest.BodyPublishers.ofByteArray(body));
+        }
+        headers.forEach(req::header);
+        try {
+            HttpResponse<java.io.InputStream> resp = client.send(req.build(), HttpResponse.BodyHandlers.ofInputStream());
+            try (var in = resp.body()) {
+                byte[] bytes = in.readNBytes(maxBytes);
+                return new Response(resp.statusCode(), null, bytes);
+            }
+        } catch (IOException e) {
+            return new Response(0, "нет соединения: " + e.getClass().getSimpleName(), null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new Response(0, "прервано", null);
+        }
+    }
+
     OutboundGuard guard(List<String> allowedHosts) {
         return new OutboundGuard(allowedHosts, props.outbound().allowLoopback(), InetAddress::getAllByName);
     }

@@ -330,3 +330,123 @@ export function useRetryDelivery() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: DELIVERIES }),
   });
 }
+
+// ---------------------------------------------------------------- мессенджеры
+
+export type MessengerKind = 'telegram' | 'max';
+export const MESSENGER_KINDS: MessengerKind[] = ['telegram', 'max'];
+export type DataField = 'title' | 'text' | 'link';
+export const DATA_FIELDS: DataField[] = ['title', 'text', 'link'];
+
+export interface Messenger {
+  id: string;
+  kind: MessengerKind;
+  name: string;
+  tokenHint: string;
+  baseUrl: string | null;
+  botUsername: string | null;
+  enabled: boolean;
+  allowTickets: boolean;
+  ticketType: 'incident' | 'request';
+  groupId: string | null;
+  dataFields: DataField[];
+  lastPollAt: string | null;
+  lastError: string | null;
+  lastEventAt: string | null;
+  linkedUsers: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessengerInput {
+  kind?: MessengerKind;
+  name?: string;
+  token?: string;
+  baseUrl?: string;
+  enabled?: boolean;
+  allowTickets?: boolean;
+  ticketType?: 'incident' | 'request';
+  groupId?: string | null;
+  clearGroup?: boolean;
+  dataFields?: DataField[];
+}
+
+export interface MyMessenger {
+  id: string;
+  kind: MessengerKind;
+  name: string;
+  botUsername: string | null;
+  linked: boolean;
+  externalName: string | null;
+  linkedAt: string | null;
+}
+
+export interface LinkCode {
+  url: string;
+  code: string;
+  expiresAt: string;
+}
+
+const BOTS = ['integrations', 'messengers'] as const;
+const MY_BOTS = ['integrations', 'my-messengers'] as const;
+
+export function useMessengers() {
+  return useQuery({
+    queryKey: BOTS,
+    queryFn: ({ signal }) => api.get<CursorPage<Messenger>>('/integrations/messengers', { signal }),
+    select: (page) => page.items,
+  });
+}
+
+function useBotMutation<A, R>(fn: (arg: A) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => void qc.invalidateQueries({ queryKey: BOTS }) });
+}
+
+export function useCreateMessenger() {
+  return useBotMutation((input: MessengerInput) =>
+    api.post<Messenger>('/integrations/messengers', input, { idempotencyKey: newIdempotencyKey() }),
+  );
+}
+
+export function useUpdateMessenger() {
+  return useBotMutation(({ id, version, input }: { id: string; version: number; input: MessengerInput }) =>
+    api.patch<Messenger>(`/integrations/messengers/${id}`, input, { ifMatch: etagOf(version) }),
+  );
+}
+
+export function useDeleteMessenger() {
+  return useBotMutation((id: string) => api.delete<void>(`/integrations/messengers/${id}`));
+}
+
+export function useCheckMessenger() {
+  return useBotMutation((id: string) =>
+    api.post<{ ok: boolean; botUsername: string | null; error: string | null }>(`/integrations/messengers/${id}/check`, {}),
+  );
+}
+
+export function useMyMessengers() {
+  return useQuery({
+    queryKey: MY_BOTS,
+    queryFn: ({ signal }) => api.get<MyMessenger[]>('/integrations/my-messengers', { signal }),
+  });
+}
+
+export function useLinkCode() {
+  return useMutation({ mutationFn: (id: string) => api.post<LinkCode>(`/integrations/my-messengers/${id}/link`, {}) });
+}
+
+export function useUnlinkMessenger() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/integrations/my-messengers/${id}`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: MY_BOTS }),
+  });
+}
+
+/** Обновить привязки: после того как пользователь нажал «Старт» в мессенджере. */
+export function useRefreshMyMessengers() {
+  const qc = useQueryClient();
+  return () => void qc.invalidateQueries({ queryKey: MY_BOTS });
+}

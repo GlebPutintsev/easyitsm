@@ -45,3 +45,4 @@ easyitsm:
     outbound:
       allow-loopback: true
     delivery-initial-delay: PT1H
+    messenger-initial-delay: PT1H
