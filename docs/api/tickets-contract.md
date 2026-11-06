@@ -89,7 +89,10 @@ Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с пр
 Optional<TicketComment>  TicketQueries.findComment(ticketId, activityId) // текст ответа или заметки для писем
 List<UUID>               TicketQueries.watchers(ticketId)
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
-Optional<TicketPermissions> TicketQueries.permissions(id)             // вложения: права текущего входа
+Optional<TicketPermissions> TicketQueries.permissions(id)             // вложения, проблемы: права текущего входа
+boolean       TicketLinks.link(id, otherId, kind, actorId)            // проблемы, MIM: связь от имени системы, повтор — false
+List<TicketLinkRef> TicketLinks.links(id)                             // связи с точки зрения заявки
+List<IncidentCluster> TicketTrends.recurringIncidents(dim, from, to, minCount, limit) // повторы PRB-05
 // Поиск (TicketSearchIndex): документ для индекса, область чтения данными и перепроверка выдачи
 Optional<TicketSearchDocument> TicketSearchIndex.document(id);  List<UUID> idsAfter(afterId, limit)
 TicketReadScope TicketSearchIndex.readScope();  Set<UUID> visibleAmong(ids);  List<TicketSearchHit> search(TicketTextQuery)
@@ -99,7 +102,7 @@ TicketReadScope TicketSearchIndex.readScope();  Set<UUID> visibleAmong(ids);  Li
 `findVisible`: те же правила, что у `GET /tickets/{id}` для текущего входа (участник, область видимости,
 конфиденциальность); невидимая заявка — пусто. Так база знаний проверяет заявку перед статьёй из неё (KB-05).
 `permissions` — видимость как у `findVisible` и права текущего входа: `canComment`, `canSeeInternal`,
-`canAddInternal`, `closed`. `TicketReadScope.canRead(doc)` — те же правила видимости в виде данных
+`canAddInternal`, `closed`, `canWork` (менять заявку: исполнитель, член группы, MIM; нераспределённую — поддержка). `TicketReadScope.canRead(doc)` — те же правила видимости в виде данных
 (группы, конфиденциальность, участники, организация); модуль поиска переводит их в фильтр OpenSearch и затем
 перепроверяет страницу выдачи через `visibleAmong`, так что устаревший индекс не раскрывает заявку.
 `search` — запасной поиск PostgreSQL (`to_tsquery('russian')`, подсветка `ts_headline` маркерами
