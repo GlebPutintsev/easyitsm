@@ -18,6 +18,12 @@ describe('toRawFilter', () => {
     expect(toRawFilter({ sla: ['at_risk'] }, now).dueBefore).toBe('2026-11-05T13:00:00.000Z');
     expect(toRawFilter({}, now).dueBefore).toBeUndefined();
   });
+
+  it('«услуга» ищется и по позиции каталога заказа', () => {
+    const f = toRawFilter({ serviceId: ['a', 'b'] }, now);
+    expect(f.serviceOrItemId).toBe('a,b');
+    expect(f).not.toHaveProperty('serviceId');
+  });
 });
 
 describe('имена людей и услуг на настоящем API', () => {

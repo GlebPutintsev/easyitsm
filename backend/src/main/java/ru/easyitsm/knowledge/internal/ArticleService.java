@@ -182,8 +182,8 @@ class ArticleService implements ArticleQueries {
         String body = cmd.body() != null ? cmd.body() : ArticleTemplates.body(cmd.template());
         ArticleAudience audience = cmd.audience() == null ? ArticleAudience.EMPLOYEES
                 : ArticleAudience.fromCode(cmd.audience());
-        Article a = newArticle(r, cmd.title(), body, checkCategory(cmd.categoryId()), audience, cmd.audienceGroupId(),
-                null, null);
+        Article a = newArticle(r, cmd.title(), body, checkCategory(cmd.categoryId()), cmd.serviceId(), audience,
+                cmd.audienceGroupId(), null, null);
         return details(r, a, version(a, 1), true);
     }
 
@@ -209,7 +209,7 @@ class ArticleService implements ArticleQueries {
             title = title.substring(0, MAX_TITLE);
         }
         String body = ArticleTemplates.fromTicket(cmd.symptoms(), cmd.cause(), cmd.solution());
-        Article a = newArticle(r, title, body, checkCategory(cmd.categoryId()), ArticleAudience.AGENTS, null,
+        Article a = newArticle(r, title, body, checkCategory(cmd.categoryId()), null, ArticleAudience.AGENTS, null,
                 ticket.id(), ticket.number());
         ticketCommands.addComment(ticket.id(), r.userId(), feedNote(a), Visibility.INTERNAL);
         events.publishEvent(new ArticleCreatedFromTicket(a.getTenantId(), a.getId(), a.key(), ticket.id(),
@@ -255,6 +255,11 @@ class ArticleService implements ArticleQueries {
             a.setCategoryId(null);
         } else if (cmd.categoryId() != null) {
             a.setCategoryId(checkCategory(cmd.categoryId()));
+        }
+        if (Boolean.TRUE.equals(cmd.clearService())) {
+            a.setServiceId(null);
+        } else if (cmd.serviceId() != null) {
+            a.setServiceId(cmd.serviceId());
         }
         if (cmd.audience() != null) {
             a.setAudience(ArticleAudience.fromCode(cmd.audience()), cmd.audienceGroupId());
@@ -461,10 +466,11 @@ class ArticleService implements ArticleQueries {
 
     // ---------------------------------------------------------------- служебное
 
-    private Article newArticle(Reader r, String title, String body, UUID categoryId, ArticleAudience audience,
-                               UUID groupId, UUID ticketId, String ticketRef) {
+    private Article newArticle(Reader r, String title, String body, UUID categoryId, UUID serviceId,
+                               ArticleAudience audience, UUID groupId, UUID ticketId, String ticketRef) {
         long number = articles.nextNumber();
         Article a = new Article(number, title.strip(), categoryId, audience, groupId, r.userId());
+        a.setServiceId(serviceId);
         a.setSource(ticketId, ticketRef);
         a = articles.save(a);
         versions.save(new ArticleVersion(a.getId(), 1, a.title(), body));
@@ -532,7 +538,7 @@ class ArticleService implements ArticleQueries {
                 a.getId(), a.key(), a.status().code(), shown.title(), shown.body(), shown.versionNo(),
                 ws ? a.currentVersionNo() : null,
                 a.publishedVersionNo(),
-                a.categoryId(), a.audience().code(),
+                a.categoryId(), a.serviceId(), a.audience().code(),
                 ws ? a.audienceGroupId() : null,
                 ws ? a.ownerId() : null,
                 ws ? a.reviewerId() : null,

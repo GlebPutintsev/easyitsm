@@ -135,6 +135,44 @@ class TicketQueueTest extends TicketApiSupport {
     }
 
     @Test
+    void filtersByCatalogItemAndServiceLists() throws Exception {
+        String group = newGroup(agent);
+        String ordered = inGroup("Из каталога", group);
+        String other = inGroup("Другая позиция", group);
+        String manual = inGroup("Услуга вручную", group);
+        String item = Ids.newId().toString();
+        String otherItem = Ids.newId().toString();
+        String service = Ids.newId().toString();
+        // Позицию каталога ставит модуль каталога при заказе, через API её не меняют.
+        ru.easyitsm.platform.tenant.TenantContext.callAs(java.util.UUID.fromString(OTHER), () -> jdbc
+                .sql("update ticket set catalog_item_id = cast(:item as uuid) where id = cast(:id as uuid)")
+                .param("item", item).param("id", ordered).update()
+                + jdbc.sql("update ticket set catalog_item_id = cast(:item as uuid) where id = cast(:id as uuid)")
+                .param("item", otherItem).param("id", other).update());
+        patchAs(manual, agent, "AGT", "{\"serviceId\":\"" + service + "\"}").andExpect(status().isOk());
+
+        perform(asAgent(get("/api/v1/tickets").param("groupId", group).param("catalogItemId", item)))
+                .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].id").value(ordered))
+                .andExpect(jsonPath("$.items[0].catalogItemId").value(item));
+        perform(asAgent(get("/api/v1/tickets/count").param("groupId", group)
+                .param("catalogItemId", item + "," + otherItem)))
+                .andExpect(jsonPath("$.count").value(2));
+        perform(asAgent(get("/api/v1/tickets").param("groupId", group).param("serviceId", service + ",none")))
+                .andExpect(jsonPath("$.items.length()").value(3));
+        perform(asAgent(get("/api/v1/tickets").param("groupId", group).param("serviceId", service)))
+                .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].id").value(manual));
+        // «Услуга» агента: позиция из заказа и та же позиция, проставленная вручную, находятся одним фильтром
+        patchAs(manual, agent, "AGT", "{\"serviceId\":\"" + item + "\"}").andExpect(status().isOk());
+        String both = body(perform(asAgent(get("/api/v1/tickets").param("groupId", group)
+                .param("serviceOrItemId", item))).andExpect(status().isOk()));
+        assertThat(TicketLifecycleTest.JsonPathList.of(both, "$.items[*].id")).containsExactlyInAnyOrder(ordered, manual);
+        perform(asAgent(get("/api/v1/tickets/count").param("groupId", group).param("serviceOrItemId", "none")))
+                .andExpect(jsonPath("$.count").value(0));
+        perform(asAgent(get("/api/v1/tickets").param("catalogItemId", "bogus")))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("invalid_filter"));
+    }
+
+    @Test
     void createIsIdempotent() throws Exception {
         String key = Ids.newId().toString();
         String json = "{\"type\":\"incident\",\"title\":\"Дубль\"}";

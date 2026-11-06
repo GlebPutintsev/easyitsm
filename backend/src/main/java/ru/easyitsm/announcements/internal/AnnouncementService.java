@@ -52,6 +52,7 @@ class AnnouncementService implements AnnouncementQueries {
     public AnnouncementView create(AnnouncementCommands.Create cmd) {
         var a = new Announcement(AnnouncementKind.fromCode(cmd.kind()), cmd.title(), cmd.body(), cmd.startsAt(),
                 cmd.endsAt());
+        a.setServiceIds(cmd.serviceIds());
         boolean published = a.setPublished(cmd.published());
         a = repository.save(a);
         if (published) {
@@ -72,6 +73,9 @@ class AnnouncementService implements AnnouncementQueries {
         }
         if (cmd.body() != null) {
             a.setBody(cmd.body());
+        }
+        if (cmd.serviceIds() != null) {
+            a.setServiceIds(cmd.serviceIds());
         }
         if (cmd.startsAt() != null || cmd.endsAt() != null) {
             a.setWindow(cmd.startsAt() != null ? cmd.startsAt() : a.startsAt(),
