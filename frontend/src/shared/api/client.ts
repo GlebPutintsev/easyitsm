@@ -50,6 +50,8 @@ interface RequestOptions {
   /** Ключ идемпотентности для создания (API-04). Генерируется один раз на действие пользователя. */
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /** Вернуть Response без разбора JSON: скачивание файлов (выгрузки отчётов). */
+  raw?: boolean;
 }
 
 /**
@@ -96,7 +98,7 @@ async function send<T>(method: Method, path: string, options: RequestOptions): P
   for (const [key, value] of Object.entries(options.query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: options.raw ? '*/*' : 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   const csrf = method === 'GET' ? undefined : csrfToken();
   if (csrf) headers['X-XSRF-TOKEN'] = csrf;
@@ -120,6 +122,7 @@ async function send<T>(method: Method, path: string, options: RequestOptions): P
     }
     throw new ApiError(problem);
   }
+  if (options.raw) return response as T;
   if (response.status === 204) return undefined as T;
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
@@ -132,6 +135,25 @@ export const api = {
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
   delete: <T = void>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
 };
+
+/**
+ * Скачать файл, который сервер отдаёт на POST (выгрузка отчёта). Повторная аутентификация (SEC-08) и ошибки
+ * RFC 9457 обрабатываются как у остальных запросов. Имя файла берётся из Content-Disposition.
+ */
+export async function downloadFile(path: string, body: unknown, fallbackName: string): Promise<void> {
+  const response = await request<Response>('POST', path, { body, raw: true });
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  const plain = /filename="?([^";]+)"?/i.exec(disposition);
+  const name = utf8?.[1] ? decodeURIComponent(utf8[1]) : (plain?.[1] ?? fallbackName);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /** ETag записи для If-Match: сервер отдаёт версию как "N" (API-05). */
 export function etagOf(version: number): string {

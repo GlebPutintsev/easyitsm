@@ -1,0 +1,133 @@
+/* Отчёты: цвета только через токены «Адмирала» (DESIGN.md), ряды графиков — --ei-chart-*. */
+
+@media (min-width: 75em) {
+  .ei-report-grid > .ei-report-span {
+    grid-column: 1 / -1;
+  }
+}
+
+.ei-report-kpi {
+  padding: 12px 14px;
+  border: 1px solid var(--ei-border);
+  border-radius: 8px;
+  background: var(--ei-surface);
+  min-width: 0;
+}
+
+.ei-report-kpi-value {
+  color: var(--ei-text);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 36em) {
+  .ei-report-kpi-value {
+    font-size: 20px;
+  }
+
+  .ei-report-filters > * {
+    flex: 1 1 140px;
+  }
+}
+
+.ei-report-drill {
+  border-radius: 4px;
+  color: inherit;
+  text-align: inherit;
+}
+
+.ei-report-drill:hover .mantine-Text-root,
+.ei-report-drill:hover {
+  color: var(--ei-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ei-report-drill:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+}
+
+.ei-report-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.ei-report-bars li {
+  display: grid;
+  grid-template-columns: minmax(96px, 34%) 1fr minmax(48px, auto);
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+}
+
+.ei-report-bar-label {
+  color: var(--ei-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ei-report-bar-track {
+  height: 12px;
+  display: flex;
+}
+
+.ei-report-bar {
+  min-width: 3px;
+  height: 100%;
+  background: var(--ei-chart-1);
+  border-radius: 0 4px 4px 0;
+}
+
+.ei-report-bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ei-text);
+}
+
+.ei-report-line {
+  position: relative;
+  width: 100%;
+}
+
+.ei-report-axis {
+  font-size: 11px;
+  fill: var(--ei-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ei-report-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.ei-report-tooltip {
+  position: absolute;
+  pointer-events: none;
+  min-width: 160px;
+  padding: 8px 10px;
+  border: 1px solid var(--ei-border);
+  border-radius: 8px;
+  background: var(--ei-surface);
+  box-shadow: var(--ei-shadow);
+  z-index: 2;
+}
+
+.ei-report-table .ei-report-cell-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ei-report-table .ei-report-cell-label {
+  color: var(--ei-text);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

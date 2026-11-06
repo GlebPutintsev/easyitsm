@@ -38,6 +38,10 @@
   --ei-wait-soft: #eee9f7;
   --ei-neutral-soft: #eef0f4;
   --ei-shadow: 0 1px 2px rgb(18 26 43 / 6%), 0 8px 24px rgb(18 26 43 / 8%);
+  /* Ряды графиков отчётов: порядок фиксирован, пара проверена на дальтонизм и контраст с фоном. */
+  --ei-chart-1: #2a78d6;
+  --ei-chart-2: #eb6834;
+  --ei-chart-grid: #e1e4ea;
 
   /* Тёмно-синяя «рама»: шапка и левое меню. Внутри неё токены переопределяет .ei-chrome. */
   --ei-nav-bg: #14213d;
@@ -83,6 +87,9 @@
   --ei-wait-soft: #241e3d;
   --ei-neutral-soft: #1c2438;
   --ei-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
+  --ei-chart-1: #3987e5;
+  --ei-chart-2: #d95926;
+  --ei-chart-grid: #243150;
 
   --ei-nav-bg: #0a0f1b;
   --ei-nav-raised: #141c30;
