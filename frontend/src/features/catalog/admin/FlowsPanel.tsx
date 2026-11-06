@@ -19,9 +19,9 @@ import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-r
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
-import { ErrorLine } from '@/features/portal/TicketPage';
+import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { type Flow, type FlowInput, type StepDef, useFlows, useSaveFlow } from '../api';
-import { UUID_RE } from '../users';
+import { UUID_RE } from '@/shared/api/people';
 import { ConditionEditor } from './ConditionEditor';
 
 /** Шаблоны маршрутов согласования (REQ-03): шаги последовательно, внутри шага все, любой или кворум. */

@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
 import { type Category, useCatalogItems, useCategories, useSaveCategory } from '../api';
-import { ErrorLine } from '@/features/portal/TicketPage';
+import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { FlowsPanel } from './FlowsPanel';
 
 /** Управление каталогом (ADM): услуги, категории, маршруты согласования. */

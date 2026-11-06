@@ -1,8 +1,9 @@
 import { AppShell } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMediaQuery } from '@mantine/hooks';
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation, useMatches } from 'react-router';
 import { MobileNav } from '@/features/portal/MobileNav';
+import { PortalHeader } from '@/features/portal/PortalHeader';
 import { SideNav } from './SideNav';
 import { TopBar } from './TopBar';
 import { spaceOf } from './spaces';
@@ -10,6 +11,7 @@ import { useGlobalHotkeys } from './useGlobalHotkeys';
 
 /**
  * Шаблон страницы (UI-01): верхняя панель, левое меню, содержимое.
+ * Портал — без левого меню: верхняя навигация, на телефоне нижнее меню (DESIGN.md, «Портал»).
  * Правая панель контекста задаётся страницей через AppShell.Aside, например карточкой заявки.
  */
 export function AppLayout() {
@@ -18,21 +20,26 @@ export function AppLayout() {
   useGlobalHotkeys();
   // Нижнее меню портала на телефоне (10.17).
   const mobile = useMediaQuery('(max-width: 48em)') ?? false;
-  const bottomNav = mobile && space === 'portal';
+  const portal = space === 'portal';
+  const bottomNav = mobile && portal;
+  // Экраны портала сами задают поля и ширину (шапка главной во всю ширину), см. handle в router.tsx.
+  const bleed = useMatches().some((m) => (m.handle as { bleed?: boolean } | undefined)?.bleed);
 
   return (
     <AppShell
       header={{ height: 56 }}
-      navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !navOpened } }}
+      navbar={portal ? undefined : { width: 232, breakpoint: 'sm', collapsed: { mobile: !navOpened } }}
       footer={bottomNav ? { height: 60 } : undefined}
-      padding="md"
+      padding={bleed ? 0 : 'md'}
     >
       <AppShell.Header>
-        <TopBar space={space} navOpened={navOpened} onToggleNav={toggleNav} />
+        {portal ? <PortalHeader /> : <TopBar space={space} navOpened={navOpened} onToggleNav={toggleNav} />}
       </AppShell.Header>
-      <AppShell.Navbar p="xs">
-        <SideNav space={space} />
-      </AppShell.Navbar>
+      {!portal && (
+        <AppShell.Navbar p="xs">
+          <SideNav space={space} />
+        </AppShell.Navbar>
+      )}
       <AppShell.Main bg="var(--ei-bg)">
         <Outlet />
       </AppShell.Main>

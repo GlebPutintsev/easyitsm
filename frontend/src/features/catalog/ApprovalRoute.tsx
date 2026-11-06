@@ -1,29 +1,31 @@
-import { Badge, Card, Group, Stack, Text, Timeline, Title } from '@mantine/core';
+import { Group, Stack, Text, Timeline } from '@mantine/core';
 import { IconCheck, IconClock, IconHourglass, IconMinus, IconX } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import type { Route, RouteStep } from './api';
-import { useUserName } from './users';
+import { usePersonName } from '@/shared/api/people';
 
 const STEP_COLOR: Record<RouteStep['state'], string> = {
-  pending: 'blue',
-  waiting: 'gray',
-  approved: 'teal',
-  rejected: 'red',
-  skipped: 'gray',
-  cancelled: 'gray',
+  pending: 'var(--ei-wait)',
+  waiting: 'var(--ei-border-strong)',
+  approved: 'var(--ei-ok)',
+  rejected: 'var(--ei-danger)',
+  skipped: 'var(--ei-border-strong)',
+  cancelled: 'var(--ei-border-strong)',
 };
+
+const ROUTE_TONE: Record<string, string | undefined> = { approved: 'ok', rejected: 'danger', pending: 'wait' };
 
 /** Маршрут согласования заявки: шаги, режим, кто и как решил (10.5, 10.8). */
 export function ApprovalRoute({ route }: { route: Route }) {
   const { t } = useTranslation();
   return (
-    <Card withBorder padding="md">
+    <section className="ep-card" style={{ padding: 16 }}>
       <Stack gap="sm">
         <Group justify="space-between">
-          <Title order={4}>{t('approvals.route')}</Title>
-          <Badge color={route.state === 'approved' ? 'teal' : route.state === 'rejected' ? 'red' : route.state === 'pending' ? 'violet' : 'gray'}>
+          <h2 className="ep-h2" style={{ fontSize: 15, lineHeight: '22px' }}>{t('approvals.route')}</h2>
+          <span className="ep-chip" data-tone={ROUTE_TONE[route.state]}>
             {t(`approvals.routeState.${route.state}`)}
-          </Badge>
+          </span>
         </Group>
         <Timeline active={route.steps.findIndex((s) => s.state === 'pending' || s.state === 'waiting') - 1} bulletSize={24}>
           {route.steps.map((s) => (
@@ -51,13 +53,13 @@ export function ApprovalRoute({ route }: { route: Route }) {
           ))}
         </Timeline>
       </Stack>
-    </Card>
+    </section>
   );
 }
 
 function ApproverLine({ approverId, decision, comment }: { approverId: string; decision: string; comment: string | null }) {
   const { t } = useTranslation();
-  const name = useUserName(approverId);
+  const name = usePersonName(approverId);
   const Icon = decision === 'approved' ? IconCheck : decision === 'rejected' ? IconX : decision === 'pending' ? IconHourglass : IconMinus;
   return (
     <Group gap={6} wrap="nowrap" align="flex-start">
