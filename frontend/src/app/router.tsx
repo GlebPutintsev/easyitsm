@@ -38,6 +38,7 @@ import { changeAdminRoutes, changeRoutes } from '@/features/changes/routes';
 import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
 import { MajorIncidentPage, MajorIncidentsPage, StatusPage } from '@/features/major';
 import { ProblemPage, ProblemsPage } from '@/features/problems';
+import { CiPage, CmdbPage, QualityPage, ReconciliationPage, SourcesPage } from '@/features/cmdb';
 import { NotFound } from './NotFound';
 
 /**
@@ -92,6 +93,11 @@ export const router = createBrowserRouter([
       { path: 'agent/assets/directory', element: <DirectoryPage /> },
       { path: 'agent/assets/:id', element: <AssetPage /> },
       { path: 'portal/assets', element: <MyAssetsPage /> },
+      { path: 'agent/cmdb', element: <CmdbPage /> },
+      { path: 'agent/cmdb/reconciliation', element: <ReconciliationPage /> },
+      { path: 'agent/cmdb/quality', element: <QualityPage /> },
+      { path: 'agent/cmdb/sources', element: <SourcesPage /> },
+      { path: 'agent/cmdb/:id', element: <CiPage /> },
       { path: 'agent/problems', element: <ProblemsPage /> },
       { path: 'agent/problems/:number', element: <ProblemPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
