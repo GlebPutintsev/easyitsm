@@ -40,6 +40,10 @@
         "title": "Email",
         "text": "Sending, support mailboxes, email logs"
       },
+      "integrations": {
+        "title": "Integrations",
+        "text": "Zabbix, Alertmanager and Grafana monitoring: incidents from alerts"
+      },
       "notificationTemplates": {
         "title": "Notification templates",
         "text": "Email and notification texts per event"

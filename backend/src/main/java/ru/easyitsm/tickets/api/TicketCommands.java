@@ -1,6 +1,7 @@
 package ru.easyitsm.tickets.api;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -52,6 +53,16 @@ public interface TicketCommands {
      * {@code transition_not_allowed}, не хватает полей — {@code field_required}.
      */
     TicketRef transition(UUID ticketId, TicketTransition transition, String trigger);
+
+    /**
+     * Решение заявки от имени системы, когда внешний источник сообщил, что проблема устранена (мониторинг).
+     * Выбирается первый ручной переход цикла из текущего статуса в статус категории RESOLVED, обязательные поля
+     * которого заполнены: комментарий, код и текст решения, а также группа и исполнитель, если они есть у заявки.
+     * Такого перехода нет (заявка новая, без исполнителя, уже решена или закрыта) — пусто, заявка не меняется
+     * и исключения нет: вызывающий сам решает, что делать (например, оставить заметку).
+     */
+    Optional<TicketRef> resolveIfPossible(UUID ticketId, String comment, String resolutionCode, String resolutionText,
+                                          String trigger);
 
     /**
      * Подписывает пользователя на заявку. Причина — {@code added} (по умолчанию), {@code mention} или {@code creator}.

@@ -1,0 +1,39 @@
+import './i18n';
+import { Stack, Tabs, Text, Title } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
+import { EventsPanel } from './EventsPanel';
+import { SourcesPanel } from './SourcesPanel';
+
+/** «Управление → Интеграции» (раздел 8): источники мониторинга и журнал их событий. */
+export function IntegrationsPage() {
+  const { t } = useTranslation();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') ?? 'monitoring';
+  return (
+    <Stack gap="md" maw={1200}>
+      <div>
+        <Title order={2}>{t('integrations.title')}</Title>
+        <Text size="sm" c="dimmed">
+          {t('integrations.subtitle')}
+        </Text>
+      </div>
+      <Tabs
+        value={tab}
+        onChange={(v) => setParams(v && v !== 'monitoring' ? { tab: v } : {}, { replace: true })}
+        keepMounted={false}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="monitoring">{t('integrations.tabs.monitoring')}</Tabs.Tab>
+          <Tabs.Tab value="events">{t('integrations.tabs.events')}</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="monitoring" pt="md">
+          <SourcesPanel />
+        </Tabs.Panel>
+        <Tabs.Panel value="events" pt="md">
+          <EventsPanel sourceId={params.get('source') ?? undefined} />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
+  );
+}
