@@ -430,4 +430,24 @@ class ChangeStore {
                 Sql.uuid(rs, "decided_by"), Sql.instant(rs, "decided_at"), Sql.instant(rs, "due_at"),
                 Sql.instant(rs, "created_at"));
     }
+
+    /**
+     * КЕ {@code from} слита в {@code to} при сверке CMDB: ссылки изменений, шаблонов и заморозок переводятся на
+     * выжившую КЕ без повторов. Возвращает число изменений, где ссылка была.
+     */
+    int replaceCi(UUID from, UUID to) {
+        String swap = """
+                array(select distinct case when x = :from then :to else x end from unnest(%1$s) x)""";
+        int changes = 0;
+        for (String col : List.of("ci_ids", "service_ids")) {
+            changes += jdbc.sql("update change_detail set " + col + " = " + swap.formatted(col)
+                            + " where :from = any(" + col + ")")
+                    .param("from", from).param("to", to).update();
+            jdbc.sql("update change_template set " + col + " = " + swap.formatted(col) + " where :from = any(" + col + ")")
+                    .param("from", from).param("to", to).update();
+            jdbc.sql("update change_freeze set " + col + " = " + swap.formatted(col) + " where :from = any(" + col + ")")
+                    .param("from", from).param("to", to).update();
+        }
+        return changes;
+    }
 }

@@ -40,6 +40,12 @@ CHG-01…12 (1.0). Пакет `ru.easyitsm.changes`, таблицы `change_deta
 | `ChangeApproved` | изменение утверждено (все согласования раунда, CAB или стандартное по шаблону) |
 | `ChangeCompleted` | внедрение завершено: `outcome` = `successful`, `partial`, `rolled_back`; факт начала и конца |
 
+## Слушает
+
+- `TicketEvent` заявок типа `change` — копия номера, темы, группы и исполнителя для списков и календаря.
+- `cmdb.events.CiMerged` — дубликат КЕ слит при сверке: `ci_ids` и `service_ids` изменений, шаблонов и заморозок
+  переводятся на выжившую КЕ.
+
 ## REST
 
 Читают `AGT, LEAD, MIM, CHG, PRB, CFG, AST, AUD, APR`; поддержка и аудитор видят все неконфиденциальные

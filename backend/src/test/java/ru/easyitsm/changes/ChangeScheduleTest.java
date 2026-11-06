@@ -211,6 +211,29 @@ class ChangeScheduleTest extends ChangeApiSupport {
                 .andExpect(jsonPath("$.protocolSentAt").isNotEmpty());
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    org.springframework.context.ApplicationEventPublisher events;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    org.springframework.transaction.PlatformTransactionManager tm;
+
+    @Test
+    void mergedDuplicateCiIsReplacedInChanges() throws Exception {
+        String id = readyNormal("Изменение с дубликатом услуги");
+        java.util.UUID survivor = Ids.newId();
+        java.util.UUID tenant = java.util.UUID.fromString(DEMO);
+        ru.easyitsm.cmdb.api.CiRef ref = new ru.easyitsm.cmdb.api.CiRef(survivor, "Портал", "business_service",
+                "Бизнес-услуга", ru.easyitsm.cmdb.api.CiLayer.BUSINESS_SERVICE, ru.easyitsm.cmdb.api.CiStatus.ACTIVE,
+                "prod", ru.easyitsm.cmdb.api.CiCriticality.HIGH, null, 0);
+        new org.springframework.transaction.support.TransactionTemplate(tm).executeWithoutResult(s ->
+                ru.easyitsm.platform.tenant.TenantContext.runAs(tenant, () -> events.publishEvent(
+                        new ru.easyitsm.cmdb.events.CiMerged(tenant, Instant.now(), null, "reconciliation", ref,
+                                java.util.UUID.fromString(service)))));
+        perform(as(get("/api/v1/changes/" + id), author, "AGT")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.serviceIds.length()").value(1))
+                .andExpect(jsonPath("$.serviceIds[0]").value(survivor.toString()));
+    }
+
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cab(
             org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder req, String mid) throws Exception {
         String etag = mvc.perform(as(get("/api/v1/cab/meetings/" + mid), manager, "CHG")).andReturn().getResponse()
