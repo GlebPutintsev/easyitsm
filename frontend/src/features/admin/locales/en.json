@@ -1,0 +1,395 @@
+{
+  "nav": {
+    "setup": "Setup wizard",
+    "groups": "Groups & schedules",
+    "dictionaries": "Dictionaries",
+    "import": "Import",
+    "journal": "Journal"
+  },
+  "admin": {
+    "title": "Administration",
+    "save": "Save",
+    "cancel": "Cancel",
+    "more": "Show more",
+    "sections": {
+      "setup": {
+        "title": "Setup wizard",
+        "text": "Organization, sign-in, mail, groups, services, SLA and demo data"
+      },
+      "users": {
+        "title": "Users",
+        "text": "Invite, block, sessions and MFA"
+      },
+      "groups": {
+        "title": "Groups & schedules",
+        "text": "Members, on-call duty, working hours and holidays"
+      },
+      "dictionaries": {
+        "title": "Dictionaries",
+        "text": "Categories, statuses, priorities, reason codes, departments"
+      },
+      "catalog": {
+        "title": "Service catalog",
+        "text": "Categories, offerings and approval routes"
+      },
+      "import": {
+        "title": "CSV import",
+        "text": "Users, groups and departments with validation and rollback"
+      },
+      "journal": {
+        "title": "Journal",
+        "text": "Who changed which settings, version comparison"
+      }
+    },
+    "home": {
+      "wizardTitle": "Setup is not finished",
+      "wizardText": "Steps done: {{done}} of {{total}}. The wizard gets your service desk running in half an hour.",
+      "wizardProgress": "Wizard progress",
+      "wizardStart": "Start setup",
+      "wizardContinue": "Continue setup",
+      "recent": "Recent changes",
+      "allJournal": "Full journal"
+    },
+    "setup": {
+      "title": "Setup wizard",
+      "lead": "Seven steps to a working service desk. Any step can be skipped and revisited later.",
+      "skipped": "Skipped",
+      "back": "Back",
+      "next": "Next",
+      "skip": "Skip",
+      "saveNext": "Save and continue",
+      "finish": "Finish setup",
+      "finishTitle": "All set",
+      "completedTitle": "Setup completed",
+      "toAdmin": "Go to Administration",
+      "state": {
+        "pending": "not done",
+        "done": "done",
+        "skipped": "skipped"
+      },
+      "org": {
+        "name": "Organization name",
+        "timezone": "Time zone",
+        "locale": "Default language"
+      },
+      "steps": {
+        "organization": {
+          "label": "Organization",
+          "text": "Name and time zone: working hours and deadlines are calculated in it."
+        },
+        "login": {
+          "label": "Sign-in",
+          "text": "Check corporate SSO sign-in. Staff enable MFA in their own profile."
+        },
+        "mail": {
+          "label": "Mail",
+          "text": "Check the connection to the mail server used for notifications."
+        },
+        "groups": {
+          "label": "Groups",
+          "text": "Support groups that tickets are assigned to."
+        },
+        "services": {
+          "label": "Services",
+          "text": "The service catalog employees order help from on the portal."
+        },
+        "sla": {
+          "label": "SLA",
+          "text": "Response and resolution targets by priority."
+        },
+        "demo": {
+          "label": "Demo data",
+          "text": "Sample departments, groups, people and tickets to look around."
+        }
+      },
+      "check": {
+        "mail": "Check mail",
+        "sso": "Check SSO",
+        "mailHint": "The server connects to the mail server from the deployment settings and greets it. No email is sent.",
+        "ssoHint": "The server requests signing keys from every configured sign-in provider.",
+        "mfaLink": "Your own MFA: Profile → Security",
+        "ok": "Check passed",
+        "failed": "Check failed",
+        "notConfigured": "Not configured in the deployment",
+        "latency": "{{ms}} ms"
+      },
+      "noGroups": "No groups yet",
+      "openGroups": "All groups",
+      "servicesCount": "Catalog categories: {{count}}",
+      "openCatalog": "Open catalog",
+      "slaDefaults": "Default targets: P1 — response 15 min, resolution 4 h; P2 — 30 min and 8 h, 24×7; P3 and P4 — on business hours.",
+      "installSla": "Install default targets ({{tz}})",
+      "loadDemo": "Load demo data",
+      "demoLoaded": "Demo data is already loaded",
+      "demoDone": "Demo data loaded",
+      "demoSummary": "Groups: {{groups}}, people: {{users}}, departments: {{departments}}. Tickets: {{tickets}}."
+    },
+    "users": {
+      "title": "Users",
+      "sync": "Synchronize",
+      "import": "CSV import",
+      "invite": "Invite",
+      "inviteTitle": "Invite a user",
+      "inviteEmailHint": "A link to set the password is sent to this address",
+      "search": "Search by name, login or email",
+      "allStates": "All states",
+      "state": "State",
+      "states": {
+        "active": "Active",
+        "blocked": "Blocked"
+      },
+      "name": "Person",
+      "displayName": "Full name",
+      "login": "Login",
+      "email": "Email",
+      "department": "Department",
+      "source": "Source",
+      "sources": {
+        "local": "Local",
+        "ldap": "LDAP directory",
+        "oidc": "SSO"
+      },
+      "lastLogin": "Last sign-in",
+      "actionsFor": "Actions: {{name}}",
+      "edit": "Edit",
+      "block": "Block",
+      "unblock": "Unblock",
+      "revokeSessions": "End sessions",
+      "resetMfa": "Reset MFA",
+      "mfaNote": "Resetting MFA asks the administrator to sign in again: verify the person's identity by phone or in person first.",
+      "synced": "Synchronized: {{users}} in directory, {{created}} created, {{blocked}} blocked",
+      "blocked": "User blocked, sessions ended",
+      "unblocked": "User unblocked",
+      "revoked": "Sessions ended: {{revoked}}",
+      "mfaReset": "MFA reset"
+    },
+    "groups": {
+      "title": "Groups & schedules",
+      "tabGroups": "Groups",
+      "tabSchedules": "Working schedules",
+      "create": "Create group",
+      "name": "Name",
+      "newName": "New group",
+      "type": "Type",
+      "description": "Description",
+      "types": {
+        "support": "Support",
+        "security": "Security",
+        "approval": "Approval",
+        "other": "Other"
+      },
+      "fromLdap": "From LDAP directory",
+      "members": "Members",
+      "noMembers": "No members yet",
+      "lead": "Lead",
+      "addMember": "Add member",
+      "add": "Add",
+      "removeMember": "Remove {{name}} from group"
+    },
+    "duty": {
+      "title": "Duty for the next two weeks",
+      "empty": "No duty assigned",
+      "who": "On duty",
+      "from": "From",
+      "to": "To",
+      "note": "Note",
+      "assign": "Assign duty",
+      "remove": "Delete shift"
+    },
+    "schedules": {
+      "create": "New schedule",
+      "name": "Schedule name",
+      "hoursHint": "Working hours separated by commas, e.g. “09:00-13:00, 14:00-18:00”. Empty means day off.",
+      "dayOff": "Day off",
+      "days": {
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "SUNDAY": "Sunday"
+      },
+      "holidays": "Holidays and special days",
+      "year": "Year",
+      "date": "Date",
+      "holidayName": "Name",
+      "specialHours": "Special hours",
+      "removeHoliday": "Remove day",
+      "noHolidays": "No holidays this year",
+      "addHoliday": "Add day"
+    },
+    "dicts": {
+      "title": "Dictionaries",
+      "tabs": {
+        "categories": "Categories",
+        "statuses": "Statuses",
+        "priorities": "Priorities",
+        "codes": "Reason codes",
+        "departments": "Departments"
+      },
+      "addCategory": "Add category",
+      "name": "Name",
+      "types": "Ticket types",
+      "state": "State",
+      "active": "Enabled",
+      "inactive": "Disabled",
+      "edit": "Edit “{{name}}”",
+      "parent": "Part of",
+      "ticketTypes": {
+        "incident": "Incident",
+        "request": "Request",
+        "problem": "Problem",
+        "change": "Change",
+        "task": "Task"
+      },
+      "workflowType": "Ticket type",
+      "statusesHint": "Status names can be changed freely: tickets store the code. The category sets color and SLA behavior and is fixed for statuses with transitions. Transitions are configured in Lifecycles.",
+      "code": "Code",
+      "category": "Category",
+      "transitions": "Transitions",
+      "newStatusCode": "New status code",
+      "addStatus": "Add status",
+      "codeRule": "Lowercase latin letters, digits and _, starts with a letter",
+      "statusCategories": {
+        "draft": "Draft",
+        "new": "New",
+        "approval": "Approval",
+        "assigned": "Assigned",
+        "in_progress": "In progress",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "closed": "Closed",
+        "cancelled": "Cancelled"
+      },
+      "matrixHint": "Ticket priority by impact (rows) and urgency (columns), section 5.2.",
+      "impactUrgency": "Impact \\ urgency",
+      "levels": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "cell": "Priority: impact {{impact}}, urgency {{urgency}}",
+      "codeKind": "Dictionary",
+      "codeKinds": {
+        "resolution": "Resolution codes",
+        "pending": "Pending reasons",
+        "cancel": "Cancellation reasons"
+      },
+      "codesHint": "Codes are already stored in tickets, so a saved code cannot be deleted — disable it instead. List order is the order in the agent dialog.",
+      "up": "Up",
+      "down": "Down",
+      "removeNew": "Remove",
+      "newCode": "New code",
+      "addCode": "Add code",
+      "addDepartment": "Add department",
+      "addOrganization": "Add organization",
+      "noDepartments": "No departments yet",
+      "kind": "Kind",
+      "kinds": {
+        "organization": "Organization",
+        "department": "Department"
+      }
+    },
+    "import": {
+      "title": "CSV import",
+      "kinds": {
+        "users": "Users",
+        "groups": "Groups",
+        "departments": "Departments"
+      },
+      "columns": {
+        "users": "Columns: login, display_name, email, department, groups separated by |, locale, timezone. Separator “;” or “,”, UTF-8.",
+        "groups": "Columns: name, type (support, security, approval, other), description.",
+        "departments": "Columns: name, code, parent."
+      },
+      "file": "CSV file",
+      "choose": "Choose a file",
+      "check": "Check file",
+      "history": "Previous imports",
+      "noHistory": "No imports yet",
+      "rowsOf": "{{valid}} of {{total}} rows",
+      "status": {
+        "preview": "Checked",
+        "applied": "Applied",
+        "rolled_back": "Rolled back"
+      },
+      "summary": "To create: {{valid}} · skipped: {{skip}} · with errors: {{errors}}",
+      "applied": "Created users: {{users}}, groups: {{groups}}, departments: {{departments}}, memberships: {{memberships}}.",
+      "rolledBack": "Rolled back: {{removed}} users deleted, {{blocked}} signed-in users blocked.",
+      "line": "Line",
+      "result": "Result",
+      "actions": {
+        "create": "Will be created",
+        "skip": "Skipped",
+        "error": "Error"
+      },
+      "col": {
+        "login": "Login",
+        "display_name": "Full name",
+        "email": "Email",
+        "locale": "Language",
+        "timezone": "Time zone",
+        "department": "Department",
+        "groups": "Groups",
+        "name": "Name",
+        "type": "Type",
+        "description": "Description",
+        "code": "Code",
+        "parent": "Part of"
+      },
+      "truncated": "First {{shown}} of {{total}} rows shown",
+      "skipInvalid": "Skip rows with errors",
+      "apply": "Apply ({{count}})",
+      "rollback": "Roll back import"
+    },
+    "journal": {
+      "title": "Administrator journal",
+      "allAreas": "All modules",
+      "area": "Module",
+      "areas": {
+        "admin": "Administration",
+        "identity": "Users and groups",
+        "sla": "SLA and schedules",
+        "tickets": "Tickets",
+        "catalog": "Catalog"
+      },
+      "allActions": "All actions",
+      "action": "Action",
+      "entity": "Setting kind",
+      "empty": "No changes yet",
+      "when": "When",
+      "who": "Who",
+      "what": "What",
+      "versionCol": "Version"
+    },
+    "history": {
+      "button": "History",
+      "title": "History: {{what}}",
+      "empty": "No saved versions yet",
+      "version": "Version {{n}}",
+      "system": "System",
+      "comparedWith": "Compared with version {{n}}",
+      "firstVersion": "First version: everything added",
+      "noChanges": "No changes",
+      "path": "Field",
+      "before": "Before",
+      "after": "After",
+      "restore": "Restore this version",
+      "kind": {
+        "added": "added",
+        "removed": "removed",
+        "changed": "changed"
+      },
+      "action": {
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "restore": "Restore",
+        "import": "Import",
+        "rollback": "Rollback",
+        "setup": "Wizard"
+      }
+    }
+  }
+}

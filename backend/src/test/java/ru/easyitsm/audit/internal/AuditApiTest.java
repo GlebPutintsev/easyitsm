@@ -178,6 +178,18 @@ class AuditApiTest extends AuditTestSupport {
     }
 
     @Test
+    void reportExportIsRecorded() throws Exception {
+        String analyst = Ids.newId().toString();
+        mvc.perform(as(post("/api/v1/reports/dashboards/overview/export"), DEMO, analyst, "ANL")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"from\":\"2026-01-01\",\"to\":\"2026-01-31\",\"tz\":\"UTC\",\"format\":\"csv\"}"))
+                .andExpect(status().isOk());
+        assertThat(rows(DEMO, "data.export")).anyMatch(r -> analyst.equals(String.valueOf(r.actorId()))
+                && "report_export".equals(r.objectType()) && r.details().contains("report:dashboard:overview")
+                && r.details().contains("\"format\": \"csv\""));
+    }
+
+    @Test
     void siemStatusIsForSecurityOnly() throws Exception {
         mvc.perform(as(get("/api/v1/audit/siem"), DEMO, sec, "SEC"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.enabled").value(false))

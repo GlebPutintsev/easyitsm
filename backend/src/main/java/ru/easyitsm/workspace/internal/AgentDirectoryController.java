@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.easyitsm.admin.api.ReasonCodes;
 import ru.easyitsm.catalog.api.CatalogQueries;
 import ru.easyitsm.identity.api.GroupSummary;
 import ru.easyitsm.identity.api.UserDirectory;
@@ -50,11 +51,19 @@ class AgentDirectoryController {
     private final UserDirectory users;
     private final CatalogQueries catalog;
     private final TicketDirectory tickets;
+    private final ReasonCodes reasons;
 
-    AgentDirectoryController(UserDirectory users, CatalogQueries catalog, TicketDirectory tickets) {
+    AgentDirectoryController(UserDirectory users, CatalogQueries catalog, TicketDirectory tickets,
+                             ReasonCodes reasons) {
         this.users = users;
         this.catalog = catalog;
         this.tickets = tickets;
+        this.reasons = reasons;
+    }
+
+    /** Коды решения, приостановки и отмены настраиваются в «Управлении → Справочники» (модуль admin). */
+    private List<Ref> reasons(ReasonCodes.Kind kind) {
+        return reasons.active(kind).stream().map(i -> new Ref(i.code(), i.name())).toList();
     }
 
     @GetMapping("/api/v1/agent-workspace/directory")
@@ -87,8 +96,8 @@ class AgentDirectoryController {
                 catalog.activeItems().stream().map(i -> new Ref(i.id().toString(), i.name())).toList(),
                 tickets.categories().stream().filter(TicketDirectory.CategoryRef::active)
                         .map(c -> new Ref(c.id().toString(), c.name())).toList(),
-                ReasonCodes.RESOLUTION,
-                ReasonCodes.PENDING,
-                ReasonCodes.CANCEL);
+                reasons(ReasonCodes.Kind.RESOLUTION),
+                reasons(ReasonCodes.Kind.PENDING),
+                reasons(ReasonCodes.Kind.CANCEL));
     }
 }

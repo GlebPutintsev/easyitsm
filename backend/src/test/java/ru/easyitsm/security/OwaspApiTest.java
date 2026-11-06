@@ -65,7 +65,8 @@ class OwaspApiTest {
             "/api/v1/response-templates/{id}",              // шаблон ответа
             "/api/v1/tickets/{ref}/links/{linkId}",         // связь заявок, видна в истории заявки
             "/api/v1/tickets/{ref}/watchers/{user}",        // наблюдатель заявки
-            "/api/v1/me/sessions/{id}");                    // завершить свою сессию
+            "/api/v1/me/sessions/{id}",                     // завершить свою сессию
+            "/api/v1/admin/duty-shifts/{id}");              // смена в графике дежурств, ставится без повторного входа
 
     @Autowired
     MockMvc mvc;
@@ -136,7 +137,7 @@ class OwaspApiTest {
         for (Endpoint e : endpoints()) {
             boolean reauth = hasAnnotation(e.handler(), RequiresRecentAuth.class);
             boolean delete = e.method() == HttpMethod.DELETE && !DELETE_WITHOUT_REAUTH.contains(e.pattern());
-            boolean export = e.pattern().contains("/export");
+            boolean export = e.pattern().contains("/export") && e.method() != HttpMethod.GET; // GET — журнал выгрузок
             boolean roles = e.pattern().startsWith("/api/v1/role-grants") && e.method() != HttpMethod.GET;
             boolean membership = e.pattern().contains("/members/") && e.method() != HttpMethod.GET;
             if ((delete || export || roles || membership) && !reauth) {

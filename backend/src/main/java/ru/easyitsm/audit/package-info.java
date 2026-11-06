@@ -7,6 +7,7 @@
  *   <li>отказ в доступе: ответ 403 или 404 на запрос к записи (AT-01, AT-05);</li>
  *   <li>действия с повторной аутентификацией ({@link ru.easyitsm.identity.api.RequiresRecentAuth}) и изменение
  *       настроек — по правилам маршрутов {@code AuditRoutes}, без правок в других модулях;</li>
+ *   <li>выгрузки отчётов — по событию {@code reporting.events.ReportExported};</li>
  *   <li>явные записи модулей через {@link ru.easyitsm.audit.api.AuditLog}: чтение чувствительных данных,
  *       массовая выгрузка ({@link ru.easyitsm.audit.api.BulkExport}).</li>
  * </ul>
@@ -14,7 +15,7 @@
  * (Syslog TLS, CEF или JSON) с повтором при сбое. Пароли, токены и секреты в журнал не попадают:
  * детали проходят через {@link ru.easyitsm.audit.api.Masking}.
  * <p>
- * Модуль зависит только от identity. Другие модули могут пользоваться {@code audit.api}, а identity — нет:
+ * Модуль зависит от identity и событий reporting. Другие модули могут пользоваться {@code audit.api}, а identity — нет:
  * его действия журнал получает из событий.
  */
 @org.springframework.modulith.ApplicationModule(displayName = "Audit and security")
