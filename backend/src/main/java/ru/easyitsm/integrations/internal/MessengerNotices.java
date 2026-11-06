@@ -62,7 +62,7 @@ class MessengerNotices implements ExternalChannel {
             sb.append("\n\n").append(n.url());
         }
         if (n.ticketId() != null) {
-            sb.append("\n\n").append(en ? "Reply to this message to add a comment." : "Ответьте на это сообщение, чтобы добавить комментарий.");
+            sb.append("\n\n").append(MessengerBot.replyHint(m.kind(), n.locale()));
         }
         return sb.toString();
     }

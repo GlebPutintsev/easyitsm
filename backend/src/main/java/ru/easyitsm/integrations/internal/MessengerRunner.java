@@ -41,7 +41,7 @@ class MessengerRunner {
                 return -1;
             }
             MessengerStore.Messenger m = store.find(messengerId).filter(MessengerStore.Messenger::enabled).orElse(null);
-            if (m == null) {
+            if (m == null || !service.connector(m.kind()).polls()) {
                 return -1;
             }
             MessengerConnector.Api api = service.api(m);
@@ -67,6 +67,30 @@ class MessengerRunner {
             return poll.updates().size();
         });
         return n == null ? 0 : n;
+    }
+
+    /** Сообщение, пришедшее по постоянному соединению (Slack), в арендаторе вызывающего и своей транзакции. */
+    void handle(UUID messengerId, MessengerConnector.Update u) {
+        tx.executeWithoutResult(s -> {
+            MessengerStore.Messenger m = store.find(messengerId).filter(MessengerStore.Messenger::enabled).orElse(null);
+            if (m == null) {
+                return;
+            }
+            bot.handle(m, u);
+            store.polled(m.id(), null, null, true);
+        });
+    }
+
+    /** Адрес нового соединения Socket Mode; null — бот выключен или удалён. */
+    java.net.URI socketUrl(UUID messengerId) {
+        MessengerStore.Messenger m = tx.execute(s -> store.find(messengerId)
+                .filter(x -> x.enabled() && "slack".equals(x.kind())).orElse(null));
+        return m == null ? null : tx.execute(s -> service.socketUrl(m));
+    }
+
+    /** Состояние соединения для экрана администратора: null — соединение установлено. */
+    void status(UUID messengerId, String error) {
+        tx.executeWithoutResult(s -> store.polled(messengerId, null, error, false));
     }
 
     /** Отправка одного сообщения очереди. @return true — отправлялось (успешно или нет) */

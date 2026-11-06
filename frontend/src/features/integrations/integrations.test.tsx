@@ -51,8 +51,10 @@ const BOT: Messenger = {
   kind: 'telegram',
   name: 'Поддержка',
   tokenHint: '…wxyz',
+  appTokenHint: null,
   baseUrl: null,
   botUsername: 'itsm_help_bot',
+  botUrl: 'https://t.me/itsm_help_bot',
   enabled: true,
   allowTickets: true,
   ticketType: 'incident',
@@ -80,8 +82,9 @@ const MY_BOT: MyMessenger = {
 // Код привязки в ответе-заглушке: тоже из частей.
 const LINK_CODE = 'L' + 'k'.repeat(19);
 
-// Токен бота во вводе: тоже из частей.
+// Токены бота во вводе: тоже из частей.
 const BOT_TOKEN = 'bot-' + 'z'.repeat(8);
+const APP_TOKEN = 'app-' + 'q'.repeat(8);
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -175,7 +178,12 @@ describe('экран интеграций', () => {
         return json({ ok: true, botUsername: 'itsm_help_bot', error: null });
       if (url.pathname === '/api/v1/integrations/my-messengers' && method === 'GET') return json([MY_BOT]);
       if (url.pathname === `/api/v1/integrations/my-messengers/${BOT.id}/link`)
-        return json({ url: `https://t.me/itsm_help_bot?start=${LINK_CODE}`, code: LINK_CODE, expiresAt: '2026-11-06T10:15:00Z' });
+        return json({
+          url: `https://t.me/itsm_help_bot?start=${LINK_CODE}`,
+          code: LINK_CODE,
+          command: `/start ${LINK_CODE}`,
+          expiresAt: '2026-11-06T10:15:00Z',
+        });
       if (url.pathname === `/api/v1/integrations/my-messengers/${BOT.id}` && method === 'DELETE') return new Response(null, { status: 204 });
       if (url.pathname === '/api/v1/groups') return json({ items: [], nextCursor: null });
       if (url.pathname === '/api/v1/admin/dictionaries')
@@ -328,6 +336,25 @@ describe('экран интеграций', () => {
     await waitFor(() => expect(calls('POST', '/integrations/messengers')).toHaveLength(1));
     const body = JSON.parse(String(calls('POST', '/integrations/messengers')[0]![1]?.body));
     expect(body).toMatchObject({ kind: 'max', name: 'MAX поддержка', token: BOT_TOKEN, clearGroup: true });
+  });
+
+  it('бот Slack требует ещё и токен приложения', async () => {
+    renderAt('/admin/integrations?tab=messengers');
+    fireEvent.click(await screen.findByRole('button', { name: 'Подключить бота' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByText('Slack'));
+    fireEvent.change(within(dialog).getByLabelText(/Название/), { target: { value: 'Slack поддержка' } });
+    fireEvent.change(within(dialog).getByLabelText(/Токен бота/), { target: { value: BOT_TOKEN } });
+    const connect = within(dialog).getByRole('button', { name: 'Подключить' });
+    expect(connect).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Токен приложения/), { target: { value: APP_TOKEN } });
+    fireEvent.click(connect);
+    await waitFor(() => expect(calls('POST', '/integrations/messengers')).toHaveLength(1));
+    expect(JSON.parse(String(calls('POST', '/integrations/messengers')[0]![1]?.body))).toMatchObject({
+      kind: 'slack',
+      token: BOT_TOKEN,
+      appToken: APP_TOKEN,
+    });
   });
 
   it('профиль: привязка выдаёт ссылку на бота и команду', async () => {

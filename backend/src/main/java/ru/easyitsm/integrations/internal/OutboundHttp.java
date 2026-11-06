@@ -84,6 +84,11 @@ class OutboundHttp {
         }
     }
 
+    /** Разрешены ли адреса самого сервера (тесты и стенд разработчика). */
+    boolean loopbackAllowed() {
+        return props.outbound().allowLoopback();
+    }
+
     OutboundGuard guard(List<String> allowedHosts) {
         return new OutboundGuard(allowedHosts, props.outbound().allowLoopback(), InetAddress::getAllByName);
     }

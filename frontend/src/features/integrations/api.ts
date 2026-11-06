@@ -333,8 +333,15 @@ export function useRetryDelivery() {
 
 // ---------------------------------------------------------------- мессенджеры
 
-export type MessengerKind = 'telegram' | 'max';
-export const MESSENGER_KINDS: MessengerKind[] = ['telegram', 'max'];
+export type MessengerKind = 'telegram' | 'max' | 'slack';
+export const MESSENGER_KINDS: MessengerKind[] = ['telegram', 'max', 'slack'];
+/** Мессенджеры, которым кроме токена бота нужен токен приложения (Slack Socket Mode). */
+export const NEEDS_APP_TOKEN: MessengerKind[] = ['slack'];
+export const DEFAULT_API: Record<MessengerKind, string> = {
+  telegram: 'https://api.telegram.org',
+  max: 'https://platform-api.max.ru',
+  slack: 'https://slack.com/api',
+};
 export type DataField = 'title' | 'text' | 'link';
 export const DATA_FIELDS: DataField[] = ['title', 'text', 'link'];
 
@@ -343,8 +350,10 @@ export interface Messenger {
   kind: MessengerKind;
   name: string;
   tokenHint: string;
+  appTokenHint: string | null;
   baseUrl: string | null;
   botUsername: string | null;
+  botUrl: string | null;
   enabled: boolean;
   allowTickets: boolean;
   ticketType: 'incident' | 'request';
@@ -363,6 +372,7 @@ export interface MessengerInput {
   kind?: MessengerKind;
   name?: string;
   token?: string;
+  appToken?: string;
   baseUrl?: string;
   enabled?: boolean;
   allowTickets?: boolean;
@@ -383,8 +393,10 @@ export interface MyMessenger {
 }
 
 export interface LinkCode {
-  url: string;
+  url: string | null;
   code: string;
+  /** Что отправить боту вручную: «/start код» или сам код (Slack). */
+  command: string;
   expiresAt: string;
 }
 

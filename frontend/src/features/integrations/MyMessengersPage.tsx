@@ -1,6 +1,6 @@
 import './i18n';
 import { Badge, Button, Card, Code, Group, Stack, Text, Title } from '@mantine/core';
-import { IconBrandTelegram, IconExternalLink, IconMessageCircle } from '@tabler/icons-react';
+import { IconBrandSlack, IconBrandTelegram, IconExternalLink, IconMessageCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorLine } from '@/shared/ui/ErrorLine';
@@ -41,7 +41,7 @@ function BotCard({ bot }: { bot: MyMessenger }) {
   const unlink = useUnlinkMessenger();
   const refresh = useRefreshMyMessengers();
   const [code, setCode] = useState<LinkCode | null>(null);
-  const Icon = bot.kind === 'telegram' ? IconBrandTelegram : IconMessageCircle;
+  const Icon = bot.kind === 'telegram' ? IconBrandTelegram : bot.kind === 'slack' ? IconBrandSlack : IconMessageCircle;
 
   return (
     <Card withBorder padding="md" data-testid={`my-bot-${bot.id}`}>
@@ -81,15 +81,17 @@ function BotCard({ bot }: { bot: MyMessenger }) {
         {code && !bot.linked && (
           <Stack gap="xs" data-testid="link-code">
             <Text size="sm">
-              {t('integrations.my.codeHint', {
+              {t(code.command === code.code ? 'integrations.my.codeHintSend' : 'integrations.my.codeHint', {
                 time: new Date(code.expiresAt).toLocaleTimeString(i18n.language, { timeStyle: 'short' }),
               })}
             </Text>
-            <Code block>{`/start ${code.code}`}</Code>
+            <Code block>{code.command}</Code>
             <Group gap="xs">
-              <Button component="a" href={code.url} target="_blank" rel="noopener noreferrer" leftSection={<IconExternalLink size={16} />}>
-                {t('integrations.my.openBot')}
-              </Button>
+              {code.url && (
+                <Button component="a" href={code.url} target="_blank" rel="noopener noreferrer" leftSection={<IconExternalLink size={16} />}>
+                  {t('integrations.my.openBot')}
+                </Button>
+              )}
               <Button variant="default" onClick={refresh}>
                 {t('integrations.my.done')}
               </Button>
