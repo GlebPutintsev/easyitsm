@@ -1,0 +1,385 @@
+/* Раздел CMDB в «Адмирале»: тонкие линии, строки 40–44 px, цвет статуса всегда со словом. */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ei-border);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ei-text-2);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--ei-text);
+}
+
+.tabActive {
+  color: var(--ei-text);
+  border-bottom-color: var(--ei-brass-line);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+button.stat {
+  cursor: pointer;
+}
+
+button.stat:hover {
+  background: var(--ei-hover);
+}
+
+.statValue {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ei-text-3);
+}
+
+.statWarn .statValue {
+  color: var(--ei-warn);
+}
+
+.tableCard {
+  background: var(--ei-surface);
+  border-color: var(--ei-border);
+  overflow: hidden;
+}
+
+.table thead th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ei-text-3);
+  background: var(--ei-surface-2);
+  white-space: nowrap;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: -2px;
+}
+
+.muted {
+  color: var(--ei-text-3);
+}
+
+.badge {
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.tone_accent {
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+}
+
+.tone_ok {
+  background: var(--ei-ok-soft);
+  color: var(--ei-ok);
+}
+
+.tone_warn {
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+}
+
+.tone_wait {
+  background: var(--ei-wait-soft);
+  color: var(--ei-wait);
+}
+
+.tone_danger {
+  background: var(--ei-danger-soft);
+  color: var(--ei-danger);
+}
+
+.tone_neutral {
+  background: var(--ei-neutral-soft);
+  color: var(--ei-text-2);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ei-text-3);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.fieldsCompact {
+  grid-template-columns: 124px minmax(0, 1fr);
+  gap: 8px 12px;
+}
+
+.fields dt {
+  font-size: 13px;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  color: var(--ei-text-3);
+}
+
+.fields dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ei-text);
+  word-break: break-word;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline li {
+  position: relative;
+  padding: 0 0 14px 20px;
+  border-left: 1px solid var(--ei-border);
+  margin-left: 4px;
+}
+
+.timeline li:last-child {
+  border-left-color: transparent;
+}
+
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ei-surface);
+  border: 2px solid var(--ei-brass-line);
+}
+
+.mono {
+  font-family: var(--ei-font-mono, 'JetBrains Mono Variable', monospace);
+  font-size: 13px;
+}
+
+.sourceTag {
+  font-size: 11px;
+  color: var(--ei-text-3);
+}
+
+.relationRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ei-border);
+}
+
+.relationRow:last-child {
+  border-bottom: none;
+}
+
+.relationLabel {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--ei-text-2);
+}
+
+.ciLink {
+  color: var(--ei-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ciLink:hover {
+  text-decoration: underline;
+}
+
+.score {
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ei-neutral-soft);
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  background: var(--ei-brass-line);
+}
+
+.conflict {
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.compareCell {
+  background: var(--ei-surface-2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Карта связей: узлы по уровням от корня, линии — связи. */
+.map {
+  width: 100%;
+  overflow: auto;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+}
+
+.mapNode {
+  cursor: pointer;
+}
+
+.mapNode rect {
+  fill: var(--ei-surface);
+  stroke: var(--ei-border-strong, var(--ei-border));
+  stroke-width: 1;
+}
+
+.mapNode:hover rect,
+.mapNode:focus-visible rect {
+  stroke: var(--ei-accent);
+  stroke-width: 2;
+}
+
+.mapNode:focus {
+  outline: none;
+}
+
+.mapRoot rect {
+  stroke: var(--ei-brass-line);
+  stroke-width: 2;
+}
+
+.mapRetired {
+  opacity: 0.55;
+}
+
+.mapName {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ei-text);
+}
+
+.mapMeta {
+  font-size: 11px;
+  fill: var(--ei-text-3);
+}
+
+.mapAlert {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ei-danger);
+}
+
+.mapEdge {
+  stroke: var(--ei-text-3);
+  stroke-width: 1;
+  fill: none;
+}
+
+.mapEdgeImpact {
+  stroke: var(--ei-brass-line);
+  stroke-width: 1.5;
+}
+
+.mapArrow {
+  fill: var(--ei-text-3);
+}
+
+.statActive {
+  border-color: var(--ei-brass-line);
+  box-shadow: inset 0 -2px 0 var(--ei-brass-line);
+}
+
+.statWarnValue {
+  color: var(--ei-warn);
+}
