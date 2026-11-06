@@ -1,0 +1,257 @@
+/* Крупные инциденты: только токены --ei-*, вид — DESIGN.md («Адмирал»). Красный — знак крупного инцидента. */
+
+.section {
+  padding: 16px 20px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ei-accent-text);
+}
+
+.label::after {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin-top: 6px;
+  background: var(--ei-brass-line);
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Шапка командного центра: красная полоса слева, пока идёт восстановление. */
+.hero {
+  position: relative;
+  padding: 16px 20px 16px 24px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--ei-border-strong);
+}
+
+.hero[data-state='active']::before,
+.hero[data-state='requested']::before {
+  background: var(--ei-danger);
+}
+
+.hero[data-state='restored']::before {
+  background: var(--ei-ok);
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ei-text);
+  line-height: 1.1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Состояния крупного инцидента. */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--ei-neutral-soft);
+  color: var(--ei-text-2);
+}
+
+.state::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.state[data-state='active'] {
+  background: var(--ei-danger-soft);
+  color: var(--ei-danger);
+}
+
+.state[data-state='requested'] {
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+}
+
+.state[data-state='restored'] {
+  background: var(--ei-ok-soft);
+  color: var(--ei-ok);
+}
+
+/* «Объявить крупным» — красная рамка (DESIGN.md, карточка заявки). */
+.declare {
+  border: 1px solid var(--ei-danger);
+  color: var(--ei-danger);
+  background: var(--ei-surface);
+}
+
+.declare:hover {
+  background: var(--ei-danger-soft);
+}
+
+/* Хронология: время слева, линия соединяет записи. */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 52px 14px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.eventTime {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ei-text-3);
+  text-align: right;
+  padding-top: 1px;
+}
+
+.eventDot {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.eventDot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: -14px;
+  width: 1px;
+  background: var(--ei-border);
+}
+
+.eventDot::after {
+  content: '';
+  position: relative;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: var(--ei-border-strong);
+}
+
+.event[data-kind='declare_requested'] .eventDot::after,
+.event[data-kind='approved'] .eventDot::after {
+  background: var(--ei-danger);
+}
+
+.event[data-kind='restored'] .eventDot::after,
+.event[data-kind='acked'] .eventDot::after {
+  background: var(--ei-ok);
+}
+
+.event[data-kind='update'] .eventDot::after,
+.event[data-kind='hypothesis'] .eventDot::after {
+  background: var(--ei-brass);
+}
+
+.event[data-kind='page_timeout'] .eventDot::after,
+.event[data-kind='page_exhausted'] .eventDot::after {
+  background: var(--ei-warn);
+}
+
+.update {
+  padding: 10px 12px;
+  border: 1px solid var(--ei-border);
+  border-left: 3px solid var(--ei-brass);
+  border-radius: 8px;
+  background: var(--ei-surface-2);
+}
+
+.update[data-audience='management'] {
+  border-left-color: var(--ei-accent);
+}
+
+.pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* Страница статуса портала. */
+.statusHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--ei-ok-soft);
+  color: var(--ei-ok);
+  font-weight: 700;
+}
+
+.statusHead[data-level='outage'] {
+  background: var(--ei-danger-soft);
+  color: var(--ei-danger);
+}
+
+.statusHead[data-level='degraded'] {
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+}
+
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ei-ok);
+}
+
+.statusDot[data-level='outage'] {
+  background: var(--ei-danger);
+}
+
+.statusDot[data-level='degraded'] {
+  background: var(--ei-warn);
+}

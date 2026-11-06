@@ -1,0 +1,226 @@
+{
+  "major": {
+    "title": "Major incidents",
+    "subtitle": "Command center: roles, timeline, tasks, user and management updates, on-call paging",
+    "tabs": {
+      "list": "Incidents",
+      "templates": "Message templates",
+      "chains": "Paging chains"
+    },
+    "filters": {
+      "open": "Current",
+      "requested": "Awaiting approval",
+      "closed": "Closed",
+      "all": "All"
+    },
+    "empty": "No major incidents",
+    "emptyHint": "Declare a major incident from an incident card.",
+    "columns": {
+      "incident": "Incident",
+      "state": "State",
+      "services": "Services",
+      "manager": "Manager",
+      "declared": "Declared",
+      "duration": "Duration",
+      "children_one": "{{count}} linked",
+      "children_other": "{{count}} linked"
+    },
+    "state": {
+      "requested": "Awaiting approval",
+      "active": "Restoring",
+      "restored": "Service restored",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "duration": {
+      "hm": "{{h}} h {{m}} min",
+      "m": "{{m}} min"
+    },
+    "hiddenTicket": "Ticket hidden",
+    "audience": {
+      "users": "Users",
+      "management": "Management"
+    },
+    "actions": {
+      "approve": "Approve declaration",
+      "reject": "Reject",
+      "restore": "Service restored",
+      "close": "Close and review",
+      "save": "Save",
+      "edit": "Edit"
+    },
+    "ticket": {
+      "open": "Command center",
+      "requested": "Major: awaiting approval"
+    },
+    "declare": {
+      "button": "Declare major",
+      "title": "Declare {{number}} a major incident",
+      "directHint": "The incident becomes major right away: priority P1, the manager is notified, the command center opens.",
+      "requestHint": "The declaration goes to a team lead or major incident manager for approval.",
+      "reason": "Justification",
+      "reasonHint": "Who is affected and why this is a major incident",
+      "manager": "Major incident manager",
+      "managerHint": "A user with the MIM or LEAD role",
+      "p1": "The ticket gets priority P1.",
+      "submit": "Declare",
+      "request": "Request declaration"
+    },
+    "fields": {
+      "publicTitle": "Title for users",
+      "publicTitleHint": "Shown on the status page and in updates, without internal details",
+      "services": "Affected services",
+      "servicesPlaceholder": "Choose services"
+    },
+    "card": {
+      "back": "Major incidents",
+      "notFound": "Major incident not found or not available",
+      "meta": "Declared {{at}} · manager {{manager}}",
+      "elapsed": "Elapsed",
+      "downtime": "Outage duration",
+      "nextUpdate": "Next update at {{time}}",
+      "updateOverdue": "Update overdue: expected at {{time}}",
+      "problem": "Problem {{number}}"
+    },
+    "reject": {
+      "title": "Reject declaration",
+      "label": "Reason",
+      "submit": "Reject"
+    },
+    "restore": {
+      "title": "Service restored",
+      "label": "Comment (optional)",
+      "submit": "Mark restored"
+    },
+    "close": {
+      "title": "Close major incident",
+      "hint": "A post-incident review (PIR) draft is saved from the timeline, roles, updates and tasks. You can finish it after closing.",
+      "createProblem": "Create a problem to find the root cause",
+      "problemTitle": "Problem title",
+      "problemTitlePlaceholder": "Root cause of major incident: {{title}}",
+      "submit": "Close"
+    },
+    "hypothesis": {
+      "title": "Current hypothesis",
+      "placeholder": "What we think is happening",
+      "none": "No hypothesis yet"
+    },
+    "updates": {
+      "title": "Updates",
+      "new": "New update",
+      "none": "No updates yet",
+      "template": "Template",
+      "templatePlaceholder": "No template",
+      "subject": "Title",
+      "body": "Text",
+      "next": "Next update",
+      "statusPage": "Show on the status page",
+      "onStatusPage": "on the status page",
+      "usersHint": "The update appears in the feed of the major incident and all linked incidents; requesters are notified.",
+      "managementHint": "The summary is added as an internal note and sent as an event to connected channels.",
+      "publish": "Publish"
+    },
+    "timeline": {
+      "title": "Timeline",
+      "add": "Add",
+      "placeholder": "What happened — it will appear on the timeline"
+    },
+    "pir": {
+      "title": "Post-incident review",
+      "draft": "Build draft",
+      "hint": "Markdown. The draft is built from the timeline, roles, updates and tasks; add conclusions and actions."
+    },
+    "roles": {
+      "title": "Roles",
+      "manager": "Manager",
+      "tech_lead": "Technical lead",
+      "comms": "Communications",
+      "scribe": "Scribe"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "none": "No tasks",
+      "placeholder": "What to do",
+      "assignee": "Assignee",
+      "add": "Add task"
+    },
+    "paging": {
+      "title": "On-call paging",
+      "start": "Page",
+      "none": "No paging yet",
+      "chain": "Chain",
+      "chainPlaceholder": "No chain — one group",
+      "group": "Group",
+      "groupHint": "On-call members are paged; without a shift, the group lead; without a lead, the members",
+      "hint": "If nobody acknowledges, paging moves to the next step of the chain.",
+      "send": "Page",
+      "cancel": "Stop",
+      "ack": "Acknowledge",
+      "acked": "acknowledged at {{time}}",
+      "waiting": "waiting",
+      "step": "Step {{step}} of {{steps}}",
+      "nextAt": "next step at {{time}}",
+      "channel": {
+        "center": "Notification center",
+        "email": "Notification and email"
+      },
+      "state": {
+        "paging": "Paging",
+        "acknowledged": "Acknowledged",
+        "exhausted": "Nobody answered",
+        "cancelled": "Stopped"
+      }
+    },
+    "children": {
+      "title": "Linked incidents · {{count}}",
+      "none": "No linked incidents",
+      "add": "Link",
+      "hint": "Requesters of linked incidents receive the major incident updates."
+    },
+    "templates": {
+      "hint": "Message templates for users and management. Variables are filled in when a template is chosen.",
+      "new": "New template",
+      "edit": "Message template",
+      "name": "Name",
+      "active": "In use",
+      "inactive": "Off",
+      "vars": "Variables:"
+    },
+    "chains": {
+      "hint": "Who to page about a major incident and in what order. Each step waits for acknowledgement.",
+      "new": "New chain",
+      "edit": "Paging chain",
+      "empty": "No chains yet",
+      "stepN": "Step {{n}}",
+      "remove": "Remove",
+      "person": "Person",
+      "wait": "Wait for acknowledgement, min",
+      "min": "min",
+      "addStep": "Add step",
+      "whoHint": "A step is a group or a person. In a group, on-call members are paged; without a shift, the group lead; without a lead, its members."
+    },
+    "status": {
+      "nav": "Status",
+      "title": "Service status",
+      "level": {
+        "ok": "All services operational",
+        "degraded": "Maintenance or recently restored outages",
+        "outage": "Outage in progress"
+      },
+      "state": {
+        "active": "Restoring",
+        "restored": "Restored"
+      },
+      "services": "Affected: {{services}}",
+      "since": "Since {{at}}",
+      "restoredAt": "restored {{at}}",
+      "nextUpdate": "Next update at {{time}}",
+      "kind": {
+        "info": "Information",
+        "maintenance": "Maintenance",
+        "outage": "Outage"
+      },
+      "allGood": "No outages or maintenance right now."
+    }
+  }
+}
