@@ -68,8 +68,11 @@ class OwaspApiTest {
             "/api/v1/me/sessions/{id}",                     // завершить свою сессию
             "/api/v1/admin/duty-shifts/{id}",               // смена в графике дежурств, ставится без повторного входа
             "/api/v1/attachments/{id}",                     // свой файл в заявке или статье, как свой ответ в ленте
+            "/api/v1/assets/{id}/tickets/{ticketId}",       // связь актива с заявкой, остаётся в истории актива
+            "/api/v1/licenses/{id}/assignments/{assignmentId}", // освободить лицензию, как вернуть актив на склад
             "/api/v1/notifications/push/subscriptions",     // своя подписка на push в этом браузере
-            "/api/v1/notification-settings/templates/{kind}/{locale}"); // сброс шаблона к стандартному
+            "/api/v1/notification-settings/templates/{kind}/{locale}", // сброс шаблона к стандартному
+            "/api/v1/cmdb/relations/{relationId}");         // связь КЕ закрывается датой и остаётся в истории
 
     @Autowired
     MockMvc mvc;

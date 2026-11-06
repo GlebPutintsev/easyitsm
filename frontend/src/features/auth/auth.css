@@ -1,0 +1,137 @@
+/* Экраны входа (макет «Адмирал»): тёмно-синяя панель слева, форма справа. Цвета только из --ei-*. */
+
+.ea-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--ei-bg);
+  color: var(--ei-text);
+}
+
+.ea-side {
+  flex: 1 1 420px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.ea-rings {
+  position: absolute;
+  right: -140px;
+  bottom: -140px;
+  fill: none;
+  stroke: var(--ei-nav-border);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.ea-rings .ea-rings-dot {
+  fill: var(--ei-brass);
+  stroke: none;
+}
+
+.ea-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ea-pitch {
+  position: relative;
+  max-width: 420px;
+}
+
+.ea-pitch h1 {
+  margin: 0 0 12px;
+  font-size: 34px;
+  line-height: 42px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+
+.ea-pitch p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ei-nav-text);
+}
+
+.ea-rule {
+  position: relative;
+  width: 64px;
+  height: 1px;
+  background: var(--ei-brass);
+}
+
+.ea-main {
+  flex: 999 1 520px;
+  box-sizing: border-box;
+  padding: 28px 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ea-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ea-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.ea-card {
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  padding: 32px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+}
+
+.ea-foot {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ei-text-3);
+}
+
+/* Телефон: панель — полоса со знаком над формой, без описания и колец. */
+@media (max-width: 48em) {
+  .ea-shell {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .ea-side {
+    flex: none;
+    padding: 14px 16px;
+    gap: 0;
+  }
+  .ea-main {
+    flex: 1 1 auto;
+  }
+  .ea-pitch,
+  .ea-rule,
+  .ea-rings {
+    display: none;
+  }
+  .ea-main {
+    padding: 16px;
+  }
+  .ea-card {
+    padding: 24px 20px;
+  }
+}

@@ -9,12 +9,15 @@ export interface Announcement {
   startsAt: string;
   endsAt: string | null;
   published: boolean;
+  /** Затронутые услуги (в MVP — позиции каталога); пусто — объявление для всех */
+  serviceIds: string[];
   version: number;
 }
 
-export function useActiveAnnouncements() {
+export function useActiveAnnouncements(enabled = true) {
   return useQuery({
     queryKey: ['announcements', 'active'],
+    enabled,
     queryFn: ({ signal }) =>
       api.get<CursorPage<Announcement>>('/announcements', { query: { active: true, limit: 20 }, signal }),
   });

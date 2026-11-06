@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { ArticleMarkdown } from './ArticleMarkdown';
 import { patchOf } from './ArticleEditor';
+import { affecting } from './ServiceOutage';
 import { collapseUnchanged, lineDiff } from './lineDiff';
 import { applyCommand, type EditLabels } from './markdownEditing';
 import { outline, readingMinutes } from './outline';
@@ -54,12 +55,14 @@ describe('lineDiff', () => {
 });
 
 describe('patchOf', () => {
-  const saved = { title: 'T', body: 'B', categoryId: 'c1', audience: 'all' as const, groupId: '' };
+  const saved = { title: 'T', body: 'B', categoryId: 'c1', serviceId: null, audience: 'all' as const, groupId: '' };
 
   it('отправляет только изменённые поля', () => {
     expect(patchOf(saved, { ...saved, body: 'B2' })?.input).toEqual({ body: 'B2' });
     expect(patchOf(saved, saved)).toBeNull();
     expect(patchOf(saved, { ...saved, categoryId: null })?.input).toEqual({ clearCategory: true });
+    expect(patchOf(saved, { ...saved, serviceId: 's1' })?.input).toEqual({ serviceId: 's1' });
+    expect(patchOf({ ...saved, serviceId: 's1' }, saved)?.input).toEqual({ clearService: true });
   });
 
   it('не отправляет группу без идентификатора и пустое название', () => {
@@ -101,5 +104,21 @@ describe('оглавление статьи', () => {
   it('считает время чтения без кода, не меньше минуты', () => {
     expect(readingMinutes('коротко')).toBe(1);
     expect(readingMinutes(Array(540).fill('слово').join(' '))).toBe(3);
+  });
+});
+
+describe('баннер сбоя над статьёй', () => {
+  const base = { title: 'Почта', body: '', startsAt: '', endsAt: null, published: true, version: 0 };
+  const items = [
+    { ...base, id: 'm', kind: 'maintenance' as const, serviceIds: ['mail'] },
+    { ...base, id: 'o', kind: 'outage' as const, serviceIds: ['mail', 'vpn'] },
+    { ...base, id: 'i', kind: 'info' as const, serviceIds: ['mail'] },
+    { ...base, id: 'all', kind: 'outage' as const, serviceIds: [] },
+  ];
+
+  it('только сбои и работы этой услуги, сначала сбой', () => {
+    expect(affecting(items, 'mail').map((a) => a.id)).toEqual(['o', 'm']);
+    expect(affecting(items, 'vpn').map((a) => a.id)).toEqual(['o']);
+    expect(affecting(items, null)).toEqual([]);
   });
 });

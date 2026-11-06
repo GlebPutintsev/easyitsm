@@ -1,5 +1,6 @@
 package ru.easyitsm.tickets.api;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,4 +34,11 @@ public interface TicketQueries {
 
     /** Наблюдатели заявки (TCK-10), в порядке подписки. */
     List<UUID> watchers(UUID ticketId);
+
+    /**
+     * Открытые заявки (категория не {@code draft}, {@code resolved}, {@code closed}, {@code cancelled}), у которых
+     * КЕ или услуга входит в {@code objectIds}; новые первыми, не больше {@code limit} (до 500). Для анализа влияния
+     * CMDB (CFG-09) и изменений. Без проверки прав: показывать пользователю через {@link #findVisible}.
+     */
+    List<TicketSnapshot> openForObjects(Collection<UUID> objectIds, int limit);
 }

@@ -1,6 +1,9 @@
 package ru.easyitsm.announcements.internal;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.data.relational.core.mapping.Table;
 import ru.easyitsm.announcements.api.AnnouncementKind;
 import ru.easyitsm.announcements.api.AnnouncementView;
@@ -16,6 +19,8 @@ class Announcement extends TenantEntity {
     private Instant startsAt;
     private Instant endsAt;
     private boolean published;
+    /** Затронутые услуги; пусто — объявление для всех. */
+    private List<UUID> serviceIds = List.of();
 
     protected Announcement() {
     }
@@ -37,6 +42,10 @@ class Announcement extends TenantEntity {
 
     void setBody(String body) {
         this.body = body;
+    }
+
+    void setServiceIds(List<UUID> serviceIds) {
+        this.serviceIds = serviceIds == null ? List.of() : List.copyOf(new LinkedHashSet<>(serviceIds));
     }
 
     void setWindow(Instant startsAt, Instant endsAt) {
@@ -71,7 +80,7 @@ class Announcement extends TenantEntity {
     }
 
     AnnouncementView toView() {
-        return new AnnouncementView(getId(), kind, title, body, startsAt, endsAt, published, getUpdatedAt(),
-                getVersion());
+        return new AnnouncementView(getId(), kind, title, body, startsAt, endsAt, published,
+                serviceIds == null ? List.of() : List.copyOf(serviceIds), getUpdatedAt(), getVersion());
     }
 }

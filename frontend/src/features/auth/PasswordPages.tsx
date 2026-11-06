@@ -1,18 +1,13 @@
-import { Alert, Anchor, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Anchor, Button, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { api, ApiError } from '@/shared/api/client';
 import { saveTenant, savedTenant, useAuthConfig } from './api';
+import { AuthLayout } from './AuthLayout';
 
 function Frame({ children }: { children: ReactNode }) {
-  return (
-    <Center mih="100dvh" p="md">
-      <Paper withBorder p="xl" radius="md" shadow="sm" w="100%" maw={420}>
-        {children}
-      </Paper>
-    </Center>
-  );
+  return <AuthLayout>{children}</AuthLayout>;
 }
 
 /** «Забыли пароль?»: ответ всегда одинаковый, чтобы не раскрывать, есть ли такой адрес. */

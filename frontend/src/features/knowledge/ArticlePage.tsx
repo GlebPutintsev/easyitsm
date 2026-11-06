@@ -10,6 +10,7 @@ import { ArticleFeedback } from './ArticleFeedback';
 import { ArticleMarkdown } from './ArticleMarkdown';
 import { KbNav } from './KbNav';
 import { outline, readingMinutes, type OutlineItem } from './outline';
+import { ServiceOutage } from './ServiceOutage';
 import { AudienceBadge, Notice, StatusBadge, useDateFormat } from './ui';
 import './knowledge.css';
 
@@ -66,6 +67,7 @@ export function ArticlePage({ space }: { space: 'portal' | 'agent' }) {
         <KbNav base={base} categoryId={a.categoryId ?? ''} />
 
         <article className="kb-main" aria-labelledby="kb-article-title">
+          <ServiceOutage serviceId={a.serviceId ?? null} />
           <nav className="kb-crumbs" aria-label={t('kb.article.breadcrumbs')}>
             <Link to={base}>{t('kb.title')}</Link>
             {category && (

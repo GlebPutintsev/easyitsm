@@ -88,6 +88,7 @@ Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
 Optional<TicketComment>  TicketQueries.findComment(ticketId, activityId) // текст ответа или заметки для писем
 List<UUID>               TicketQueries.watchers(ticketId)
+List<TicketSnapshot>     TicketQueries.openForObjects(ciOrServiceIds, limit) // открытые заявки по КЕ/услугам, без прав (CMDB)
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
 Optional<TicketPermissions> TicketQueries.permissions(id)             // вложения, проблемы: права текущего входа
 boolean       TicketLinks.link(id, otherId, kind, actorId)            // проблемы, MIM: связь от имени системы, повтор — false
