@@ -3,10 +3,6 @@ import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import '@/shared/i18n';
 
-// Без globals: true Testing Library не размонтирует дерево сама. Тогда отрисовка из незавершённого запроса
-// может прийти после того, как vitest закрыл jsdom, и прогон падает с «window is not defined» (CI в #52).
-afterEach(() => cleanup());
-
 // По умолчанию findBy*/waitFor ждут 1 с. Первая отрисовка очереди с таблицей на загруженном раннере CI
 // занимает дольше (1,4 с в PR #24), и тест падал, хотя экран был верным. 5 с хватает с запасом.
 configure({ asyncUtilTimeout: 5000 });
