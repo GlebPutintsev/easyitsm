@@ -162,7 +162,7 @@
       }
     },
     "messengers": {
-      "intro": "A Telegram, MAX or Slack bot accepts tickets from direct messages and sends notifications to people who linked their account in the profile. The server polls the messenger or keeps a connection to it (Slack Socket Mode), so no inbound internet access is needed. A reply to a bot message becomes a ticket comment.",
+      "intro": "A Telegram, MAX, Slack or Microsoft Teams bot accepts tickets from direct messages and sends notifications to people who linked their account in the profile. The server polls Telegram, MAX and Slack or keeps a connection to them, so they need no inbound internet access; Teams sends messages to the server's public address. A reply to a bot message becomes a ticket comment.",
       "add": "Connect a bot",
       "empty": "No bots yet",
       "newTitle": "New bot",
@@ -175,7 +175,8 @@
       "kinds": {
         "telegram": "Telegram",
         "max": "MAX",
-        "slack": "Slack"
+        "slack": "Slack",
+        "teams": "Microsoft Teams"
       },
       "polled": "Polled {{time}}",
       "waiting": "Waiting for the first poll",
@@ -183,7 +184,8 @@
       "tokenHint": {
         "telegram": "Issued by @BotFather with the /newbot command.",
         "max": "Issued by the MAX partner platform under Chat bots.",
-        "slack": "Bot User OAuth Token (xoxb-…) under OAuth & Permissions. Scopes: chat:write, im:history, im:read."
+        "slack": "Bot User OAuth Token (xoxb-…) under OAuth & Permissions. Scopes: chat:write, im:history, im:read.",
+        "teams": "Client secret of the app in Microsoft Entra (Certificates & secrets)."
       },
       "tokenKeep": "Token {{hint}} is saved. Leave the field empty to keep it.",
       "baseUrl": "API address",
@@ -206,7 +208,14 @@
       "confirmDelete": "Delete the bot and all links",
       "appToken": "App token",
       "appTokenHint": "App-Level Token (xapp-…) with connections:write: enable Socket Mode and the message.im event subscription, and allow messages on the App Home tab.",
-      "appTokenKeep": "Token {{hint}} is saved. Leave the field empty to keep it."
+      "appTokenKeep": "Token {{hint}} is saved. Leave the field empty to keep it.",
+      "appId": "Microsoft App ID",
+      "appIdHint": "From the Azure Bot resource, Configuration section.",
+      "appTenant": "Microsoft Entra tenant",
+      "appTenantHint": "Tenant ID (Directory ID) or domain, for example contoso.onmicrosoft.com.",
+      "secret": "Client secret",
+      "endpoint": "Messaging endpoint for Azure Bot",
+      "endpointHint": "Set this address in the bot settings in Azure and add the Microsoft Teams channel. Unlike other messengers, Microsoft calls this address itself, so it must be reachable from the internet over HTTPS."
     },
     "my": {
       "title": "Messengers",

@@ -40,8 +40,12 @@ interface MessengerConnector {
     record Poll(List<Update> updates, String cursor) {
     }
 
-    /** Подключение к API: адрес, токен бота, токен приложения (Slack, иначе null) и проверка исходящих адресов. */
-    record Api(OutboundHttp http, OutboundGuard guard, String baseUrl, String token, String appToken, JsonMapper json) {
+    /**
+     * Подключение к API: адрес, токен бота (у Teams — секрет клиента), токен приложения (Slack), App ID и арендатор
+     * Entra (Teams) и проверка исходящих адресов. Ненужные мессенджеру поля — null.
+     */
+    record Api(OutboundHttp http, OutboundGuard guard, String baseUrl, String token, String appToken, String appId,
+               String appTenant, JsonMapper json) {
 
         JsonNode get(String path, Map<String, String> headers) {
             return parse(http.call(guard, URI.create(baseUrl + path), headers, null, MAX_RESPONSE));
@@ -59,6 +63,28 @@ interface MessengerConnector {
             return parse(http.call(guard, URI.create(baseUrl + path), h, bytes, MAX_RESPONSE));
         }
 
+        /** Форма {@code application/x-www-form-urlencoded} (выдача токена OAuth). */
+        JsonNode postForm(String path, Map<String, String> form) {
+            String body = form.entrySet().stream()
+                    .map(e -> java.net.URLEncoder.encode(e.getKey(), java.nio.charset.StandardCharsets.UTF_8) + "="
+                            + java.net.URLEncoder.encode(e.getValue(), java.nio.charset.StandardCharsets.UTF_8))
+                    .collect(java.util.stream.Collectors.joining("&"));
+            return parse(http.call(guard, URI.create(baseUrl + path),
+                    Map.of("Content-Type", "application/x-www-form-urlencoded"),
+                    body.getBytes(java.nio.charset.StandardCharsets.UTF_8), MAX_RESPONSE));
+        }
+
+        /** JSON на другой адрес со своей проверкой узла (Teams: serviceUrl разговора). */
+        JsonNode postTo(OutboundGuard target, URI uri, Map<String, String> headers, Object body) {
+            Map<String, String> h = new java.util.LinkedHashMap<>(headers);
+            h.put("Content-Type", "application/json");
+            try {
+                return parse(http.call(target, uri, h, json.writeValueAsBytes(body), MAX_RESPONSE));
+            } catch (JacksonException e) {
+                throw new Failure("не удалось подготовить запрос");
+            }
+        }
+
         private JsonNode parse(OutboundHttp.Response r) {
             if (r.status() == 0) {
                 throw new Failure(scrub(r.error()));
@@ -70,7 +96,8 @@ interface MessengerConnector {
                 throw new Failure("ответ HTTP " + r.status() + " не JSON");
             }
             if (!r.ok()) {
-                String detail = node.path("description").asString(node.path("message").asString(""));
+                String detail = node.path("description").asString(node.path("message").asString(
+                        node.path("error_description").asString(node.path("error").path("message").asString(""))));
                 throw new Failure("ответ HTTP " + r.status() + (detail.isBlank() ? "" : ": " + AlertFormats.cut(scrub(detail), 200)));
             }
             return node;
@@ -112,6 +139,11 @@ interface MessengerConnector {
 
     /** @return id отправленного сообщения или null */
     String send(Api api, String chatId, String text, String replyTo);
+
+    /** Отправка с ботом: Teams берёт из него адрес разговора. */
+    default String send(Api api, MessengerStore.Messenger bot, String chatId, String text, String replyTo) {
+        return send(api, chatId, text, replyTo);
+    }
 
     /** Ссылка, открывающая бот (с кодом привязки, если мессенджер это умеет). */
     String deepLink(MessengerStore.Messenger bot, String code);

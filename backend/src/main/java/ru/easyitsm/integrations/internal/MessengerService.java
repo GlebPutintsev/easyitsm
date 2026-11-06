@@ -35,16 +35,19 @@ import tools.jackson.databind.json.JsonMapper;
 class MessengerService {
 
     static final String HISTORY_ENTITY = "integrations.messenger";
-    static final Set<String> KINDS = Set.of("telegram", "max", "slack");
+    static final Set<String> KINDS = Set.of("telegram", "max", "slack", "teams");
     static final List<String> FIELDS = List.of("title", "text", "link");
     static final Duration CODE_TTL = Duration.ofMinutes(15);
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
-    /** {@code appToken} — токен приложения Slack ({@code xapp-}), для других мессенджеров не нужен. */
-    record MessengerInput(String kind, String name, String token, String appToken, String baseUrl, Boolean enabled,
-                          Boolean allowTickets, String ticketType, UUID groupId, Boolean clearGroup,
-                          List<String> dataFields) {
+    /**
+     * {@code appToken} — токен приложения Slack ({@code xapp-}); {@code appId} и {@code appTenant} — Microsoft App ID
+     * бота Teams и арендатор Entra (у Teams {@code token} — секрет клиента). Другим мессенджерам они не нужны.
+     */
+    record MessengerInput(String kind, String name, String token, String appToken, String appId, String appTenant,
+                          String baseUrl, Boolean enabled, Boolean allowTickets, String ticketType, UUID groupId,
+                          Boolean clearGroup, List<String> dataFields) {
     }
 
     /** Итог проверки бота. */
@@ -99,13 +102,19 @@ class MessengerService {
      * адресов «Интеграций»; служебные и собственные адреса сервера запрещены в любом случае.
      */
     MessengerConnector.Api api(String kind, String baseUrl, String token, String appToken, List<String> allowedHosts) {
+        return api(kind, baseUrl, token, appToken, null, null, allowedHosts);
+    }
+
+    MessengerConnector.Api api(String kind, String baseUrl, String token, String appToken, String appId,
+                               String appTenant, List<String> allowedHosts) {
         MessengerConnector c = connector(kind);
         String base = baseUrl == null ? c.defaultBaseUrl() : baseUrl;
         List<String> allowed = new ArrayList<>(allowedHosts);
         if (baseUrl == null) {
             allowed.add(URI.create(c.defaultBaseUrl()).getHost());
         }
-        return new MessengerConnector.Api(http, http.guard(allowed), base.replaceAll("/+$", ""), token, appToken, json);
+        return new MessengerConnector.Api(http, http.guard(allowed), base.replaceAll("/+$", ""), token, appToken, appId,
+                appTenant, json);
     }
 
     /** Подключение к API сохранённого бота в арендаторе вызывающего; null — ключ не расшифровывается. */
@@ -115,7 +124,7 @@ class MessengerService {
         if (token == null || connector(m.kind()).needsAppToken() && appToken == null) {
             return null;
         }
-        return api(m.kind(), m.baseUrl(), token, appToken, policy.policy().allowedHosts());
+        return api(m.kind(), m.baseUrl(), token, appToken, m.appId(), m.appTenant(), policy.policy().allowedHosts());
     }
 
     /**
@@ -157,7 +166,7 @@ class MessengerService {
     MessengerStore.Messenger create(MessengerInput in) {
         String kind = in.kind() == null ? "" : in.kind().strip().toLowerCase(Locale.ROOT);
         if (!KINDS.contains(kind)) {
-            throw invalid("Мессенджер: telegram, max или slack");
+            throw invalid("Мессенджер: telegram, max, slack или teams");
         }
         String token = token(in.token());
         if (token == null) {
@@ -168,8 +177,8 @@ class MessengerService {
         if (needsApp && appToken == null) {
             throw invalid("Укажите токен приложения");
         }
-        MessengerStore.Fields f = fields(in, null);
-        MessengerStore.Verified bot = verify(kind, f.baseUrl(), token, appToken);
+        MessengerStore.Fields f = fields(kind, in, null);
+        MessengerStore.Verified bot = verify(kind, f, token, appToken);
         return tx.execute(s -> {
             UUID id = store.insert(kind, f, secrets(token, appToken), bot);
             MessengerStore.Messenger m = require(id);
@@ -181,11 +190,13 @@ class MessengerService {
     MessengerStore.Messenger update(UUID id, String ifMatch, MessengerInput in) {
         MessengerStore.Messenger current = get(id);
         ETags.requireMatch(ifMatch, current.version());
-        MessengerStore.Fields f = fields(in, current);
+        MessengerStore.Fields f = fields(current.kind(), in, current);
         String token = token(in.token());
         String appToken = connector(current.kind()).needsAppToken() ? token(in.appToken()) : null;
         MessengerStore.Verified bot = null;
-        boolean addressChanged = !java.util.Objects.equals(f.baseUrl(), current.baseUrl());
+        boolean addressChanged = !java.util.Objects.equals(f.baseUrl(), current.baseUrl())
+                || !java.util.Objects.equals(f.appId(), current.appId())
+                || !java.util.Objects.equals(f.appTenant(), current.appTenant());
         if (token != null || appToken != null || addressChanged) {
             String check = token != null ? token
                     : tx.execute(s -> store.token(id).map(secrets::decryptOrNull).orElse(null));
@@ -194,7 +205,7 @@ class MessengerService {
             if (check == null || connector(current.kind()).needsAppToken() && checkApp == null) {
                 throw invalid("Токен не расшифровывается: укажите его заново");
             }
-            bot = verify(current.kind(), f.baseUrl(), check, checkApp);
+            bot = verify(current.kind(), f, check, checkApp);
         }
         MessengerStore.Verified verified = bot;
         return tx.execute(s -> {
@@ -239,9 +250,9 @@ class MessengerService {
                 appToken == null ? null : Tokens.hint(appToken));
     }
 
-    private MessengerStore.Verified verify(String kind, String baseUrl, String token, String appToken) {
+    private MessengerStore.Verified verify(String kind, MessengerStore.Fields f, String token, String appToken) {
         List<String> allowed = tx.execute(s -> policy.policy().allowedHosts());
-        MessengerConnector.Api api = api(kind, baseUrl, token, appToken, allowed);
+        MessengerConnector.Api api = api(kind, f.baseUrl(), token, appToken, f.appId(), f.appTenant(), allowed);
         MessengerConnector c = connector(kind);
         try {
             MessengerConnector.Bot bot = c.me(api);
@@ -301,9 +312,21 @@ class MessengerService {
         return store.find(id).orElseThrow(() -> ApiException.notFound("Бот"));
     }
 
-    private MessengerStore.Fields fields(MessengerInput in, MessengerStore.Messenger current) {
+    private MessengerStore.Fields fields(String kind, MessengerInput in, MessengerStore.Messenger current) {
         String name = in.name() == null && current != null ? current.name() : name(in.name());
         String baseUrl = in.baseUrl() == null ? (current == null ? null : current.baseUrl()) : baseUrl(in.baseUrl());
+        String appId = null;
+        String appTenant = null;
+        if ("teams".equals(kind)) {
+            // Ответы Teams уходят на serviceUrl разговора, а токен — от Microsoft Entra: свой адрес API не нужен.
+            baseUrl = null;
+            appId = in.appId() == null ? (current == null ? null : current.appId()) : ident(in.appId(), "Microsoft App ID");
+            appTenant = in.appTenant() == null ? (current == null ? null : current.appTenant())
+                    : ident(in.appTenant(), "Арендатор Microsoft Entra");
+            if (appId == null || appTenant == null) {
+                throw invalid("Укажите Microsoft App ID и арендатора Microsoft Entra");
+            }
+        }
         boolean enabled = in.enabled() == null ? current == null || current.enabled() : in.enabled();
         boolean tickets = in.allowTickets() == null ? current == null || current.allowTickets() : in.allowTickets();
         String type = in.ticketType() == null ? (current == null ? "incident" : current.ticketType()) : in.ticketType();
@@ -317,7 +340,7 @@ class MessengerService {
         }
         List<String> fields = in.dataFields() == null ? (current == null ? List.of("title", "link") : current.dataFields())
                 : dataFields(in.dataFields());
-        return new MessengerStore.Fields(name, baseUrl, enabled, tickets, type, group, fields);
+        return new MessengerStore.Fields(name, baseUrl, enabled, tickets, type, group, fields, appId, appTenant);
     }
 
     static List<String> dataFields(List<String> in) {
@@ -329,6 +352,15 @@ class MessengerService {
             out.add(f);
         }
         return FIELDS.stream().filter(out::contains).toList();
+    }
+
+    /** GUID или имя домена: попадает в адрес выдачи токена, поэтому только безопасные символы. */
+    private static String ident(String value, String what) {
+        String v = value.strip();
+        if (!v.matches("[A-Za-z0-9][A-Za-z0-9.-]{0,99}")) {
+            throw invalid(what + ": GUID или имя домена");
+        }
+        return v;
     }
 
     private static String name(String name) {
@@ -384,6 +416,10 @@ class MessengerService {
         snap.put("ticketType", m.ticketType());
         snap.put("groupId", m.groupId() == null ? null : m.groupId().toString());
         snap.put("dataFields", m.dataFields());
+        if (m.appId() != null) {
+            snap.put("appId", m.appId());
+            snap.put("appTenant", m.appTenant());
+        }
         history.record(HISTORY_ENTITY, m.id().toString(), m.name(), action, snap, comment);
     }
 

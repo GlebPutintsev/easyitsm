@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  Code,
   Group,
   Modal,
   PasswordInput,
@@ -27,6 +28,7 @@ import {
   DEFAULT_API,
   MESSENGER_KINDS,
   NEEDS_APP_TOKEN,
+  teamsEndpoint,
   type Messenger,
   type MessengerInput,
   type MessengerKind,
@@ -88,7 +90,7 @@ export function MessengersPanel() {
                     <Anchor component="button" type="button" onClick={() => setEditing(m)}>
                       {m.name}
                     </Anchor>
-                    {m.botUsername && (
+                    {m.botUsername && m.kind !== 'teams' && (
                       <Text size="xs" c="dimmed">
                         @{m.botUsername}
                       </Text>
@@ -140,6 +142,9 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
   const [token, setToken] = useState('');
   const [appToken, setAppToken] = useState('');
   const needsApp = NEEDS_APP_TOKEN.includes(current?.kind ?? kind);
+  const teams = (current?.kind ?? kind) === 'teams';
+  const [appId, setAppId] = useState(current?.appId ?? '');
+  const [appTenant, setAppTenant] = useState(current?.appTenant ?? '');
   const [baseUrl, setBaseUrl] = useState(current?.baseUrl ?? '');
   const [allowTickets, setAllowTickets] = useState(current?.allowTickets ?? true);
   const [ticketType, setTicketType] = useState<'incident' | 'request'>(current?.ticketType ?? 'incident');
@@ -155,13 +160,14 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
   const submit = () => {
     const input: MessengerInput = {
       name,
-      baseUrl: baseUrl.trim(),
+      ...(teams ? {} : { baseUrl: baseUrl.trim() }),
       allowTickets,
       ticketType,
       dataFields: fields,
       ...(groupId ? { groupId } : { clearGroup: true }),
       ...(token.trim() ? { token: token.trim() } : {}),
       ...(needsApp && appToken.trim() ? { appToken: appToken.trim() } : {}),
+      ...(teams ? { appId: appId.trim(), appTenant: appTenant.trim() } : {}),
     };
     if (current) update.mutate({ id: current.id, version: current.version, input }, { onSuccess: onClose });
     else create.mutate({ ...input, kind }, { onSuccess: onClose });
@@ -179,8 +185,28 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
           />
         )}
         <TextInput label={t('integrations.messengers.columns.name')} required maxLength={200} value={name} disabled={!canEdit} onChange={(e) => setName(e.currentTarget.value)} />
+        {teams && (
+          <Group grow align="flex-start">
+            <TextInput
+              label={t('integrations.messengers.appId')}
+              description={t('integrations.messengers.appIdHint')}
+              required
+              value={appId}
+              disabled={!canEdit}
+              onChange={(e) => setAppId(e.currentTarget.value)}
+            />
+            <TextInput
+              label={t('integrations.messengers.appTenant')}
+              description={t('integrations.messengers.appTenantHint')}
+              required
+              value={appTenant}
+              disabled={!canEdit}
+              onChange={(e) => setAppTenant(e.currentTarget.value)}
+            />
+          </Group>
+        )}
         <PasswordInput
-          label={t('integrations.messengers.token')}
+          label={t(teams ? 'integrations.messengers.secret' : 'integrations.messengers.token')}
           description={current ? t('integrations.messengers.tokenKeep', { hint: current.tokenHint }) : t(`integrations.messengers.tokenHint.${kind}`)}
           required={!current}
           value={token}
@@ -203,14 +229,32 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
             onChange={(e) => setAppToken(e.currentTarget.value)}
           />
         )}
-        <TextInput
-          label={t('integrations.messengers.baseUrl')}
-          description={t('integrations.messengers.baseUrlHint')}
-          placeholder={DEFAULT_API[current?.kind ?? kind]}
-          value={baseUrl}
-          disabled={!canEdit}
-          onChange={(e) => setBaseUrl(e.currentTarget.value)}
-        />
+        {teams ? (
+          current && (
+            <Alert variant="light" title={t('integrations.messengers.endpoint')}>
+              <Code block data-testid="teams-endpoint">
+                {teamsEndpoint(current.id)}
+              </Code>
+              <Text size="xs" mt={6}>
+                {t('integrations.messengers.endpointHint')}
+              </Text>
+            </Alert>
+          )
+        ) : (
+          <TextInput
+            label={t('integrations.messengers.baseUrl')}
+            description={t('integrations.messengers.baseUrlHint')}
+            placeholder={DEFAULT_API[current?.kind ?? kind]}
+            value={baseUrl}
+            disabled={!canEdit}
+            onChange={(e) => setBaseUrl(e.currentTarget.value)}
+          />
+        )}
+        {teams && !current && (
+          <Text size="xs" c="dimmed">
+            {t('integrations.messengers.endpointHint')}
+          </Text>
+        )}
         <Switch label={t('integrations.messengers.allowTickets')} checked={allowTickets} disabled={!canEdit} onChange={(e) => setAllowTickets(e.currentTarget.checked)} />
         {allowTickets && (
           <Group grow align="flex-start">
@@ -256,7 +300,7 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
             </Button>
             {check.data && (
               <Badge color={check.data.ok ? 'green' : 'red'} variant="light" data-testid="messenger-check">
-                {check.data.ok ? `@${check.data.botUsername}` : check.data.error}
+                {check.data.ok ? (teams ? 'OK' : `@${check.data.botUsername}`) : check.data.error}
               </Badge>
             )}
           </Group>
@@ -286,7 +330,12 @@ function MessengerModal({ current, canEdit, onClose }: { current: Messenger | nu
             {canEdit && (
               <Button
                 loading={create.isPending || update.isPending}
-                disabled={pending || !name.trim() || (!current && (!token.trim() || (needsApp && !appToken.trim())))}
+                disabled={
+                  pending ||
+                  !name.trim() ||
+                  (teams && (!appId.trim() || !appTenant.trim())) ||
+                  (!current && (!token.trim() || (needsApp && !appToken.trim())))
+                }
                 onClick={submit}
               >
                 {current ? t('integrations.webhooks.save') : t('integrations.messengers.connect')}

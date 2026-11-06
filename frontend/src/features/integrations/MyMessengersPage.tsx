@@ -1,6 +1,6 @@
 import './i18n';
 import { Badge, Button, Card, Code, Group, Stack, Text, Title } from '@mantine/core';
-import { IconBrandSlack, IconBrandTelegram, IconExternalLink, IconMessageCircle } from '@tabler/icons-react';
+import { IconBrandSlack, IconBrandTeams, IconBrandTelegram, IconExternalLink, IconMessageCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorLine } from '@/shared/ui/ErrorLine';
@@ -41,7 +41,7 @@ function BotCard({ bot }: { bot: MyMessenger }) {
   const unlink = useUnlinkMessenger();
   const refresh = useRefreshMyMessengers();
   const [code, setCode] = useState<LinkCode | null>(null);
-  const Icon = bot.kind === 'telegram' ? IconBrandTelegram : bot.kind === 'slack' ? IconBrandSlack : IconMessageCircle;
+  const Icon = { telegram: IconBrandTelegram, slack: IconBrandSlack, teams: IconBrandTeams, max: IconMessageCircle }[bot.kind];
 
   return (
     <Card withBorder padding="md" data-testid={`my-bot-${bot.id}`}>
@@ -53,7 +53,7 @@ function BotCard({ bot }: { bot: MyMessenger }) {
               <Text fw={600}>{bot.name}</Text>
               <Text size="xs" c="dimmed">
                 {t(`integrations.messengers.kinds.${bot.kind}`)}
-                {bot.botUsername ? ` · @${bot.botUsername}` : ''}
+                {bot.botUsername && bot.kind !== 'teams' ? ` · @${bot.botUsername}` : ''}
               </Text>
             </div>
           </Group>

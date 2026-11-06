@@ -112,7 +112,7 @@ class MessengerRunner {
                 return true;
             }
             try {
-                String id = service.connector(m.kind()).send(api, o.chatId(), o.text(), o.replyTo());
+                String id = service.connector(m.kind()).send(api, m, o.chatId(), o.text(), o.replyTo());
                 store.sent(o.id(), attempt);
                 store.thread(m.id(), o.chatId(), id, o.ticketId());
             } catch (MessengerConnector.Failure e) {

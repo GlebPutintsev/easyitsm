@@ -55,6 +55,8 @@ const BOT: Messenger = {
   baseUrl: null,
   botUsername: 'itsm_help_bot',
   botUrl: 'https://t.me/itsm_help_bot',
+  appId: null,
+  appTenant: null,
   enabled: true,
   allowTickets: true,
   ticketType: 'incident',
@@ -355,6 +357,25 @@ describe('экран интеграций', () => {
       token: BOT_TOKEN,
       appToken: APP_TOKEN,
     });
+  });
+
+  it('бот Teams: App ID и арендатор вместо адреса API', async () => {
+    renderAt('/admin/integrations?tab=messengers');
+    fireEvent.click(await screen.findByRole('button', { name: 'Подключить бота' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByText('Microsoft Teams'));
+    expect(within(dialog).queryByLabelText(/Адрес API/)).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Название/), { target: { value: 'Teams' } });
+    fireEvent.change(within(dialog).getByLabelText(/Секрет клиента/), { target: { value: BOT_TOKEN } });
+    const connect = within(dialog).getByRole('button', { name: 'Подключить' });
+    expect(connect).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Microsoft App ID/), { target: { value: 'app-1' } });
+    fireEvent.change(within(dialog).getByLabelText(/Арендатор Microsoft Entra/), { target: { value: 'contoso.onmicrosoft.com' } });
+    fireEvent.click(connect);
+    await waitFor(() => expect(calls('POST', '/integrations/messengers')).toHaveLength(1));
+    const body = JSON.parse(String(calls('POST', '/integrations/messengers')[0]![1]?.body));
+    expect(body).toMatchObject({ kind: 'teams', token: BOT_TOKEN, appId: 'app-1', appTenant: 'contoso.onmicrosoft.com' });
+    expect(body).not.toHaveProperty('baseUrl');
   });
 
   it('профиль: привязка выдаёт ссылку на бота и команду', async () => {
