@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,14 +19,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.easyitsm.identity.api.RequiresRecentAuth;
 import ru.easyitsm.platform.web.CursorPage;
 import ru.easyitsm.platform.web.ETags;
 import ru.easyitsm.platform.web.PageParams;
 
 /**
  * REST загрузки и сверки CMDB (CFG-04, CFG-05): источники данных, пакеты, конфликты, слияние дубликатов.
- * Источники заводят CFG и ADM; пакеты пока присылает пользователь с ролью CFG — сервисный токен агента
- * обнаружения (роль SVC) появится в модуле identity.
+ * Источники заводят CFG и ADM; пакеты присылает пользователь с ролью CFG или агент с токеном источника
+ * ({@link CmdbIngestController}).
  */
 @RestController
 @RequestMapping("/api/v1/cmdb")
@@ -72,6 +74,25 @@ class CmdbSourcesController {
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             @Valid @RequestBody SourceService.UpdateSource cmd) {
         SourceService.Source s = sources.update(code, ifMatch, cmd);
+        return ResponseEntity.ok().eTag(ETags.of(s.version())).body(s);
+    }
+
+    /**
+     * Выпустить токен источника для агента обнаружения или коннектора (CFG-04). Показывается один раз, прежний
+     * токен сразу перестаёт приниматься.
+     */
+    @PostMapping("/sources/{code}/token")
+    @PreAuthorize(CmdbController.CONFIGURE)
+    @RequiresRecentAuth
+    SourceService.IssuedToken issueToken(@PathVariable String code) {
+        return sources.issueToken(code);
+    }
+
+    @DeleteMapping("/sources/{code}/token")
+    @PreAuthorize(CmdbController.CONFIGURE)
+    @RequiresRecentAuth
+    ResponseEntity<SourceService.Source> revokeToken(@PathVariable String code) {
+        SourceService.Source s = sources.revokeToken(code);
         return ResponseEntity.ok().eTag(ETags.of(s.version())).body(s);
     }
 

@@ -102,9 +102,11 @@ const json = (body: unknown, status = 200) =>
 describe('CMDB', () => {
   const fetchMock = vi.fn<typeof fetch>();
   let roles = ['CFG'];
+  let sources: unknown[] = [];
 
   beforeEach(() => {
     roles = ['CFG'];
+    sources = [];
     fetchMock.mockReset();
     fetchMock.mockImplementation(async (input, init) => {
       const url = new URL(String(input));
@@ -150,8 +152,10 @@ describe('CMDB', () => {
       if (path === '/api/v1/cmdb/quality/issues') return json([ref(APP, 'Биллинг')]);
       if (path === '/api/v1/cmdb/quality/duplicates') return json([{ key: 'serial_number', value: 'SN-42', cis: [ref(SRV, 'srv-db-01'), ref(DUP, 'srv-db-01 (копия)')] }]);
       if (path === `/api/v1/cmdb/cis/${SRV}/merge`) return json(server({ version: 3 }));
-      if (path === '/api/v1/cmdb/sources' && method === 'GET') return json([]);
-      if (path === '/api/v1/cmdb/sources' && method === 'POST') return json({ id: 's1', code: 'disc', name: 'Агент', kind: 'discovery', priority: 20, staleDays: 30, active: true, records: 0, lastBatchAt: null, createdAt: '', updatedAt: '', version: 0 }, 201);
+      if (path === '/api/v1/cmdb/sources' && method === 'GET') return json(sources);
+      if (path === '/api/v1/cmdb/sources/disc/batches') return json([]);
+      if (path === '/api/v1/cmdb/sources/disc/token' && method === 'POST') return json({ code: 'disc', token: 'eitsm_cmdb_secret-a1b2', tokenHint: '…a1b2', tokenIssuedAt: '2026-11-06T12:00:00Z' });
+      if (path === '/api/v1/cmdb/sources' && method === 'POST') return json({ id: 's1', code: 'disc', name: 'Агент', kind: 'discovery', priority: 20, staleDays: 30, active: true, records: 0, lastBatchAt: null, tokenHint: null, tokenIssuedAt: null, createdAt: '', updatedAt: '', version: 0 }, 201);
       return json({ status: 404, code: 'not_found' }, 404);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -255,5 +259,17 @@ describe('CMDB', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Создать' }));
     await waitFor(() => expect(calls('/api/v1/cmdb/sources', 'POST').length).toBe(1));
     expect(JSON.parse(String(calls('/api/v1/cmdb/sources', 'POST')[0]?.[1]?.body))).toMatchObject({ code: 'disc', name: 'Агент', kind: 'discovery', priority: 20 });
+  });
+
+  it('источники: CFG выпускает токен агента, токен виден один раз', async () => {
+    sources = [{ id: 's1', code: 'disc', name: 'Агент', kind: 'discovery', priority: 20, staleDays: 30, active: true, records: 3, lastBatchAt: null, tokenHint: null, tokenIssuedAt: null, createdAt: '', updatedAt: '', version: 0 }];
+    renderAt('/agent/cmdb/sources');
+    fireEvent.click(await screen.findByText('Агент'));
+    expect(await screen.findByText(/Токена нет/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Выпустить токен' }));
+    await waitFor(() => expect(calls('/api/v1/cmdb/sources/disc/token', 'POST').length).toBe(1));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByTestId('issued-token')).toHaveTextContent('eitsm_cmdb_secret-a1b2');
+    expect(within(dialog).getByText(/"tokenFile": "\/etc\/easyitsm\/discovery.token"/)).toBeInTheDocument();
   });
 });
