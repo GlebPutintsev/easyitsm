@@ -35,7 +35,8 @@ CREATE TABLE org_unit (
     version    bigint NOT NULL,
     CHECK (parent_id IS NULL OR parent_id <> id)
 );
-CREATE UNIQUE INDEX org_unit_name_uq ON org_unit (tenant_id, kind, coalesce(parent_id, id), lower(name));
+CREATE UNIQUE INDEX org_unit_name_uq ON org_unit
+    (tenant_id, kind, coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(name));
 CREATE UNIQUE INDEX org_unit_code_uq ON org_unit (tenant_id, lower(code)) WHERE code IS NOT NULL;
 CREATE INDEX org_unit_parent_idx ON org_unit (tenant_id, parent_id);
 
