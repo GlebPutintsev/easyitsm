@@ -291,7 +291,7 @@ export interface Directory {
   groups: GroupRef[];
   /** Агенты с группами и текущей загрузкой, для назначения. */
   agents: (UserRef & { groupIds: string[]; openTickets: number; available: boolean })[];
-  /** Прочие известные пользователи (заявители). Неизвестные адаптер показывает по id, пока identity не отдаст поиск. */
+  /** Прочие известные пользователи (заявители) — только в моках. На настоящем API адаптер берёт их имена из /people?ids=. */
   users?: UserRef[];
   services: Ref[];
   categories: Ref[];
