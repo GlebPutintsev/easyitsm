@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '@/app/theme';
@@ -85,7 +85,10 @@ describe('Карточка заявки на портале', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   function renderPage() {
     const router = createMemoryRouter([{ path: '/portal/tickets/:ref', element: <TicketPage /> }], {
@@ -117,6 +120,8 @@ describe('Карточка заявки на портале', () => {
     const [, init] = fetchMock.mock.calls.find(([u, i]) => String(u).endsWith('/transitions') && i?.method === 'POST')!;
     expect((init?.headers as Record<string, string>)['If-Match']).toBe('"3"');
     expect(JSON.parse(String(init?.body))).toEqual({ to: 'closed' });
+    // Дожидаемся перерисовки закрытой заявки, чтобы React не доделывал работу после теста.
+    expect(await screen.findByRole('button', { name: 'Создать новую на основе' })).toBeInTheDocument();
   });
 
   it('«Это не помогло» требует комментарий и возвращает в работу', async () => {
@@ -130,5 +135,6 @@ describe('Карточка заявки на портале', () => {
       const call = fetchMock.mock.calls.find(([u, i]) => String(u).endsWith('/transitions') && i?.method === 'POST');
       expect(call && JSON.parse(String(call[1]?.body))).toEqual({ to: 'in_progress', comment: 'VPN снова отваливается', reasonCode: 'reopened' });
     });
+    expect(await screen.findByRole('button', { name: 'Создать новую на основе' })).toBeInTheDocument();
   });
 });
