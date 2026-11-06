@@ -6,10 +6,8 @@ import {
   Checkbox,
   Divider,
   Group,
-  Paper,
   PasswordInput,
   PinInput,
-  Select,
   Stack,
   Text,
   TextInput,
@@ -21,6 +19,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api, ApiError } from '@/shared/api/client';
+import { AuthLayout } from './AuthLayout';
 import { meKey, saveTenant, savedTenant, useAuthConfig, type LoginResult, type WebAuthnOptions } from './api';
 import { RecoveryCodes } from './RecoveryCodes';
 import { TotpEnrollment, type TotpSetup } from './TotpEnrollment';
@@ -33,7 +32,7 @@ type Step = 'credentials' | 'mfa' | 'mfa_setup' | 'recovery';
  * Ошибка входа всегда одна и та же и не раскрывает причину.
  */
 export function LoginPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
@@ -86,51 +85,30 @@ export function LoginPage() {
   };
 
   return (
-    <Center mih="100dvh" p="md" bg="var(--mantine-color-body)">
-      <Stack w="100%" maw={420} gap="md">
-        <Group justify="space-between">
-          <Text fw={700} size="xl">
-            Easy ITSM
-          </Text>
-          <Select
-            size="xs"
-            w={120}
-            aria-label={t('auth.language')}
-            data={[
-              { value: 'ru', label: 'Русский' },
-              { value: 'en', label: 'English' },
-            ]}
-            value={i18n.language}
-            onChange={(v) => v && void i18n.changeLanguage(v)}
-            allowDeselect={false}
-          />
-        </Group>
-        <Paper withBorder p="xl" radius="md" shadow="sm">
-          {step === 'credentials' && (
-            <Credentials
-              multiTenant={!!config.data?.multiTenant}
-              sso={config.data?.sso ?? []}
-              passwordLogin={config.data?.passwordLogin ?? true}
-              error={error}
-              onResult={handle}
-              onError={fail}
-            />
-          )}
-          {step === 'mfa' && (
-            <SecondFactor
-              methods={methods.length ? methods : ['totp', 'webauthn', 'recovery']}
-              rememberDays={config.data?.rememberDeviceDays ?? 0}
-              error={error}
-              onResult={handle}
-              onError={fail}
-              onBack={() => setStep('credentials')}
-            />
-          )}
-          {step === 'mfa_setup' && <MfaSetup onResult={handle} onError={fail} error={error} />}
-          {step === 'recovery' && <RecoveryCodes codes={recoveryCodes} onDone={() => void finish()} />}
-        </Paper>
-      </Stack>
-    </Center>
+    <AuthLayout>
+      {step === 'credentials' && (
+        <Credentials
+          multiTenant={!!config.data?.multiTenant}
+          sso={config.data?.sso ?? []}
+          passwordLogin={config.data?.passwordLogin ?? true}
+          error={error}
+          onResult={handle}
+          onError={fail}
+        />
+      )}
+      {step === 'mfa' && (
+        <SecondFactor
+          methods={methods.length ? methods : ['totp', 'webauthn', 'recovery']}
+          rememberDays={config.data?.rememberDeviceDays ?? 0}
+          error={error}
+          onResult={handle}
+          onError={fail}
+          onBack={() => setStep('credentials')}
+        />
+      )}
+      {step === 'mfa_setup' && <MfaSetup onResult={handle} onError={fail} error={error} />}
+      {step === 'recovery' && <RecoveryCodes codes={recoveryCodes} onDone={() => void finish()} />}
+    </AuthLayout>
   );
 }
 

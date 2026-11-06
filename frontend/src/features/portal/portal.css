@@ -1,23 +1,24 @@
 /*
- * Портал по дизайн-системе «Ясность» (DESIGN.md, макеты «Портал: главная» и «Каталог услуг»).
+ * Портал по дизайн-системе «Адмирал» (DESIGN.md, макеты «Портал: главная» и «Каталог услуг»).
  * Цвета только из токенов var(--ei-…), одинаковых в светлой и тёмной теме.
  */
 
 /* ------------------------------------------------------------------ шапка */
 
+/* Шапка по макету «Адмирал»: тёмно-синяя рама (.ei-chrome на AppShell.Header), латунный знак и черта под разделом. */
 .ep-header {
   height: 100%;
-  background: var(--ei-surface);
+  background: var(--ei-nav-bg);
 }
 
 .ep-header-inner {
-  max-width: 1200px;
+  max-width: 1180px;
   height: 100%;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 36px;
 }
 
 .ep-brand {
@@ -25,25 +26,15 @@
   align-items: center;
   gap: 10px;
   flex: none;
-  color: var(--ei-text);
+  color: var(--ei-nav-text-strong);
   text-decoration: none;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-}
-
-.ep-brand-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--ei-accent);
-  color: var(--ei-on-accent);
-  display: inline-grid;
-  place-items: center;
 }
 
 .ep-nav {
   display: flex;
-  gap: 20px;
+  gap: 28px;
   height: 100%;
   overflow-x: auto;
   scrollbar-width: none;
@@ -53,9 +44,8 @@
   height: 100%;
   display: inline-flex;
   align-items: center;
-  padding: 0 4px;
-  border-bottom: 2px solid transparent;
-  color: var(--ei-text-2);
+  padding: 0 2px;
+  color: var(--ei-nav-text);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -64,13 +54,21 @@
 }
 
 .ep-nav a:hover {
-  color: var(--ei-text);
+  color: var(--ei-nav-text-strong);
 }
 
 .ep-nav a[aria-current='page'] {
-  border-bottom-color: var(--ei-accent);
-  color: var(--ei-text);
+  box-shadow: inset 0 -2px 0 var(--ei-brass);
+  color: var(--ei-nav-text-strong);
   font-weight: 600;
+}
+
+/* Инициалы в шапке: приподнятый синий и светлая латунь, как на макете. */
+.ep-header .ep-avatar {
+  width: 34px;
+  height: 34px;
+  background: var(--ei-nav-active);
+  color: #e8d3ae;
 }
 
 .ep-avatar {

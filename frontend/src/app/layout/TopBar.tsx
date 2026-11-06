@@ -27,6 +27,7 @@ import { useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
 import { GlobalSearchBox } from '@/features/search';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { BrandMark } from '@/shared/ui/BrandMark';
 import { spaces, type SpaceId } from './spaces';
 
 /** Куда ведут пункты «+ Создать». Остальные пункты подключат модули изменений, проблем и знаний. */
@@ -60,12 +61,14 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
           component="a"
           c="var(--mantine-color-text)"
           td="none"
+          style={{ display: 'flex', alignItems: 'center', gap: 10 }}
           href={spaces[space].home}
           onClick={(e) => {
             e.preventDefault();
             navigate(spaces[space].home);
           }}
         >
+          <BrandMark />
           Easy ITSM
         </Text>
       </Group>

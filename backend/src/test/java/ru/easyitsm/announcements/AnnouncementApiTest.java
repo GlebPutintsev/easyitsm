@@ -43,6 +43,32 @@ class AnnouncementApiTest {
     }
 
     @Test
+    void serviceIdsAreStoredAndReplaced() throws Exception {
+        String a = Ids.newId().toString();
+        String b = Ids.newId().toString();
+        String body = BODY.replace("\"published\":true", "\"published\":true,\"serviceIds\":[\"" + a + "\",\"" + a + "\"]");
+        String created = mvc.perform(as(post("/api/v1/announcements"), DEMO, "ADM")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.serviceIds.length()").value(1))
+                .andExpect(jsonPath("$.serviceIds[0]").value(a))
+                .andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(created, "$.id");
+        mvc.perform(as(patch("/api/v1/announcements/" + id), DEMO, "ADM").header("If-Match", "\"0\"")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"serviceIds\":[\"" + b + "\"]}"))
+                .andExpect(status().isOk());
+        mvc.perform(as(get("/api/v1/announcements/" + id), DEMO, "REQ"))
+                .andExpect(jsonPath("$.serviceIds[0]").value(b))
+                .andExpect(jsonPath("$.serviceIds.length()").value(1));
+        // Без поля — пустой список: объявление для всех
+        String plain = mvc.perform(as(post("/api/v1/announcements"), DEMO, "ADM")
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andReturn().getResponse().getContentAsString();
+        mvc.perform(as(get("/api/v1/announcements/" + JsonPath.read(plain, "$.id")), DEMO, "REQ"))
+                .andExpect(jsonPath("$.serviceIds.length()").value(0));
+    }
+
+    @Test
     void requesterCannotCreate() throws Exception {
         mvc.perform(as(post("/api/v1/announcements"), DEMO, "REQ").contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden())

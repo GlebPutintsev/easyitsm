@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 
+// Адрес бэкенда для прокси dev-сервера; другой порт — EASYITSM_API_URL=http://localhost:8081 npm run dev.
+const apiUrl = process.env.EASYITSM_API_URL ?? 'http://localhost:8080';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -11,8 +14,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/actuator': 'http://localhost:8080',
+      '/api': apiUrl,
+      '/actuator': apiUrl,
     },
   },
   test: {

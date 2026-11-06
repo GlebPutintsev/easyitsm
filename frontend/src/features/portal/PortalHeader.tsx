@@ -1,18 +1,18 @@
 import { Group } from '@mantine/core';
-import { IconCheck } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router';
 import { hasRole, useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { ProfileMenu, SpaceSwitcher } from '@/app/layout/TopBar';
+import { BrandMark } from '@/shared/ui/BrandMark';
 import './portal.css';
 
 /** Роли, у которых кроме портала есть рабочее место или управление. */
 const STAFF = ['AGT', 'LEAD', 'MIM', 'CHG', 'PRB', 'KNW', 'CFG', 'AST', 'ANL', 'ADM', 'SEC', 'AUD'];
 
 /**
- * Шапка портала (DESIGN.md, «Портал»): верхняя навигация вместо левого меню —
+ * Шапка портала (макет «Адмирал», DESIGN.md «Портал»): тёмно-синяя полоса 64 px, верхняя навигация вместо левого меню —
  * Главная, Каталог услуг, Мои заявки, База знаний. На телефоне разделы в нижнем меню.
  */
 export function PortalHeader() {
@@ -28,9 +28,7 @@ export function PortalHeader() {
     <div className="ep-header">
       <div className="ep-header-inner">
         <Link to="/portal" className="ep-brand">
-          <span className="ep-brand-mark" aria-hidden="true">
-            <IconCheck size={16} stroke={2.5} />
-          </span>
+          <BrandMark />
           {t('portal.brand')}
         </Link>
         <Group component="nav" aria-label={t('portal.navLabel')} className="ep-nav" visibleFrom="sm" wrap="nowrap">

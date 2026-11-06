@@ -48,7 +48,14 @@ paths:
         - {name: assigneeId, in: query, description: UUID через запятую или `none`, schema: {type: string}}
         - {name: awaitingAgent, in: query, description: Последняя публичная запись от заявителя, schema: {type: boolean}}
         - {name: requesterId, in: query, schema: {type: string, format: uuid}}
-        - {name: serviceId, in: query, schema: {type: string, format: uuid}}
+        - {name: serviceId, in: query, description: UUID через запятую или `none`, schema: {type: string}}
+        - {name: catalogItemId, in: query, description: "Позиция каталога, по которой заказана заявка: UUID через запятую или `none`", schema: {type: string}}
+        - name: serviceOrItemId
+          in: query
+          description: |
+            «Услуга» рабочего места агента в MVP: совпадает serviceId, а если его нет — catalogItemId
+            (так же услуга показывается в заявке). UUID через запятую или `none`.
+          schema: {type: string}
         - {name: categoryId, in: query, schema: {type: string, format: uuid}}
         - {name: q, in: query, description: Полнотекст (морфология RU) по теме и описанию или номер, schema: {type: string}}
         - {name: createdFrom, in: query, schema: {type: string, format: date-time}}

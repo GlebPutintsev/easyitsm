@@ -23,7 +23,8 @@
 Нужны JDK 21, Maven 3.9, Node 22 и Docker.
 
 ```bash
-# 1. PostgreSQL, Valkey, MinIO, Mailpit (Keycloak: --profile sso)
+# 1. PostgreSQL, Valkey, S3 (moto), Mailpit. Дополнительно: --profile sso (Keycloak),
+#    --profile search (OpenSearch), --profile av (ClamAV). Все образы работают и на Apple Silicon.
 docker compose -f deploy/compose/compose.yaml up -d
 
 # 2. Бэкенд на :8080, профиль dev включает демо-арендатора и демо-пользователей admin, agent, user
@@ -33,6 +34,11 @@ cd backend && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 # 3. Фронтенд на :5173, запросы /api проксируются на бэкенд
 cd frontend && npm install && npm run dev
 ```
+
+Если порты 5432, 6379 или 8080 заняты другими проектами, их можно сдвинуть без правки файлов:
+`EASYITSM_PG_PORT`, `EASYITSM_VALKEY_PORT`, `EASYITSM_S3_PORT` для compose (подробнее в его шапке),
+`SERVER_PORT` для бэкенда и `EASYITSM_API_URL=http://localhost:8081` для фронтенда.
+Рабочее место агента без бэкенда, на данных в памяти: `VITE_TICKETS_API=mock npm run dev`.
 
 Тесты:
 

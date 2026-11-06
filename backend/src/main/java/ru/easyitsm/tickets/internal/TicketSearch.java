@@ -32,7 +32,8 @@ class TicketSearch {
     }
 
     record Filter(String scope, String state, String type, String status, String statusCategory, String priority,
-                  String groupId, String assigneeId, UUID requesterId, UUID serviceId, UUID categoryId, String q,
+                  String groupId, String assigneeId, UUID requesterId, String serviceId, String catalogItemId,
+                  String serviceOrItemId, UUID categoryId, String q,
                   Instant createdFrom, Instant createdTo, Instant updatedFrom, Instant dueBefore,
                   Boolean awaitingAgent, List<String> custom) {
     }
@@ -142,10 +143,12 @@ class TicketSearch {
             p.put("requester", f.requesterId());
             w.append(" and t.requester_id = :requester");
         }
-        if (f.serviceId() != null) {
-            p.put("service", f.serviceId());
-            w.append(" and t.service_id = :service");
-        }
+        uuidList(w, p, "t.service_id", "services", f.serviceId(), Set.of());
+        // Заявки из каталога: позиция, по которой заказана заявка (в MVP «услуга» портала).
+        uuidList(w, p, "t.catalog_item_id", "catalogItems", f.catalogItemId(), Set.of());
+        // «Услуга» в MVP — позиция каталога: у заказа она в catalog_item_id, агент ставит её вручную в service_id.
+        // Показывается так же: serviceId ?? catalogItemId. UUID не пересекаются, ложных совпадений нет.
+        uuidList(w, p, "coalesce(t.service_id, t.catalog_item_id)", "offerings", f.serviceOrItemId(), Set.of());
         if (f.categoryId() != null) {
             p.put("category", f.categoryId());
             w.append(" and t.category_id = :category");

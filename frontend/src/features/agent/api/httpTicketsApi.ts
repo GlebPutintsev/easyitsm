@@ -205,7 +205,9 @@ export function toRawFilter(f: TicketFilter, now = Date.now()): RawFilter {
     type: list(f.type),
     groupId: list(f.groupId),
     assigneeId: onlyMe ? undefined : list(f.assignee),
-    serviceId: list(f.serviceId),
+    // В MVP «услуга» — позиция каталога из справочника (catalog.activeItems): заказ с портала хранит её
+    // в catalogItemId, агент вручную — в serviceId. Когда появятся услуги CMDB, фильтр переедет на serviceId.
+    serviceOrItemId: list(f.serviceId),
     // Просрочено — ближайший срок раньше текущего момента, «под угрозой» — в пределах часа.
     dueBefore: f.sla?.includes('at_risk')
       ? new Date(now + 60 * 60_000).toISOString()
@@ -231,7 +233,8 @@ function fromRawView(v: SavedTicketView): SavedView {
     type: split(f.type) as TicketFilter['type'],
     groupId: split(f.groupId),
     assignee: f.scope === 'assigned_to_me' ? ['me'] : split(f.assigneeId),
-    serviceId: split(f.serviceId),
+    // Представления, сохранённые до фильтра serviceOrItemId, хранили услугу в serviceId.
+    serviceId: split(f.serviceOrItemId ?? f.serviceId),
   };
   return { id: v.id, name: v.name, visibility: v.visibility, builtIn: false, filter, sort: SORT_BACK[v.sort ?? 'due'] };
 }

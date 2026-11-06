@@ -27,7 +27,8 @@ export function AppLayout() {
 
   return (
     <AppShell
-      header={{ height: 56 }}
+      // Шапка портала выше рабочей: 64 px по макету «Адмирал».
+      header={{ height: portal ? 64 : 56 }}
       navbar={portal ? undefined : { width: 232, breakpoint: 'sm', collapsed: { mobile: !navOpened } }}
       footer={bottomNav ? { height: 60 } : undefined}
       padding={bleed ? 0 : 'md'}
