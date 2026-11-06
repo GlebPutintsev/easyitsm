@@ -126,6 +126,7 @@ class TicketAccessTest extends TicketApiSupport {
         String outsider = Ids.newId().toString();
         perform(as(get("/api/v1/tickets/" + id), Ids.newId().toString(), "REQ")).andExpect(status().isNotFound());
         perform(as(get("/api/v1/tickets/" + id), outsider, "LEAD")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), Ids.newId().toString(), "KNW")).andExpect(status().isNotFound());
         perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.permissions.assign").value(true));
         // Любой агент распределяет: назначает группу, дальше заявка — её
