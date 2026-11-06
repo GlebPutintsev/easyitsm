@@ -856,7 +856,14 @@
       "key": "Confirm with a key"
     },
     "ssoError": "Single sign-on failed. Try again or contact your administrator.",
-    "ssoConflict": "An account with this username already exists. Ask your administrator to link it to single sign-on."
+    "ssoConflict": "An account with this username already exists. Ask your administrator to link it to single sign-on.",
+    "side": {
+      "label": "About",
+      "title": "IT service desk",
+      "text": "Requests, services and knowledge base in one place.",
+      "darkTheme": "Dark theme",
+      "lightTheme": "Light theme"
+    }
   },
   "security": {
     "title": "Security",
