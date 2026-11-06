@@ -9,6 +9,7 @@ import { ListState } from '@/shared/ui/ListState';
 import { AUDIENCES, useArticle, useUpdateArticle, type ArticleDetails, type Audience, type UpdateArticleInput } from './api';
 import { ArticleActions } from './ArticleActions';
 import { CategoryField } from './CategoryField';
+import { ServiceField } from './ServiceField';
 import { MarkdownEditor } from './MarkdownEditor';
 import { Notice, StatusBadge, notifyError, useDateFormat } from './ui';
 
@@ -18,6 +19,7 @@ interface Draft {
   title: string;
   body: string;
   categoryId: string | null;
+  serviceId: string | null;
   audience: Audience;
   groupId: string;
 }
@@ -26,6 +28,7 @@ const draftOf = (a: ArticleDetails): Draft => ({
   title: a.title,
   body: a.body,
   categoryId: a.categoryId,
+  serviceId: a.serviceId ?? null,
   audience: a.audience,
   groupId: a.audienceGroupId ?? '',
 });
@@ -46,6 +49,11 @@ export function patchOf(saved: Draft, draft: Draft): { input: UpdateArticleInput
     if (draft.categoryId) input.categoryId = draft.categoryId;
     else input.clearCategory = true;
     next.categoryId = draft.categoryId;
+  }
+  if (draft.serviceId !== saved.serviceId) {
+    if (draft.serviceId) input.serviceId = draft.serviceId;
+    else input.clearService = true;
+    next.serviceId = draft.serviceId;
   }
   const audienceChanged = draft.audience !== saved.audience || (draft.audience === 'group' && draft.groupId !== saved.groupId);
   if (audienceChanged && (draft.audience !== 'group' || draft.groupId.trim())) {
@@ -212,8 +220,9 @@ function EditorForm({ article, onReload }: { article: ArticleDetails; onReload: 
         styles={{ input: { fontWeight: 600, fontSize: 28 } }}
         error={!draft.title.trim() ? t('kb.editor.titleRequired') : undefined}
       />
-      <SimpleGrid cols={{ base: 1, sm: draft.audience === 'group' ? 3 : 2 }} maw={900}>
+      <SimpleGrid cols={{ base: 1, sm: draft.audience === 'group' ? 4 : 3 }} maw={1200}>
         <CategoryField value={draft.categoryId} onChange={(v) => set('categoryId', v)} />
+        <ServiceField value={draft.serviceId} onChange={(v) => set('serviceId', v)} />
         <Select
           label={t('kb.fields.audience')}
           value={draft.audience}

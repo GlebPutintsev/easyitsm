@@ -25,6 +25,7 @@ final class KnowledgeDtos {
             @Size(max = MAX_BODY) String body,
             @Pattern(regexp = "blank|howto|solution|faq|known_error") String template,
             UUID categoryId,
+            UUID serviceId,
             @Pattern(regexp = AUDIENCES) String audience,
             UUID audienceGroupId) {
     }
@@ -35,6 +36,8 @@ final class KnowledgeDtos {
             @Size(max = MAX_BODY) String body,
             UUID categoryId,
             Boolean clearCategory,
+            UUID serviceId,
+            Boolean clearService,
             @Pattern(regexp = AUDIENCES) String audience,
             UUID audienceGroupId,
             UUID ownerId) {
@@ -113,6 +116,7 @@ final class KnowledgeDtos {
             Integer currentVersionNo,
             Integer publishedVersionNo,
             UUID categoryId,
+            UUID serviceId,
             String audience,
             UUID audienceGroupId,
             UUID ownerId,

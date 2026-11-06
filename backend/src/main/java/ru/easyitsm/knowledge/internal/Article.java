@@ -21,6 +21,8 @@ class Article extends TenantEntity {
     private String status;
     private String title;
     private UUID categoryId;
+    /** Услуга статьи для баннера сбоя. В MVP — id позиции каталога, в 1.0 — услуга CMDB. Без FK: другой модуль. */
+    private UUID serviceId;
     private String audience;
     private UUID audienceGroupId;
     private UUID ownerId;
@@ -97,6 +99,10 @@ class Article extends TenantEntity {
 
     void setCategoryId(UUID categoryId) {
         this.categoryId = categoryId;
+    }
+
+    void setServiceId(UUID serviceId) {
+        this.serviceId = serviceId;
     }
 
     void setAudience(ArticleAudience audience, UUID groupId) {
@@ -217,6 +223,10 @@ class Article extends TenantEntity {
 
     UUID categoryId() {
         return categoryId;
+    }
+
+    UUID serviceId() {
+        return serviceId;
     }
 
     ArticleAudience audience() {

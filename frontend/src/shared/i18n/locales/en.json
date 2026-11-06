@@ -125,6 +125,9 @@
       "title": "Title",
       "category": "Category",
       "noCategory": "No category",
+      "service": "Service",
+      "noService": "No service",
+      "serviceHint": "A banner appears above the article while the service has an outage or maintenance",
       "audience": "Visible to",
       "groupId": "Group ID",
       "groupIdHint": "Group picker will arrive with the users module",
@@ -353,6 +356,10 @@
       "related": "Related articles",
       "version": "Version {{no}}",
       "reviewUntil": "Review by {{date}}"
+    },
+    "outage": {
+      "outage": "Outage",
+      "maintenance": "Maintenance"
     }
   },
   "ticket": {

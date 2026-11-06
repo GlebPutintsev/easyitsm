@@ -366,4 +366,18 @@ class KnowledgeApiTest {
         kb.perform(KNW.in(OTHER), get("/api/v1/knowledge/categories"))
                 .andExpect(jsonPath("$[?(@.id == '%s')]".formatted(cat)).doesNotExist());
     }
+
+    @Test
+    void articleKeepsItsServiceForOutageBanner() throws Exception {
+        String service = UUID.randomUUID().toString();
+        String res = kb.json(AGENT, post(API), "{\"title\":\"Почта\",\"serviceId\":\"%s\"}".formatted(service))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.serviceId").value(service))
+                .andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(res, "$.id");
+        String other = UUID.randomUUID().toString();
+        kb.edit(AGENT, id, "{\"serviceId\":\"%s\"}".formatted(other)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.serviceId").value(other));
+        kb.edit(AGENT, id, "{\"clearService\":true}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.serviceId").doesNotExist());
+    }
 }

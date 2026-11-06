@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 final class AnnouncementCommands {
 
@@ -17,7 +19,8 @@ final class AnnouncementCommands {
             @Size(max = 10_000) String body,
             @NotNull Instant startsAt,
             Instant endsAt,
-            boolean published) {
+            boolean published,
+            @Size(max = 50) List<@NotNull UUID> serviceIds) {
     }
 
     /** Частичное изменение: null означает «не менять». */
@@ -27,6 +30,7 @@ final class AnnouncementCommands {
             @Size(max = 10_000) String body,
             Instant startsAt,
             Instant endsAt,
-            Boolean published) {
+            Boolean published,
+            @Size(max = 50) List<@NotNull UUID> serviceIds) {
     }
 }

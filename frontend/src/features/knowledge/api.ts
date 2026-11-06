@@ -37,6 +37,8 @@ export interface ArticleDetails {
   currentVersionNo: number | null;
   publishedVersionNo: number | null;
   categoryId: string | null;
+  /** Услуга статьи (в MVP — позиция каталога): над статьёй показывается баннер её сбоя */
+  serviceId: string | null;
   audience: Audience;
   audienceGroupId: string | null;
   ownerId: string | null;
@@ -213,6 +215,7 @@ export interface CreateArticleInput {
   title: string;
   template?: TemplateCode;
   categoryId?: string | null;
+  serviceId?: string | null;
   audience?: Audience;
   body?: string;
 }
@@ -232,6 +235,8 @@ export interface UpdateArticleInput {
   body?: string;
   categoryId?: string;
   clearCategory?: boolean;
+  serviceId?: string;
+  clearService?: boolean;
   audience?: Audience;
   audienceGroupId?: string | null;
 }

@@ -638,3 +638,47 @@
   border-color: var(--ei-accent);
   background: var(--ei-accent-soft);
 }
+
+/* Баннер сбоя или работ по услуге статьи (макет «Адмирал»): тёплый фон, метка капителью. */
+.kb-outages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.kb-outage {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--ei-warn-soft);
+  color: var(--ei-text);
+}
+
+.kb-outage[data-kind='maintenance'] {
+  background: var(--ei-accent-soft);
+}
+
+.kb-outage-label {
+  flex: none;
+  font-size: 12px;
+  line-height: 21px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ei-warn);
+}
+
+.kb-outage[data-kind='maintenance'] .kb-outage-label {
+  color: var(--ei-accent-text);
+}
+
+.kb-outage-title {
+  font-weight: 600;
+}
+
+.kb-outage-body {
+  display: block;
+  color: var(--ei-text-2);
+}
