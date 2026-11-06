@@ -139,6 +139,12 @@ class CatalogService implements CatalogQueries {
                 .stream().map(CatalogItem::toRef).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CatalogItemRef> activeItems() {
+        return items.allActive().stream().map(CatalogItem::toRef).toList();
+    }
+
     @Transactional
     public CatalogViews.ItemDetail createItem(CatalogCommands.ItemFields in) {
         var item = new CatalogItem(in.categoryId(), in.name());

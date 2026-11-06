@@ -57,6 +57,18 @@ class Directory implements UserDirectory {
     }
 
     @Override
+    public List<GroupSummary> listGroups(String type) {
+        return jdbc.sql("""
+                select id, name, type from user_group
+                 where cast(:type as text) is null or type = :type
+                 order by lower(name), id""")
+                .param("type", type)
+                .query((rs, n) -> new GroupSummary(rs.getObject("id", UUID.class), rs.getString("name"),
+                        rs.getString("type")))
+                .list();
+    }
+
+    @Override
     public Set<UUID> groupsOf(UUID userId) {
         return new HashSet<>(jdbc.sql("select group_id from group_member where user_id = :user")
                 .param("user", userId).query(UUID.class).list());

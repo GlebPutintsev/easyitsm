@@ -18,6 +18,9 @@ public interface UserDirectory {
 
     Optional<GroupSummary> findGroup(UUID groupId);
 
+    /** Группы арендатора по имени. type — support, security, approval или other; null — все типы. */
+    List<GroupSummary> listGroups(String type);
+
     /** Группы, в которых состоит пользователь. */
     Set<UUID> groupsOf(UUID userId);
 
