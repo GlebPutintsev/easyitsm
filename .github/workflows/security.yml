@@ -93,7 +93,7 @@ jobs:
       - uses: azure/setup-helm@v5
         with:
           version: v3.22.1
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.27"
           cache: false
@@ -124,7 +124,7 @@ jobs:
         working-directory: deploy/docker/web
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.27"
           cache: false
