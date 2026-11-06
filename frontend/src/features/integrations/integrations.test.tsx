@@ -13,6 +13,9 @@ if (!('fonts' in document)) {
 }
 Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 
+// Выданный токен в ответе-заглушке: собирается из частей, чтобы не походить на настоящий секрет для gitleaks.
+const ISSUED = 'eitsm_mon_' + 'x'.repeat(12);
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -73,7 +76,7 @@ describe('экран интеграций', () => {
         return json(
           {
             source: { ...SOURCE, source: { ...SOURCE.source, id: 'new', name: body.name, kind: body.kind } },
-            token: 'eitsm_mon_SECRET123',
+            token: ISSUED,
           },
           201,
         );
@@ -135,11 +138,11 @@ describe('экран интеграций', () => {
     fireEvent.click(screen.getByText('Alertmanager / Grafana'));
     fireEvent.click(screen.getByRole('button', { name: 'Создать и получить токен' }));
 
-    expect(await screen.findByTestId('issued-token')).toHaveTextContent('eitsm_mon_SECRET123');
+    expect(await screen.findByTestId('issued-token')).toHaveTextContent(ISSUED);
     const body = JSON.parse(String(calls('POST', '/monitoring/sources')[0]![1]?.body));
     expect(body).toMatchObject({ name: 'Prometheus', kind: 'alertmanager', minSeverity: 'warning', autoResolve: true });
     expect(body.requesterId).toBeNull();
-    expect(screen.getByText(/credentials: eitsm_mon_SECRET123/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`credentials: ${ISSUED}`))).toBeInTheDocument();
   });
 
   it('журнал событий: итог и ссылка на инцидент', async () => {
