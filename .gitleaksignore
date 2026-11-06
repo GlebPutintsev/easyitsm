@@ -9,3 +9,5 @@
 # Заглушка выданного токена источника мониторинга в тесте экрана интеграций (первая версия PR #50).
 # Не секрет: строка только в ответе-заглушке fetch; в текущей версии теста собирается из частей.
 b634efa74117bc66fefe60ba31d303725143b80b:frontend/src/features/integrations/integrations.test.tsx:generic-api-key:76
+# Заглушка выданного токена источника CMDB в тесте экрана CMDB (первая версия PR #63), теперь собирается из частей.
+72c05d1d2f4da885d238bb0328f51be84dd51d46:frontend/src/features/cmdb/cmdb.test.tsx:generic-api-key:157

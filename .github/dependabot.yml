@@ -50,6 +50,14 @@ updates:
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: gomod
+    directory: /discovery-agent
+    schedule: { interval: monthly }
+    groups:
+      gomod-agent:
+        applies-to: version-updates
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
     directory: /deploy/docker/web
     schedule: { interval: monthly }
     groups:

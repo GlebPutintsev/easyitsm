@@ -1,4 +1,4 @@
-import { Button, Card, Group, Modal, NumberInput, Select, Stack, Switch, Table, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Card, Code, CopyButton, Group, Modal, NumberInput, Select, Stack, Switch, Table, Text, TextInput } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,17 @@ import { hasRole, useMe } from '@/features/auth/api';
 import { ApiError } from '@/shared/api/client';
 import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { ListState } from '@/shared/ui/ListState';
-import { SOURCE_KINDS, type Source, type SourceKind, useBatches, useSaveSource, useSources } from './api';
+import {
+  type IssuedToken,
+  SOURCE_KINDS,
+  type Source,
+  type SourceKind,
+  useBatches,
+  useIssueSourceToken,
+  useRevokeSourceToken,
+  useSaveSource,
+  useSources,
+} from './api';
 import { CmdbHeader, SectionLabel, ToneBadge, formatDateTime } from './ui';
 import classes from './cmdb.module.css';
 
@@ -85,6 +95,7 @@ export function SourcesPage() {
         <Batches
           source={list.find((s) => s.code === selected) ?? null}
           onEdit={canConfigure ? (s) => setEditing(s) : undefined}
+          canConfigure={canConfigure}
         />
       )}
       <SourceForm value={editing} onClose={() => setEditing(null)} />
@@ -92,7 +103,7 @@ export function SourcesPage() {
   );
 }
 
-function Batches({ source, onEdit }: { source: Source | null; onEdit?: (s: Source) => void }) {
+function Batches({ source, onEdit, canConfigure }: { source: Source | null; onEdit?: (s: Source) => void; canConfigure: boolean }) {
   const { t } = useTranslation();
   const batches = useBatches(source?.code ?? null);
   if (!source) return null;
@@ -109,6 +120,7 @@ function Batches({ source, onEdit }: { source: Source | null; onEdit?: (s: Sourc
             </Button>
           )}
         </Group>
+        <TokenLine source={source} canConfigure={canConfigure} />
         {batches.isPending ? (
           <ListState state="loading" rows={2} />
         ) : batches.isError ? (
@@ -133,6 +145,84 @@ function Batches({ source, onEdit }: { source: Source | null; onEdit?: (s: Sourc
         )}
       </Stack>
     </div>
+  );
+}
+
+/** Токен агента обнаружения: агент шлёт пакеты без входа пользователя, токен действует только для этого источника. */
+function TokenLine({ source, canConfigure }: { source: Source; canConfigure: boolean }) {
+  const { t } = useTranslation();
+  const issue = useIssueSourceToken();
+  const revoke = useRevokeSourceToken();
+  const [issued, setIssued] = useState<IssuedToken | null>(null);
+  return (
+    <Stack gap={6}>
+      <Group justify="space-between" gap="xs">
+        <Text size="sm" className={source.tokenHint ? undefined : classes.muted}>
+          <Text span size="sm" fw={600}>
+            {t('cmdb.sources.token.title')}:{' '}
+          </Text>
+          {source.tokenHint
+            ? t('cmdb.sources.token.hint', { hint: source.tokenHint, at: source.tokenIssuedAt ? formatDateTime(source.tokenIssuedAt) : '' })
+            : t('cmdb.sources.token.none')}
+        </Text>
+        {canConfigure && (
+          <Group gap="xs">
+            <Button size="xs" variant="default" loading={issue.isPending} onClick={() => issue.mutate(source.code, { onSuccess: setIssued })}>
+              {t(source.tokenHint ? 'cmdb.sources.token.reissue' : 'cmdb.sources.token.issue')}
+            </Button>
+            {source.tokenHint && (
+              <Button
+                size="xs"
+                variant="subtle"
+                color="red"
+                loading={revoke.isPending}
+                onClick={() => {
+                  if (window.confirm(t('cmdb.sources.token.revokeConfirm'))) revoke.mutate(source.code);
+                }}
+              >
+                {t('cmdb.sources.token.revoke')}
+              </Button>
+            )}
+          </Group>
+        )}
+      </Group>
+      <ErrorLine error={issue.error ?? revoke.error} />
+      {issued && <TokenModal source={source} issued={issued} onClose={() => setIssued(null)} />}
+    </Stack>
+  );
+}
+
+function TokenModal({ source, issued, onClose }: { source: Source; issued: IssuedToken; onClose: () => void }) {
+  const { t } = useTranslation();
+  const config = JSON.stringify({ server: window.location.origin, tokenFile: '/etc/easyitsm/discovery.token', environment: 'production' }, null, 2);
+  return (
+    <Modal opened onClose={onClose} size="lg" title={t('cmdb.sources.token.issuedTitle', { name: source.name })}>
+      <Stack gap="sm">
+        <Alert color="yellow" variant="light">
+          {t('cmdb.sources.token.once')}
+        </Alert>
+        <Group gap="xs" wrap="nowrap">
+          <Code style={{ overflowWrap: 'anywhere', flex: 1 }} data-testid="issued-token">
+            {issued.token}
+          </Code>
+          <CopyButton value={issued.token}>
+            {({ copied, copy }) => (
+              <Button size="xs" onClick={copy}>
+                {copied ? t('cmdb.sources.token.copied') : t('cmdb.sources.token.copy')}
+              </Button>
+            )}
+          </CopyButton>
+        </Group>
+        <Text size="sm">{t('cmdb.sources.token.setup')}</Text>
+        <Code block>{config}</Code>
+        <Text size="sm" className={classes.muted}>
+          {t('cmdb.sources.token.check')}
+        </Text>
+        <Group justify="flex-end">
+          <Button onClick={onClose}>{t('cmdb.sources.token.done')}</Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 }
 
