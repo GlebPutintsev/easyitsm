@@ -9,11 +9,12 @@ import java.util.List;
  *                {@code enum}
  * @param options значения для {@code enum}
  */
-record AttributeDef(String code, String name, String type, boolean required, List<String> options) {
+record AttributeDef(String code, String name, String type, Boolean required, List<String> options) {
 
     static final List<String> TYPES = List.of("string", "text", "number", "boolean", "date", "ip", "enum");
 
     AttributeDef {
+        required = Boolean.TRUE.equals(required);
         options = options == null ? List.of() : List.copyOf(options);
     }
 
