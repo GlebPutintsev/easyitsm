@@ -1,0 +1,35 @@
+{
+  "globalSearch": {
+    "placeholder": "Search tickets, articles and services",
+    "label": "Global search",
+    "title": "Search",
+    "showAll": "All results",
+    "nothing": "Nothing found. Try other words or a ticket number.",
+    "minChars": "Type at least two characters",
+    "degraded": "Search is in limited mode: results come from the fallback search, without internal notes and with lower accuracy.",
+    "error": "Search is unavailable right now",
+    "kinds": {
+      "all": "All",
+      "ticket": "Tickets",
+      "article": "Articles",
+      "service": "Services"
+    },
+    "state": {
+      "any": "Any",
+      "active": "Open",
+      "closed": "Closed"
+    },
+    "ticketType": "Ticket type",
+    "anyType": "All types",
+    "types": {
+      "incident": "Incident",
+      "request": "Request",
+      "problem": "Problem",
+      "change": "Change",
+      "task": "Task"
+    },
+    "found": "Found: {{count}}",
+    "updated": "Updated {{date}}",
+    "published": "Published {{date}}"
+  }
+}

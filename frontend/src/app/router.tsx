@@ -31,6 +31,7 @@ import { ArticlePage } from '@/features/knowledge/ArticlePage';
 import { KnowledgePortal } from '@/features/knowledge/KnowledgePortal';
 import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
+import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { NotFound } from './NotFound';
 
@@ -62,6 +63,8 @@ export const router = createBrowserRouter([
       { path: 'portal/tickets', element: <MyTicketsPage />, handle: bleed },
       { path: 'portal/tickets/:ref', element: <TicketPage />, handle: bleed },
       { path: 'portal/approvals', element: <ApprovalsPage />, handle: bleed },
+      { path: 'portal/search', element: <SearchPage space="portal" /> },
+      { path: 'agent/search', element: <SearchPage space="agent" /> },
       { path: 'agent/approvals', element: <ApprovalsPage /> },
       { path: 'admin/catalog', element: <CatalogAdminPage /> },
       { path: 'admin/catalog/items/:id', element: <ItemEditorPage /> },

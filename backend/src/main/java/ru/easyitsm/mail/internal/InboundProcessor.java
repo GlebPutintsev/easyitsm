@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import ru.easyitsm.attachments.api.AttachmentIntake;
+import ru.easyitsm.attachments.api.IncomingFile;
 import ru.easyitsm.identity.api.UserDirectory;
 import ru.easyitsm.identity.api.UserSummary;
 import ru.easyitsm.mail.events.InboundMailProcessed;
@@ -55,12 +57,13 @@ class InboundProcessor {
     private final TicketQueries ticketQueries;
     private final SecretScanner secrets;
     private final ApplicationEventPublisher events;
+    private final AttachmentIntake attachments;
     private final TransactionTemplate tx;
 
     InboundProcessor(JdbcClient jdbc, MimeParser parser, MailAuthenticator authenticator, ReplyTokens tokens,
                      MailSettings settings, MailProperties props, UserDirectory users, TicketCommands tickets,
                      TicketQueries ticketQueries, SecretScanner secrets, ApplicationEventPublisher events,
-                     PlatformTransactionManager txManager) {
+                     AttachmentIntake attachments, PlatformTransactionManager txManager) {
         this.jdbc = jdbc;
         this.parser = parser;
         this.authenticator = authenticator;
@@ -72,6 +75,7 @@ class InboundProcessor {
         this.ticketQueries = ticketQueries;
         this.secrets = secrets;
         this.events = events;
+        this.attachments = attachments;
         this.tx = new TransactionTemplate(txManager);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -191,16 +195,19 @@ class InboundProcessor {
             }
             if (visibility != null && !t.statusCategory().isFinal()) {
                 tickets.addComment(t.id(), userId, text, visibility);
-                return new Verdict("comment_added", join(authDetail, "ответ в " + t.number()), t.id(), false);
+                String files = files(t.id(), mail, userId,
+                        visibility == Visibility.INTERNAL ? "internal" : "public");
+                return new Verdict("comment_added", join(join(authDetail, "ответ в " + t.number()), files), t.id(),
+                        false);
             }
             if (visibility != null) {
                 UUID created = create(box, mail, userId, "Продолжение заявки " + t.number() + "\n\n" + text);
-                return new Verdict("ticket_created", join(authDetail, t.number() + " закрыта, создана новая"), created,
-                        false);
+                return new Verdict("ticket_created", join(join(authDetail, t.number() + " закрыта, создана новая"),
+                        files(created, mail, userId, "public")), created, false);
             }
         }
         UUID created = create(box, mail, userId, text);
-        return new Verdict("ticket_created", authDetail, created, false);
+        return new Verdict("ticket_created", join(authDetail, files(created, mail, userId, "public")), created, false);
     }
 
     private final ThreadLocal<MailAuthenticator.Outcome> currentAuth = new ThreadLocal<>();
@@ -220,11 +227,39 @@ class InboundProcessor {
         return tickets.create(n).id();
     }
 
+    /**
+     * Вложения письма — в файлы заявки через карантин и антивирус (модуль attachments). Хранилище недоступно —
+     * заявка всё равно создаётся, а в журнал письма попадает отметка: имена файлов остались в тексте.
+     *
+     * @return подробность для журнала письма или null, если всё принято
+     */
+    private String files(UUID ticketId, ParsedMail mail, UUID sender, String visibility) {
+        int failed = 0;
+        int blocked = 0;
+        for (ParsedMail.MailFile f : mail.attachments()) {
+            try {
+                var accepted = attachments.accept(new IncomingFile("ticket", ticketId, f.name(), f.contentType(),
+                        f.content(), visibility, sender, "mail"));
+                if (accepted.reason() != null) {
+                    blocked++;
+                }
+            } catch (AttachmentIntake.StorageUnavailable e) {
+                log.warn("Вложение {} письма {} не сохранено: {}", f.name(), mail.messageId(), e.getMessage());
+                failed++;
+            }
+        }
+        if (failed > 0) {
+            return "вложения не сохранены (" + failed + "): хранилище файлов недоступно";
+        }
+        return blocked > 0 ? "вложения не приняты (" + blocked + "): размер или число файлов" : null;
+    }
+
     private String body(ParsedMail mail) {
         String text = mail.text().isBlank() ? "(письмо без текста)" : mail.text();
         if (!mail.attachments().isEmpty()) {
-            text += "\n\n_Вложения в письме: " + String.join(", ", mail.attachments().stream().limit(20).toList())
-                    + "_";
+            // Сами файлы — в разделе «Файлы» заявки после проверки; имена в тексте остаются для истории переписки.
+            text += "\n\n_Вложения в письме: " + String.join(", ", mail.attachments().stream().limit(20)
+                    .map(ParsedMail.MailFile::name).toList()) + "_";
         }
         // Секреты в тексте маскирует модуль заявок (TCK-17); строку токена из цитаты убираем сами.
         return ReplyTokens.BODY_REF.matcher(text).replaceAll("").strip();
@@ -330,7 +365,7 @@ class InboundProcessor {
     }
 
     private static String join(String a, String b) {
-        return a == null ? b : a + "; " + b;
+        return a == null ? b : b == null ? a : a + "; " + b;
     }
 
     static List<String> verdicts() {

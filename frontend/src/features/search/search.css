@@ -1,0 +1,189 @@
+/* Глобальный поиск. Только токены «Адмирала» (DESIGN.md). */
+
+.es-mark {
+  background: var(--ei-brass-soft);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+  font-weight: 600;
+}
+
+.es-box {
+  position: relative;
+  flex: 1;
+  max-width: 560px;
+}
+
+.es-dropdown {
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  background: var(--ei-surface);
+  color: var(--ei-text);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  box-shadow: var(--ei-shadow);
+  padding: 8px;
+}
+
+.es-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ei-text-3);
+}
+
+.es-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--ei-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.es-item:hover,
+.es-item:focus-visible,
+.es-item[data-active] {
+  background: var(--ei-hover);
+  outline: none;
+}
+
+.es-item:focus-visible {
+  box-shadow: 0 0 0 2px var(--ei-focus, var(--ei-accent));
+}
+
+.es-item-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ei-text-3);
+}
+
+.es-item-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.es-item-title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.es-item-snippet {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ei-text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.es-ref {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ei-text-3);
+  margin-right: 6px;
+}
+
+.es-footer {
+  display: block;
+  padding: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--ei-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ei-link);
+  text-decoration: none;
+}
+
+.es-empty {
+  padding: 12px 8px;
+  font-size: 13px;
+  color: var(--ei-text-3);
+}
+
+.es-page {
+  max-width: 960px;
+}
+
+.es-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.es-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  color: var(--ei-text);
+  text-decoration: none;
+}
+
+.es-card:hover {
+  border-color: var(--ei-border-strong);
+}
+
+.es-card:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+}
+
+.es-card .es-item-title {
+  white-space: normal;
+}
+
+.es-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ei-text-3);
+}
+
+.es-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--ei-warn-soft);
+  color: var(--ei-text);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.es-notice svg {
+  color: var(--ei-warn);
+  flex: none;
+}
+
+/* На тёмно-синей раме поле поиска берёт цвета рамы. */
+.ei-chrome .es-box .mantine-TextInput-input {
+  background: var(--ei-nav-raised);
+  border-color: var(--ei-nav-border);
+  color: var(--ei-nav-text-strong);
+}
+
+.ei-chrome .es-box .mantine-TextInput-input::placeholder {
+  color: var(--ei-nav-text-3);
+}

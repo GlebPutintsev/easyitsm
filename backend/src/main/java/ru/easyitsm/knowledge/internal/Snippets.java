@@ -15,6 +15,21 @@ final class Snippets {
     private Snippets() {
     }
 
+    private static final Pattern FENCE = Pattern.compile("(?m)^\\s*```.*$");
+
+    /** Текст для поискового индекса: без разметки, но с содержимым блоков кода (тексты ошибок, команды). */
+    static String searchable(String markdown) {
+        if (markdown == null || markdown.isBlank()) {
+            return "";
+        }
+        String s = FENCE.matcher(markdown).replaceAll(" ");
+        s = HEADING.matcher(s).replaceAll("$1.");
+        s = IMAGE.matcher(s).replaceAll("$1");
+        s = LINK.matcher(s).replaceAll("$1");
+        s = MARKUP.matcher(s).replaceAll(" ");
+        return SPACES.matcher(s).replaceAll(" ").strip();
+    }
+
     static String plain(String markdown, int maxChars) {
         if (markdown == null || markdown.isBlank()) {
             return "";

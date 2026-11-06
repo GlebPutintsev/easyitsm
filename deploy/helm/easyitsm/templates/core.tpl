@@ -116,6 +116,19 @@ spec:
                     - { key: app-password, path: EASYITSM_DB_APP_PASSWORD }
                     - { key: owner-username, path: EASYITSM_DB_OWNER_USER }
                     - { key: owner-password, path: EASYITSM_DB_OWNER_PASSWORD }
+              {{- with $root.Values.search.opensearch.existingSecret }}
+              - secret:
+                  name: {{ . }}
+                  items:
+                    - { key: password, path: EASYITSM_SEARCH_OPENSEARCH_PASSWORD }
+              {{- end }}
+              {{- with $root.Values.attachments.s3.existingSecret }}
+              - secret:
+                  name: {{ . }}
+                  items:
+                    - { key: access-key, path: EASYITSM_ATTACHMENTS_S3_ACCESS_KEY }
+                    - { key: secret-key, path: EASYITSM_ATTACHMENTS_S3_SECRET_KEY }
+              {{- end }}
               - secret:
                   name: {{ include "easyitsm.appSecretName" $root }}
                   items:

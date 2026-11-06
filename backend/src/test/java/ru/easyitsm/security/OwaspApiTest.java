@@ -66,7 +66,10 @@ class OwaspApiTest {
             "/api/v1/tickets/{ref}/links/{linkId}",         // связь заявок, видна в истории заявки
             "/api/v1/tickets/{ref}/watchers/{user}",        // наблюдатель заявки
             "/api/v1/me/sessions/{id}",                     // завершить свою сессию
-            "/api/v1/admin/duty-shifts/{id}");              // смена в графике дежурств, ставится без повторного входа
+            "/api/v1/admin/duty-shifts/{id}",               // смена в графике дежурств, ставится без повторного входа
+            "/api/v1/attachments/{id}",                     // свой файл в заявке или статье, как свой ответ в ленте
+            "/api/v1/notifications/push/subscriptions",     // своя подписка на push в этом браузере
+            "/api/v1/notification-settings/templates/{kind}/{locale}"); // сброс шаблона к стандартному
 
     @Autowired
     MockMvc mvc;
@@ -128,7 +131,9 @@ class OwaspApiTest {
                 || m.contains("/api/v1/approvals") || m.contains("/api/v1/catalog") || m.contains("/api/v1/knowledge")
                 || m.contains("/api/v1/surveys") || m.contains("/api/v1/announcements")
                 || m.contains("/api/v1/ticket-views") || m.contains("/api/v1/response-templates")
-                || m.contains("/api/v1/workspace") || m.contains("/api/v1/sla/instances"), "без @PreAuthorize: %s");
+                || m.contains("/api/v1/workspace") || m.contains("/api/v1/sla/instances")
+                // Права файла и выдачи поиска — права записи-владельца (заявки, статьи, услуги)
+                || m.contains("/api/v1/attachments") || m.contains("/api/v1/search"), "без @PreAuthorize: %s");
     }
 
     @Test

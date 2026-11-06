@@ -33,7 +33,7 @@ func get(h http.Handler, method, target string) *httptest.ResponseRecorder {
 }
 
 func TestClientRouteFallsBackToIndex(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	rec := get(h, http.MethodGet, "/agent/queue/42")
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "spa") {
 		t.Fatalf("ожидался index.html, получено %d %q", rec.Code, rec.Body.String())
@@ -47,7 +47,7 @@ func TestClientRouteFallsBackToIndex(t *testing.T) {
 }
 
 func TestAssetsAreImmutable(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	rec := get(h, http.MethodGet, "/assets/app-1a2b.js")
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Header().Get("Cache-Control"), "immutable") {
 		t.Fatalf("ожидался кэшируемый ресурс, получено %d %q", rec.Code, rec.Header().Get("Cache-Control"))
@@ -55,14 +55,14 @@ func TestAssetsAreImmutable(t *testing.T) {
 }
 
 func TestMissingAssetIs404NotIndex(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	if rec := get(h, http.MethodGet, "/assets/old-0000.js"); rec.Code != http.StatusNotFound {
 		t.Fatalf("старый ресурс должен давать 404, получено %d", rec.Code)
 	}
 }
 
 func TestPathTraversalStaysInRoot(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	rec := get(h, http.MethodGet, "/../../etc/passwd")
 	if strings.Contains(rec.Body.String(), "root:") {
 		t.Fatal("выход за пределы каталога")
@@ -70,15 +70,41 @@ func TestPathTraversalStaysInRoot(t *testing.T) {
 }
 
 func TestOnlyGetAndHead(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	if rec := get(h, http.MethodPost, "/"); rec.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("POST должен быть запрещён, получено %d", rec.Code)
 	}
 }
 
 func TestHealth(t *testing.T) {
-	h := newHandler(site(t))
+	h := newHandler(site(t), "")
 	if rec := get(h, http.MethodGet, "/healthz"); rec.Code != http.StatusOK {
 		t.Fatalf("healthz: %d", rec.Code)
+	}
+}
+
+func TestFilesOriginInPolicy(t *testing.T) {
+	h := newHandler(site(t), "https://files.example.ru")
+	policy := get(h, http.MethodGet, "/").Header().Get("Content-Security-Policy")
+	for _, want := range []string{"connect-src 'self' https://files.example.ru;", "img-src 'self' data: blob: https://files.example.ru;"} {
+		if !strings.Contains(policy, want) {
+			t.Fatalf("в политике нет %q: %s", want, policy)
+		}
+	}
+	if p := get(newHandler(site(t), ""), http.MethodGet, "/").Header().Get("Content-Security-Policy"); !strings.Contains(p, "connect-src 'self';") {
+		t.Fatalf("без хранилища только 'self': %s", p)
+	}
+}
+
+func TestFilesOriginValidated(t *testing.T) {
+	for _, ok := range []string{"", "https://files.example.ru", "http://localhost:9000"} {
+		if err := validOrigin(ok); err != nil {
+			t.Fatalf("%q должен проходить: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"files.example.ru", "https://files.example.ru/bucket", "https://a.ru; script-src *", "javascript:x", "https://*.ru"} {
+		if validOrigin(bad) == nil {
+			t.Fatalf("%q должен отклоняться", bad)
+		}
 	}
 }

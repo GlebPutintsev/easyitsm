@@ -1,0 +1,61 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "refresh_interval": "1s",
+      "max_ngram_diff": 1
+    },
+    "analysis": {
+      "char_filter": {
+        "eitsm_yo": { "type": "mapping", "mappings": ["ё => е", "Ё => Е"] }
+      },
+      "filter": {
+        "eitsm_ru_stop": { "type": "stop", "stopwords": "_russian_" },
+        "eitsm_en_stop": { "type": "stop", "stopwords": "_english_" },
+        "eitsm_ru_stem": { "type": "stemmer", "language": "russian" },
+        "eitsm_en_stem": { "type": "stemmer", "language": "english" },
+        "eitsm_en_possessive": { "type": "stemmer", "language": "possessive_english" }
+      },
+      "normalizer": {
+        "eitsm_lower": { "type": "custom", "filter": ["lowercase"] }
+      },
+      "analyzer": {
+        "eitsm_text": {
+          "type": "custom",
+          "char_filter": ["eitsm_yo"],
+          "tokenizer": "standard",
+          "filter": ["lowercase", "eitsm_en_possessive", "eitsm_ru_stop", "eitsm_en_stop", "eitsm_ru_stem", "eitsm_en_stem"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "tenant_id": { "type": "keyword" },
+      "kind": { "type": "keyword" },
+      "entity_id": { "type": "keyword" },
+      "ref": { "type": "keyword", "normalizer": "eitsm_lower" },
+      "title": { "type": "text", "analyzer": "eitsm_text" },
+      "body": { "type": "text", "analyzer": "eitsm_text" },
+      "public_text": { "type": "text", "analyzer": "eitsm_text" },
+      "internal_text": { "type": "text", "analyzer": "eitsm_text" },
+      "ticket_type": { "type": "keyword" },
+      "status": { "type": "keyword" },
+      "status_category": { "type": "keyword" },
+      "priority": { "type": "keyword" },
+      "created_at": { "type": "date" },
+      "updated_at": { "type": "date" },
+      "participants": { "type": "keyword" },
+      "group_id": { "type": "keyword" },
+      "security_group_id": { "type": "keyword" },
+      "confidential": { "type": "boolean" },
+      "organization_id": { "type": "keyword" },
+      "audience": { "type": "keyword" },
+      "audience_group_id": { "type": "keyword" },
+      "category_id": { "type": "keyword" },
+      "indexed_at": { "type": "date" }
+    }
+  }
+}
