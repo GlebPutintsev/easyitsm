@@ -8,7 +8,7 @@ import { type VersionSummary, useDiff, useVersions } from './api';
 import { DiffTable, VersionLine, formatTime } from './ui/History';
 import classes from './ui/admin.module.css';
 
-const AREAS = ['admin', 'identity', 'sla', 'tickets', 'catalog'];
+const AREAS = ['admin', 'identity', 'sla', 'tickets', 'catalog', 'automation'];
 const ACTIONS = ['create', 'update', 'delete', 'restore', 'import', 'rollback', 'setup'];
 
 function Author({ id }: { id: string | null }) {
