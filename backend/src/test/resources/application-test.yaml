@@ -31,3 +31,12 @@ easyitsm:
       create-bucket: true
     antivirus:
       mode: none
+  mail:
+    # Тесты вызывают отправку и опрос сами: плановые задачи не должны забирать их письма.
+    initial-delay: PT1H
+    fallback:
+      host: ""
+    inbound-smtp:
+      enabled: false
+  notifications:
+    push-initial-delay: PT1H

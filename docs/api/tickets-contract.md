@@ -86,6 +86,8 @@ TicketRef     TicketCommands.transition(id, TicketTransition, trigger) // авт
 boolean       TicketCommands.addWatcher(id, userId, reason)           // автоматизация: подписка
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
+Optional<TicketComment>  TicketQueries.findComment(ticketId, activityId) // текст ответа или заметки для писем
+List<UUID>               TicketQueries.watchers(ticketId)
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
 Optional<TicketPermissions> TicketQueries.permissions(id)             // вложения: права текущего входа
 // Поиск (TicketSearchIndex): документ для индекса, область чтения данными и перепроверка выдачи

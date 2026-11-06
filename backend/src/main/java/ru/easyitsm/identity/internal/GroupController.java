@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.easyitsm.identity.api.RequiresRecentAuth;
 import ru.easyitsm.platform.web.CursorPage;
 import ru.easyitsm.platform.web.ETags;
 import ru.easyitsm.platform.web.PageParams;
@@ -73,8 +74,10 @@ class GroupController {
         return service.members(id);
     }
 
+    /** Членство в группе даёт роли группы, поэтому это назначение ролей: нужен повторный вход (SEC-08). */
     @PutMapping("/{id}/members/{userId}")
     @PreAuthorize("hasRole('ADM')")
+    @RequiresRecentAuth
     ResponseEntity<Void> addMember(@PathVariable UUID id, @PathVariable UUID userId,
                                    @RequestBody(required = false) MemberCommand cmd) {
         service.addMember(id, userId, cmd != null && Boolean.TRUE.equals(cmd.lead()));
@@ -83,6 +86,7 @@ class GroupController {
 
     @DeleteMapping("/{id}/members/{userId}")
     @PreAuthorize("hasRole('ADM')")
+    @RequiresRecentAuth
     ResponseEntity<Void> removeMember(@PathVariable UUID id, @PathVariable UUID userId) {
         service.removeMember(id, userId);
         return ResponseEntity.noContent().build();

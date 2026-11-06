@@ -100,6 +100,18 @@ class TicketService implements TicketCommands, TicketQueries {
                         t.statusCategory.isFinal()));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ru.easyitsm.tickets.api.TicketComment> findComment(UUID ticketId, UUID activityId) {
+        return feed.find(ticketId, activityId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> watchers(UUID ticketId) {
+        return watchers.userIds(ticketId);
+    }
+
     @Transactional(readOnly = true)
     TicketRow readTx(String ref, Actor actor) {
         return read(ref, actor);

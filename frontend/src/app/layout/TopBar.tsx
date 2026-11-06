@@ -4,15 +4,12 @@ import {
   Burger,
   Button,
   Group,
-  Indicator,
   Menu,
   Text,
-  Tooltip,
   UnstyledButton,
   useMantineColorScheme,
 } from '@mantine/core';
 import {
-  IconBell,
   IconChevronDown,
   IconLanguage,
   IconLogout,
@@ -29,6 +26,7 @@ import { clearPeopleCache, initials } from '@/shared/api/people';
 import { useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
 import { GlobalSearchBox } from '@/features/search';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { spaces, type SpaceId } from './spaces';
 
 /** Куда ведут пункты «+ Создать». Остальные пункты подключат модули изменений, проблем и знаний. */
@@ -93,13 +91,7 @@ export function TopBar({ space, navOpened, onToggleNav }: Props) {
         </Menu>
 
         <ApprovalsButton />
-        <Tooltip label={t('topbar.notifications')}>
-          <Indicator disabled size={8} offset={6}>
-            <ActionIcon variant="subtle" size="lg" aria-label={t('topbar.notifications')}>
-              <IconBell size={20} />
-            </ActionIcon>
-          </Indicator>
-        </Tooltip>
+        <NotificationBell />
 
         <SpaceSwitcher space={space} />
         <ProfileMenu />

@@ -52,6 +52,14 @@ class Directory implements UserDirectory {
     }
 
     @Override
+    public Optional<UserSummary> findUserByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return users.findByEmail(email.trim()).map(UserAccount::toSummary);
+    }
+
+    @Override
     public Optional<GroupSummary> findGroup(UUID groupId) {
         return groups.findById(groupId).map(UserGroup::toSummary);
     }

@@ -40,4 +40,8 @@ helm install easyitsm deploy/helm/easyitsm -n easyitsm -f deploy/helm/easyitsm/v
 | `postgresql.enabled` | `true` | Встроенный PostgreSQL |
 | `database.*` | | Внешний PostgreSQL |
 | `license.existingSecret` | `""` | Секрет с `license.json` |
-| `networkPolicy.*` | включено | Селекторы Ingress-контроллера, мониторинга, DNS, внешние адреса |
+| `appSecret.existingSecret` | `""` | Секрет с `secret-key` — ключ шифрования TOTP, паролей ящиков, токенов ответа в письмах. Пусто — чарт создаст и сохранит свой |
+| `publicUrl` | `""` | Адрес интерфейса для ссылок в письмах и push; пусто — из `ingress.host` |
+| `mail.smtp.*` | | Сервер отправки по умолчанию для всей установки (арендатор может задать свой в «Управление → Почта») |
+| `mail.inboundSmtp.*` | выключено | Приём писем по SMTP: порт, сервис (LoadBalancer), сети почтовых серверов `sourceCidrs` |
+| `networkPolicy.*` | включено | Селекторы Ingress-контроллера, мониторинга, DNS, внешние адреса. Для почты и push добавьте в `networkPolicy.coreEgress` SMTP/IMAP-серверы и 443 к Microsoft Graph и push-сервисам браузеров |

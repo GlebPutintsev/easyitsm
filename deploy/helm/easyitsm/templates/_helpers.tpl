@@ -58,6 +58,10 @@ global.imageRegistry подменяет реестр для офлайн-уст�
 {{- default (printf "%s-db" (include "easyitsm.fullname" .)) .Values.database.existingSecret -}}
 {{- end -}}
 
+{{- define "easyitsm.appSecretName" -}}
+{{- default (printf "%s-app" (include "easyitsm.fullname" .)) .Values.appSecret.existingSecret -}}
+{{- end -}}
+
 {{- define "easyitsm.dbHost" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- printf "%s-postgresql" (include "easyitsm.fullname" .) -}}

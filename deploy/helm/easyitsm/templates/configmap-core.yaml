@@ -49,7 +49,35 @@ data:
   EASYITSM_ATTACHMENTS_ANTIVIRUS_HOST: {{ include "easyitsm.clamavHost" . | quote }}
   EASYITSM_ATTACHMENTS_ANTIVIRUS_PORT: {{ .Values.attachments.antivirus.port | quote }}
   {{- end }}
+  # Адрес интерфейса для ссылок в письмах и push.
+  EASYITSM_PUBLIC_URL: {{ default (printf "%s://%s" (ternary "https" "http" (not (empty .Values.ingress.tls))) .Values.ingress.host) .Values.publicUrl | quote }}
+  {{- with .Values.mail.smtp }}
+  {{- with .host }}
+  EASYITSM_SMTP_HOST: {{ . | quote }}
+  {{- end }}
+  {{- with .port }}
+  EASYITSM_SMTP_PORT: {{ . | quote }}
+  {{- end }}
+  {{- with .security }}
+  EASYITSM_SMTP_SECURITY: {{ . | quote }}
+  {{- end }}
+  {{- with .fromAddress }}
+  EASYITSM_SMTP_FROM: {{ . | quote }}
+  {{- end }}
+  {{- end }}
   MANAGEMENT_SERVER_PORT: "8081"
   SERVER_PORT: "8080"
   # Заголовки X-Forwarded-* от Ingress: правильные адреса клиентов в журнале аудита.
   SERVER_FORWARD_HEADERS_STRATEGY: framework
+  {{- with .Values.audit.siem }}
+  {{- if .enabled }}
+  EASYITSM_AUDIT_SIEM_ENABLED: "true"
+  EASYITSM_AUDIT_SIEM_HOST: {{ required "audit.siem.host обязателен, если audit.siem.enabled" .host | quote }}
+  EASYITSM_AUDIT_SIEM_PORT: {{ .port | quote }}
+  EASYITSM_AUDIT_SIEM_TRANSPORT: {{ .transport | quote }}
+  EASYITSM_AUDIT_SIEM_FORMAT: {{ .format | quote }}
+  {{- if .caSecret }}
+  EASYITSM_AUDIT_SIEM_CAFILE: /run/secrets/easyitsm/siem/ca.crt
+  {{- end }}
+  {{- end }}
+  {{- end }}

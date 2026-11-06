@@ -58,13 +58,13 @@ class SlaApiTest {
     }
 
     @Test
-    void requesterCannotReadInstancesButAgentCan() throws Exception {
+    void requesterCannotReadInstancesAndUnknownTicketIsNotFound() throws Exception {
         String ticket = UUID.randomUUID().toString();
         mvc.perform(as(get("/api/v1/sla/instances").param("ticketId", ticket), DEMO, "REQ"))
                 .andExpect(status().isForbidden());
+        // Счётчики видны только вместе с заявкой: несуществующая заявка — 404 (видимость — TicketSlaVisibilityTest)
         mvc.perform(as(get("/api/v1/sla/instances").param("ticketId", ticket), DEMO, "AGT"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isNotFound());
         mvc.perform(as(get("/api/v1/sla/instances/" + UUID.randomUUID()), DEMO, "AGT"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("not_found"));

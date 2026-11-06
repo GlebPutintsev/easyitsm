@@ -132,6 +132,18 @@ spec:
             {{- toYaml $np.ingressController.podSelector | nindent 12 }}
       ports:
         - { port: 8080, protocol: TCP }
+    {{- if .Values.mail.inboundSmtp.enabled }}
+    {{- if not .Values.mail.inboundSmtp.sourceCidrs }}
+    {{- fail "mail.inboundSmtp.sourceCidrs обязателен: письма принимаются только от почтовых серверов организации" }}
+    {{- end }}
+    # Входящий SMTP — только от почтовых серверов организации.
+    - from:
+        {{- range .Values.mail.inboundSmtp.sourceCidrs }}
+        - ipBlock: { cidr: {{ . }} }
+        {{- end }}
+      ports:
+        - { port: {{ .Values.mail.inboundSmtp.port }}, protocol: TCP }
+    {{- end }}
 {{- if .Values.postgresql.enabled }}
 ---
 # Встроенный PostgreSQL: входящие только от ядра, исходящих нет.

@@ -15,6 +15,9 @@ interface UserRepository extends ListCrudRepository<UserAccount, UUID> {
     @Query("select * from user_account where source = :source and external_id = :externalId")
     Optional<UserAccount> findByExternalId(String source, String externalId);
 
+    @Query("select * from user_account where email is not null and lower(email) = lower(:email) limit 1")
+    Optional<UserAccount> findByEmail(String email);
+
     @Query("select * from user_account where source = :source")
     List<UserAccount> findAllBySource(String source);
 

@@ -22,8 +22,12 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
+        <jsoup.version>1.23.2</jsoup.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
         <awssdk.version>2.57.0</awssdk.version>
+        <jsoup.version>1.24.1</jsoup.version>
+        <subethasmtp.version>7.2.2</subethasmtp.version>
+        <greenmail.version>2.1.15</greenmail.version>
         <pdfbox.version>3.0.8</pdfbox.version>
     </properties>
 
@@ -70,6 +74,12 @@
             <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
+            <!-- Очистка HTML по разрешённому списку тегов на сервере (SEC-24) -->
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+        <dependency>
             <!-- WebAuthn и passkeys (SEC-02) -->
             <groupId>com.webauthn4j</groupId>
             <artifactId>webauthn4j-core</artifactId>
@@ -99,6 +109,23 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>url-connection-client</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Канал почты: отправка SMTP, приём IMAP (CHN-01) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Очистка HTML входящих писем до текста (поток 6.4) -->
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+        <dependency>
+            <!-- Входящий SMTP (CHN-01): письма от почтового сервера заказчика без IMAP -->
+            <groupId>com.github.davidmoten</groupId>
+            <artifactId>subethasmtp</artifactId>
+            <version>${subethasmtp.version}</version>
         </dependency>
         <dependency>
             <!-- Выгрузка отчётов в PDF (RPT-04), Apache License 2.0 -->
@@ -182,6 +209,13 @@
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- SMTP и IMAP в памяти для тестов канала почты -->
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail-junit5</artifactId>
+            <version>${greenmail.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

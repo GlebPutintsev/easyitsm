@@ -1,11 +1,13 @@
 import { Anchor, Button, Group, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import {
   IconBolt,
+  IconBellCog,
   IconBook2,
   IconClipboardList,
   IconFileImport,
   IconHistory,
   IconListDetails,
+  IconMail,
   IconUsers,
   IconUsersGroup,
   IconWand,
@@ -26,6 +28,8 @@ const SECTIONS: { key: string; to: string; icon: Icon }[] = [
   { key: 'dictionaries', to: '/admin/dictionaries', icon: IconBook2 },
   { key: 'catalog', to: '/admin/catalog', icon: IconClipboardList },
   { key: 'automation', to: '/admin/automation', icon: IconBolt },
+  { key: 'mail', to: '/admin/mail', icon: IconMail },
+  { key: 'notificationTemplates', to: '/admin/notification-templates', icon: IconBellCog },
   { key: 'import', to: '/admin/import', icon: IconFileImport },
   { key: 'journal', to: '/admin/journal', icon: IconHistory },
 ];

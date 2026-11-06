@@ -1,5 +1,6 @@
 package ru.easyitsm.tickets.api;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,4 +24,13 @@ public interface TicketQueries {
 
     /** Видимая текущему пользователю заявка и его права на ленту; невидимая — пусто (404). */
     Optional<TicketPermissions> permissions(UUID ticketId);
+    /**
+     * Запись ленты по id из {@code TicketCommentAdded.activityId} — текст ответа для письма заявителю.
+     * Без проверки прав: вызывающий сам решает, кому можно показать запись (внутреннюю — только поддержке,
+     * конфиденциальную — никому в письме, NTF-05).
+     */
+    Optional<TicketComment> findComment(UUID ticketId, UUID activityId);
+
+    /** Наблюдатели заявки (TCK-10), в порядке подписки. */
+    List<UUID> watchers(UUID ticketId);
 }

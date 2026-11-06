@@ -36,6 +36,14 @@
         "title": "Automation",
         "text": "Event–condition–action rules and the run log"
       },
+      "mail": {
+        "title": "Email",
+        "text": "Sending, support mailboxes, email logs"
+      },
+      "notificationTemplates": {
+        "title": "Notification templates",
+        "text": "Email and notification texts per event"
+      },
       "import": {
         "title": "CSV import",
         "text": "Users, groups and departments with validation and rollback"
@@ -109,8 +117,9 @@
       "check": {
         "mail": "Check mail",
         "sso": "Check SSO",
-        "mailHint": "The server connects to the mail server from the deployment settings and greets it. No email is sent.",
+        "mailHint": "The server connects to the mail server from Admin → Email (or the deployment settings when it is empty) and signs in. No email is sent.",
         "ssoHint": "The server requests signing keys from every configured sign-in provider.",
+        "mailLink": "Set up sending and mailboxes: Admin → Email",
         "mfaLink": "Your own MFA: Profile → Security",
         "ok": "Check passed",
         "failed": "Check failed",
