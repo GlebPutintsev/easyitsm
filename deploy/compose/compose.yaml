@@ -1,5 +1,9 @@
 # Окружение разработки. Запуск: docker compose -f deploy/compose/compose.yaml up -d
 # Не для продуктива: поставка — Helm-чарт в deploy/helm (тред DevSecOps).
+# Все образы есть для amd64 и arm64 (Apple Silicon).
+# Порты наружу меняются переменными, если стандартные заняты, например:
+#   EASYITSM_PG_PORT=5433 EASYITSM_VALKEY_PORT=6380 docker compose -f deploy/compose/compose.yaml up -d
+# Тогда бэкенду: EASYITSM_DB_URL=jdbc:postgresql://localhost:5433/easyitsm SPRING_DATA_REDIS_PORT=6380.
 name: easyitsm-dev
 
 services:
@@ -7,7 +11,7 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_PASSWORD: postgres
-    ports: ["5432:5432"]
+    ports: ["${EASYITSM_PG_PORT:-5432}:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -17,16 +21,16 @@ services:
 
   valkey:
     image: valkey/valkey:8-alpine
-    ports: ["6379:6379"]
+    ports: ["${EASYITSM_VALKEY_PORT:-6379}:6379"]
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  # S3 для вложений. MinIO больше не публикует образы на Docker Hub, поэтому эмулятор moto — тот же, что в CI.
+  # Принимает любые ключи, корзину ядро создаёт само (create-bucket в профиле dev).
+  # Файлы живут в памяти и пропадают при перезапуске контейнера: для разработки этого хватает.
+  s3:
+    image: motoserver/moto:5.2.5
     environment:
-      MINIO_ROOT_USER: easyitsm
-      MINIO_ROOT_PASSWORD: easyitsm-dev-secret
-    ports: ["9000:9000", "9001:9001"]
-    volumes: [minio:/data]
+      MOTO_PORT: "9000"
+    ports: ["${EASYITSM_S3_PORT:-9000}:9000"]
 
   # Глобальный поиск с морфологией. Без него ядро ищет в PostgreSQL.
   # docker compose --profile search up -d, затем EASYITSM_SEARCH_OPENSEARCH_ENABLED=true для ядра.
@@ -43,8 +47,10 @@ services:
 
   # Антивирус для вложений: docker compose --profile av up -d, затем EASYITSM_ATTACHMENTS_ANTIVIRUS_MODE=clamd.
   # Без него в разработке файлы помечаются «не проверено антивирусом».
+  # Сборка на Debian: у clamav/clamav (Alpine) нет arm64, а эта работает и на Apple Silicon.
+  # Первый старт качает базы сигнатур, clamd отвечает минуты через 2–3.
   clamav:
-    image: clamav/clamav:1.4
+    image: clamav/clamav-debian:1.4
     environment:
       CLAMD_CONF_StreamMaxLength: 110M
       CLAMD_CONF_MaxFileSize: 110M
@@ -68,5 +74,4 @@ services:
 
 volumes:
   pgdata:
-  minio:
   opensearch:

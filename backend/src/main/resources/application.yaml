@@ -135,7 +135,7 @@ easyitsm:
       enforced: false
   attachments:
     s3:
-      # MinIO из deploy/compose. В поставке ключи задаются секретом.
+      # S3 (moto) из deploy/compose принимает любые ключи. В поставке ключи задаются секретом.
       access-key: ${EASYITSM_ATTACHMENTS_S3_ACCESS_KEY:easyitsm}
       secret-key: ${EASYITSM_ATTACHMENTS_S3_SECRET_KEY:easyitsm-dev-secret} # gitleaks:allow
       create-bucket: true

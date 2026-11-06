@@ -55,7 +55,7 @@
 | Фронтенд | React 19, TypeScript, Vite, Mantine 9 (компоненты, темы, доступность), TanStack Query, React Router, i18next, клиент из OpenAPI |
 | ИИ-шлюз | Python 3.12+, FastAPI (с 1.0) |
 | Агент обнаружения | Go (с 1.0) |
-| Инфраструктура | Valkey, OpenSearch, S3 (MinIO для разработки), Keycloak, OpenBao |
+| Инфраструктура | Valkey, OpenSearch, S3 (moto для разработки), Keycloak, OpenBao |
 | Поставка | Docker-образы без оболочки, Helm, CycloneDX SBOM, cosign |
 | Наблюдаемость | OpenTelemetry, Prometheus, Grafana, Loki, Tempo |
 
