@@ -10,6 +10,8 @@ import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
 import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { MailSettingsPage } from '@/features/mail/MailSettingsPage';
+import { TemplatesPage } from '@/features/notifications/TemplatesPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -62,6 +64,8 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
       { path: 'admin', element: <AdminHome /> },
+      { path: 'admin/mail', element: <MailSettingsPage /> },
+      { path: 'admin/notification-templates', element: <TemplatesPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
     ],

@@ -83,6 +83,8 @@ TicketRef     TicketCommands.escalate(id, kind, groupId, reason, actor) // SLA �
 void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: срок для sort=due
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
+Optional<TicketComment>  TicketQueries.findComment(ticketId, activityId) // текст ответа или заметки для писем
+List<UUID>               TicketQueries.watchers(ticketId)
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
 ```
 

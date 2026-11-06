@@ -9,6 +9,8 @@ import {
   IconFlame,
   IconHome,
   IconListDetails,
+  IconMail,
+  IconBellCog,
   IconSettings,
   IconSitemap,
   IconStack2,
@@ -59,6 +61,8 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
       { key: 'home', to: '/admin', icon: IconSettings },
       { key: 'users', to: '/admin/users', icon: IconUsers },
       { key: 'catalogAdmin', to: '/admin/catalog', icon: IconClipboardList },
+      { key: 'mail', to: '/admin/mail', icon: IconMail },
+      { key: 'notificationTemplates', to: '/admin/notification-templates', icon: IconBellCog },
     ],
   },
 };

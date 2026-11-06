@@ -16,6 +16,12 @@ public interface UserDirectory {
 
     List<UserSummary> findUsers(Collection<UUID> userIds);
 
+    /**
+     * Пользователь по адресу почты без учёта регистра (адрес уникален в арендаторе), в том числе заблокированный —
+     * вызывающий сам проверяет {@link UserSummary#active()}. Так канал почты определяет отправителя письма.
+     */
+    Optional<UserSummary> findUserByEmail(String email);
+
     Optional<GroupSummary> findGroup(UUID groupId);
 
     /** Группы арендатора по имени. type — support, security, approval или other; null — все типы. */

@@ -106,6 +106,35 @@ postgresql:
     requests: { cpu: 250m, memory: 512Mi }
     limits: { memory: 2Gi }
 
+# Адрес интерфейса для ссылок в письмах и push. Пусто — из ingress.host (https, если задан TLS).
+publicUrl: ""
+
+appSecret:
+  # Секрет с ключом secret-key (32 случайных байта в base64, `openssl rand -base64 32`): шифрование TOTP,
+  # паролей почтовых ящиков, токенов ответа в письмах и ключа VAPID. Пусто — чарт создаст и сохранит свой.
+  existingSecret: ""
+
+mail:
+  # Сервер отправки по умолчанию для всей установки. Администратор арендатора может задать свой в
+  # «Управление → Почта». Логин и пароль — через api.extraEnv/worker.extraEnv из секрета
+  # (EASYITSM_SMTP_USERNAME, EASYITSM_SMTP_PASSWORD). Исходящий доступ разрешите в networkPolicy.coreEgress.
+  smtp:
+    host: ""
+    port: 587
+    security: starttls
+    fromAddress: ""
+  # Приём писем по SMTP: почтовый сервер организации пересылает письма ящиков поддержки на этот порт.
+  # Для IMAP и Microsoft Graph не нужен.
+  inboundSmtp:
+    enabled: false
+    port: 2525
+    service:
+      type: LoadBalancer
+      port: 25
+      annotations: {}
+    # Сети почтовых серверов, от которых принимаются письма (обязательно при enabled).
+    sourceCidrs: []
+
 license:
   # Секрет с ключом license.json — подписанный файл лицензии (ADM-07). Без него работает пробный режим.
   existingSecret: ""
@@ -136,7 +165,8 @@ networkPolicy:
         k8s-app: kube-dns
   # Сети внешнего PostgreSQL (CIDR), если postgresql.enabled=false.
   databaseCidrs: []
-  # Прочие исходящие соединения ядра: почта, IdP, S3, SIEM, OpenSearch. Формат — правило egress NetworkPolicy:
+  # Прочие исходящие соединения ядра: почта (SMTP 25/465/587, IMAP 993, Microsoft Graph и Web Push — 443),
+  # IdP, S3, SIEM, OpenSearch. Формат — правило egress NetworkPolicy:
   #   - to: [{ ipBlock: { cidr: 10.0.10.25/32 } }]
   #     ports: [{ port: 587, protocol: TCP }]
   coreEgress: []

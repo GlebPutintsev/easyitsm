@@ -1,9 +1,10 @@
-import { ActionIcon, Group, Indicator, Tooltip } from '@mantine/core';
-import { IconBell, IconCheck } from '@tabler/icons-react';
+import { Group } from '@mantine/core';
+import { IconCheck } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router';
 import { hasRole, useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { ProfileMenu, SpaceSwitcher } from '@/app/layout/TopBar';
 import './portal.css';
 
@@ -42,13 +43,7 @@ export function PortalHeader() {
         <div style={{ flex: 1 }} />
         <Group gap={6} wrap="nowrap">
           <ApprovalsButton />
-          <Tooltip label={t('topbar.notifications')}>
-            <Indicator disabled size={8} offset={6}>
-              <ActionIcon variant="subtle" color="gray" size="lg" aria-label={t('topbar.notifications')}>
-                <IconBell size={20} />
-              </ActionIcon>
-            </Indicator>
-          </Tooltip>
+          <NotificationBell />
           {hasRole(me.data, ...STAFF) && <SpaceSwitcher space="portal" />}
           <ProfileMenu avatar />
         </Group>

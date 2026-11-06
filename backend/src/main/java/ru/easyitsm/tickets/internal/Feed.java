@@ -102,6 +102,20 @@ class Feed {
                 .map(Row::change);
     }
 
+    /** Ответ или заметка (kind reply/note) для других модулей: текст письма заявителю. */
+    java.util.Optional<ru.easyitsm.tickets.api.TicketComment> find(UUID ticketId, UUID activityId) {
+        return jdbc.sql("""
+                select id, ticket_id, author_id, visibility, from_requester, body, created_at
+                  from ticket_activity
+                 where ticket_id = :t and id = :id and kind in ('reply', 'note')""")
+                .param("t", ticketId).param("id", activityId)
+                .query((rs, n) -> new ru.easyitsm.tickets.api.TicketComment(Sql.uuid(rs, "id"),
+                        Sql.uuid(rs, "ticket_id"), Sql.uuid(rs, "author_id"),
+                        ru.easyitsm.tickets.api.Visibility.fromCode(rs.getString("visibility")),
+                        rs.getBoolean("from_requester"), rs.getString("body"), Sql.instant(rs, "created_at")))
+                .optional();
+    }
+
     /** Публичная запись ленты, если она есть, — для проверки «последний ответ от заявителя». */
     boolean exists(UUID ticketId, UUID activityId) {
         return jdbc.sql("select exists (select 1 from ticket_activity where ticket_id = :t and id = :id)")

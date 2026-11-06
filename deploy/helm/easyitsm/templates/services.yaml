@@ -27,3 +27,30 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+{{- if .Values.mail.inboundSmtp.enabled }}
+---
+# Входящий SMTP (CHN-01): отдельный сервис, обычно LoadBalancer для почтового сервера организации.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "easyitsm.fullname" . }}-smtp
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  {{- with .Values.mail.inboundSmtp.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.mail.inboundSmtp.service.type }}
+  {{- if ne .Values.mail.inboundSmtp.service.type "ClusterIP" }}
+  # Адрес отправителя нужен для проверки SPF.
+  externalTrafficPolicy: Local
+  {{- end }}
+  selector:
+    {{- include "easyitsm.selector" (list . "api") | nindent 4 }}
+  ports:
+    - name: smtp
+      port: {{ .Values.mail.inboundSmtp.service.port }}
+      targetPort: smtp
+{{- end }}
