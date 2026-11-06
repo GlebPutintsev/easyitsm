@@ -24,10 +24,12 @@ import ru.easyitsm.tickets.api.Priority;
 import ru.easyitsm.tickets.api.SecretFinding;
 import ru.easyitsm.tickets.api.SecretScanner;
 import ru.easyitsm.tickets.api.StatusCategory;
+import ru.easyitsm.tickets.api.TicketChange;
 import ru.easyitsm.tickets.api.TicketCommands;
 import ru.easyitsm.tickets.api.TicketQueries;
 import ru.easyitsm.tickets.api.TicketRef;
 import ru.easyitsm.tickets.api.TicketSnapshot;
+import ru.easyitsm.tickets.api.TicketTransition;
 import ru.easyitsm.tickets.api.TicketType;
 import ru.easyitsm.tickets.api.Visibility;
 import ru.easyitsm.tickets.events.TicketCommentAdded;
@@ -505,6 +507,66 @@ class TicketService implements TicketCommands, TicketQueries {
     @Transactional
     public void updateSlaDue(UUID ticketId, Instant slaDueAt) {
         store.updateSlaDue(ticketId, slaDueAt); // неизвестная заявка — ничего не делает
+    }
+
+    // ================================================================ изменения от других модулей
+
+    @Override
+    @Transactional
+    public TicketRef change(UUID ticketId, TicketChange c) {
+        TicketRow before = store.lock(ticketId).orElseThrow(() -> ApiException.notFound("Заявка"));
+        requireActive(before);
+        TicketRow t = before.copy();
+        ChangeContext ctx = new ChangeContext(Actor.system(null));
+        ctx.reason = c.reason();
+        if (c.impact() != null) {
+            t.impact = c.impact();
+        }
+        if (c.urgency() != null) {
+            t.urgency = c.urgency();
+        }
+        if (c.priority() != null) {
+            t.priority = c.priority();
+            t.priorityManual = true;
+        } else if (!t.priorityManual) {
+            t.priority = settings.priorityMatrix().priority(t.impact, t.urgency);
+        }
+        boolean groupChanged = c.groupId() != null && !c.groupId().equals(t.groupId);
+        if (groupChanged) {
+            t.groupId = c.groupId();
+            t.assigneeId = c.assigneeId() != null ? c.assigneeId() : routing.dispatch(c.groupId()).orElse(null);
+        } else if (c.assigneeId() != null) {
+            t.assigneeId = c.assigneeId();
+        }
+        if (c.clearAssignee()) {
+            t.assigneeId = null;
+        }
+        if (groupChanged) {
+            engine.onGroupAssigned(t, ctx);
+        }
+        TicketRow saved = engine.commit(before, t, ctx).ticket();
+        return new TicketRef(saved.id, saved.number, saved.status, saved.statusCategory);
+    }
+
+    @Override
+    @Transactional
+    public TicketRef transition(UUID ticketId, TicketTransition tr, String trigger) {
+        TicketRow before = store.lock(ticketId).orElseThrow(() -> ApiException.notFound("Заявка"));
+        TicketRow t = before.copy();
+        ChangeContext ctx = new ChangeContext(Actor.system(null)).trigger(trigger == null ? "system" : trigger);
+        ctx.reasonCode = tr.reasonCode();
+        engine.transition(t, new TicketEngine.TransitionInput(tr.to(), tr.comment(), tr.reasonCode(),
+                tr.resolutionCode(), tr.resolutionText(), null), ctx);
+        TicketRow saved = engine.commit(before, t, ctx).ticket();
+        return new TicketRef(saved.id, saved.number, saved.status, saved.statusCategory);
+    }
+
+    @Override
+    @Transactional
+    public boolean addWatcher(UUID ticketId, UUID userId, String reason) {
+        TicketRow t = store.find(ticketId).orElseThrow(() -> ApiException.notFound("Заявка"));
+        String why = Set.of("added", "mention", "creator").contains(reason) ? reason : "added";
+        return watchers.add(t, userId, why, Actor.system(null));
     }
 
     // ================================================================ лента

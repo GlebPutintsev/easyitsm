@@ -1,0 +1,98 @@
+/* «Управление»: только токены --ei-* (DESIGN.md «Адмирал»). */
+.panel {
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: var(--mantine-radius-lg);
+  padding: 16px;
+}
+
+.muted {
+  color: var(--ei-text-3);
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+}
+
+.added {
+  background: var(--ei-ok-soft);
+  color: var(--ei-ok);
+}
+
+.removed {
+  background: var(--ei-danger-soft);
+  color: var(--ei-danger);
+}
+
+.changed {
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+}
+
+.rowError {
+  background: var(--ei-danger-soft);
+}
+
+.rowSkip {
+  color: var(--ei-text-3);
+}
+
+.selected {
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+}
+
+.tile {
+  display: block;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  border-radius: var(--mantine-radius-lg);
+  padding: 16px;
+  color: var(--ei-text);
+  text-decoration: none;
+  height: 100%;
+}
+
+.tile:hover {
+  background: var(--ei-hover);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+}
+
+.wizardBanner {
+  background: var(--ei-brass-soft);
+  border: 1px solid var(--ei-brass-line);
+  border-radius: var(--mantine-radius-lg);
+  padding: 16px;
+  color: var(--ei-text);
+}
+
+.listItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--mantine-radius-sm);
+  background: transparent;
+  color: var(--ei-text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.listItem:hover {
+  background: var(--ei-hover);
+}
+
+.listItem[aria-current='true'] {
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+}
+
+.scroll {
+  overflow-x: auto;
+}

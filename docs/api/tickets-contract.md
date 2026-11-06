@@ -81,6 +81,9 @@ TicketRef     TicketCommands.applyApprovalOutcome(id, approved, reason) // ка�
 UUID          TicketCommands.addComment(id, authorId, body, visibility) // почта, мессенджеры
 TicketRef     TicketCommands.escalate(id, kind, groupId, reason, actor) // SLA при нарушении
 void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: срок для sort=due
+TicketRef     TicketCommands.change(id, TicketChange)                 // автоматизация: приоритет, влияние, срочность, группа, исполнитель
+TicketRef     TicketCommands.transition(id, TicketTransition, trigger) // автоматизация: переход по ручному переходу цикла
+boolean       TicketCommands.addWatcher(id, userId, reason)           // автоматизация: подписка
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
@@ -99,6 +102,9 @@ TicketReadScope TicketSearchIndex.readScope();  Set<UUID> visibleAmong(ids);  Li
 перепроверяет страницу выдачи через `visibleAmong`, так что устаревший индекс не раскрывает заявку.
 `search` — запасной поиск PostgreSQL (`to_tsquery('russian')`, подсветка `ts_headline` маркерами
 `TicketSearchIndex.MARK_START/MARK_END`).
+`change`, `transition` и `addWatcher` выполняются от имени системы (`actorId = null` в событиях). Группа и исполнитель
+в `change` не сверяются с identity — это делает вызывающий модуль. `transition` берёт любой ручной переход из текущего
+статуса, обязательные поля перехода проверяются; `trigger` попадает в `TicketStatusChanged.trigger` (`automation`).
 `NewTicket.awaitingApproval = true` создаёт запрос в статусе категории `approval` (`pending_approval`).
 Влияние в `NewTicket` — `HIGH | MEDIUM | LOW`; портал сам сопоставляет «только я / подразделение / все».
 
