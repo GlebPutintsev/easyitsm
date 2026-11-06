@@ -112,6 +112,22 @@ class TicketService implements TicketCommands, TicketQueries {
         return watchers.userIds(ticketId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TicketSnapshot> openForObjects(java.util.Collection<UUID> objectIds, int limit) {
+        if (objectIds.isEmpty()) {
+            return List.of();
+        }
+        UUID[] ids = objectIds.stream().distinct().toArray(UUID[]::new);
+        return store.query("""
+                        where (t.ci_id = any(:ids) or t.service_id = any(:ids))
+                          and t.status_category not in ('draft', 'resolved', 'closed', 'cancelled')
+                        order by t.created_at desc, t.id desc
+                        limit :limit""",
+                        java.util.Map.of("ids", ids, "limit", Math.clamp(limit, 1, 500)))
+                .stream().map(TicketRow::snapshot).toList();
+    }
+
     @Transactional(readOnly = true)
     TicketRow readTx(String ref, Actor actor) {
         return read(ref, actor);

@@ -1,0 +1,523 @@
+openapi: 3.1.0
+info:
+  title: Easy ITSM — CMDB
+  version: 0.1.0
+  description: |
+    Модуль cmdb: классы КЕ, КЕ, связи, анализ влияния (CFG-01…09). Общие правила API: ошибки RFC 9457 с `code`,
+    `trace_id` и `field`, курсорная пагинация (`limit` до 200), `Idempotency-Key` на создание, `ETag`/`If-Match`
+    на изменение. Коды значений в нижнем регистре. Описание решений: docs/api/cmdb-contract.md.
+    Операции с `x-status: planned` — проект следующих PR, схема может уточниться.
+servers:
+  - url: /api/v1
+security:
+  - session: []
+
+tags:
+  - name: classes
+  - name: cis
+  - name: relations
+  - name: impact
+  - name: ingestion
+
+paths:
+  /cmdb/classes:
+    get:
+      tags: [classes]
+      summary: Классы КЕ с унаследованными атрибутами и правилами идентификации
+      responses:
+        '200':
+          description: Все классы арендатора
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/CiClass'}}
+        '403': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/relation-types:
+    get:
+      tags: [relations]
+      summary: Типы связей
+      responses:
+        '200':
+          description: Типы связей арендатора
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/RelationType'}}
+
+  /cmdb/cis:
+    get:
+      tags: [cis]
+      summary: Список КЕ с фильтрами (экран 10.13)
+      parameters:
+        - {name: q, in: query, description: Часть имени без учёта регистра, schema: {type: string}}
+        - {name: classCode, in: query, description: Коды классов через запятую, включая подклассы, schema: {type: string}}
+        - {name: layer, in: query, description: 'business_service, technical_service, application, infrastructure', schema: {type: string}}
+        - {name: status, in: query, description: Через запятую; без фильтра выведенные из эксплуатации скрыты, schema: {type: string}}
+        - {name: environment, in: query, schema: {type: string}}
+        - {name: criticality, in: query, schema: {type: string}}
+        - {name: ownerGroupId, in: query, schema: {type: string, format: uuid}}
+        - {name: includeRetired, in: query, schema: {type: boolean, default: false}}
+        - {$ref: '#/components/parameters/Cursor'}
+        - {$ref: '#/components/parameters/Limit'}
+      responses:
+        '200':
+          description: Страница по имени
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Ci'}}
+                  nextCursor: {type: [string, 'null']}
+        '403': {$ref: '#/components/responses/Problem'}
+    post:
+      tags: [cis]
+      summary: Создать КЕ (CFG)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CiCreate'}
+      responses:
+        '201':
+          description: Создана
+          headers: {ETag: {$ref: '#/components/headers/ETag'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ci'}
+        '400':
+          description: |
+            `unknown_class`, `abstract_class`, `unknown_attribute`, `invalid_attribute`, `attribute_required`,
+            `unknown_group`, `secret_not_allowed` (CFG-08) — с `field`
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/cis/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/CiId'}
+    get:
+      tags: [cis]
+      summary: Карточка КЕ
+      parameters:
+        - name: at
+          in: query
+          x-status: planned
+          description: Состояние на момент времени (CFG-06)
+          schema: {type: string, format: date-time}
+      responses:
+        '200':
+          description: КЕ
+          headers: {ETag: {$ref: '#/components/headers/ETag'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ci'}
+        '404': {$ref: '#/components/responses/Problem'}
+    patch:
+      tags: [cis]
+      summary: Изменить КЕ (CFG), JSON Merge Patch
+      parameters:
+        - {$ref: '#/components/parameters/IfMatch'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CiPatch'}
+      responses:
+        '200':
+          description: Изменена
+          headers: {ETag: {$ref: '#/components/headers/ETag'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ci'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '412': {$ref: '#/components/responses/Problem'}
+        '428': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/cis/{id}/relations:
+    parameters:
+      - {$ref: '#/components/parameters/CiId'}
+    get:
+      tags: [relations]
+      summary: Активные связи КЕ с её стороны
+      responses:
+        '200':
+          description: Связи по подписи
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Relation'}}
+        '404': {$ref: '#/components/responses/Problem'}
+    post:
+      tags: [relations]
+      summary: Добавить связь (CFG)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [typeCode, targetId]
+              properties:
+                typeCode: {type: string, example: runs_on}
+                targetId: {type: string, format: uuid, description: КЕ на другом конце}
+                direction:
+                  type: string
+                  enum: [outgoing, incoming]
+                  default: outgoing
+                  description: outgoing — эта КЕ источник связи, incoming — цель
+      responses:
+        '201':
+          description: Связь добавлена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Relation'}
+        '400':
+          description: '`unknown_relation_type`, `unknown_ci`, `self_relation`, `ci_retired`'
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '409':
+          description: '`relation_exists`'
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+
+  /cmdb/relations/{relationId}:
+    delete:
+      tags: [relations]
+      summary: Снять связь (CFG); запись остаётся в истории с датой окончания
+      parameters:
+        - {name: relationId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204': {description: Снята}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/cis/{id}/impact:
+    get:
+      tags: [impact]
+      summary: Анализ влияния отказа КЕ (CFG-09)
+      parameters:
+        - {$ref: '#/components/parameters/CiId'}
+        - {name: depth, in: query, schema: {type: integer, minimum: 1, maximum: 5, default: 3}}
+      responses:
+        '200':
+          description: Затронутые КЕ, услуги и видимые пользователю открытые заявки
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Impact'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/sources/{source}/batches:
+    post:
+      tags: [ingestion]
+      x-status: planned
+      summary: Пакетная загрузка из источника (CFG-04, CFG-05) — агент обнаружения, импорт, коннекторы
+      parameters:
+        - {name: source, in: path, required: true, schema: {type: string, example: discovery}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IngestBatch'}
+      responses:
+        '200':
+          description: Пакет обработан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IngestResult'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '413': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/sources/{source}/batches/{batchId}:
+    get:
+      tags: [ingestion]
+      x-status: planned
+      summary: Результат пакета
+      parameters:
+        - {name: source, in: path, required: true, schema: {type: string}}
+        - {name: batchId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Результат
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IngestResult'}
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: SESSION
+      description: Сессия модуля identity. В профиле dev — заголовки X-Dev-User, X-Dev-Tenant, X-Dev-Roles.
+
+  parameters:
+    CiId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 200, default: 50}
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag записи; без него 428, с устаревшим 412
+      schema: {type: string, example: '"3"'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema: {type: string}
+
+  headers:
+    ETag:
+      description: Версия записи в кавычках
+      schema: {type: string, example: '"3"'}
+
+  responses:
+    Problem:
+      description: Ошибка RFC 9457
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        code: {type: string}
+        field: {type: string, description: Поле запроса с ошибкой, для атрибутов — код атрибута}
+        trace_id: {type: string}
+
+    Layer:
+      type: string
+      enum: [business_service, technical_service, application, infrastructure]
+
+    AttributeDef:
+      type: object
+      properties:
+        code: {type: string}
+        name: {type: string}
+        type: {type: string, enum: [string, text, number, boolean, date, ip, enum]}
+        required: {type: boolean}
+        options: {type: array, items: {type: string}}
+
+    CiClass:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        parentId: {type: [string, 'null'], format: uuid}
+        code: {type: string, example: virtual_machine}
+        name: {type: string}
+        layer: {$ref: '#/components/schemas/Layer'}
+        isAbstract: {type: boolean}
+        system: {type: boolean}
+        active: {type: boolean}
+        attributes: {type: array, description: С унаследованными, items: {$ref: '#/components/schemas/AttributeDef'}}
+        ownAttributes: {type: array, items: {$ref: '#/components/schemas/AttributeDef'}}
+        identificationRules:
+          type: array
+          items: {type: array, items: {type: string}}
+          example: [[serial_number], [fqdn], [hostname, domain]]
+        version: {type: integer}
+
+    RelationType:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        code: {type: string}
+        name: {type: string}
+        inverseName: {type: string}
+        impactDirection: {type: string, enum: [target_to_source, source_to_target, none]}
+        system: {type: boolean}
+        active: {type: boolean}
+
+    Ci:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        classCode: {type: string}
+        className: {type: string}
+        layer: {$ref: '#/components/schemas/Layer'}
+        status: {type: string, enum: [planned, active, maintenance, retired]}
+        environment: {type: [string, 'null'], example: production}
+        criticality: {type: string, enum: [low, medium, high, critical]}
+        ownerGroupId: {type: [string, 'null'], format: uuid}
+        description: {type: string}
+        attributes: {type: object, additionalProperties: true}
+        attributeSources:
+          type: object
+          additionalProperties: {type: string}
+          description: Источник значения каждого атрибута, manual — ручной ввод
+        lastSeenAt: {type: [string, 'null'], format: date-time, description: Последний раз видел источник данных}
+        createdAt: {type: string, format: date-time}
+        createdBy: {type: [string, 'null'], format: uuid}
+        updatedAt: {type: string, format: date-time}
+        updatedBy: {type: [string, 'null'], format: uuid}
+        version: {type: integer}
+
+    CiCreate:
+      type: object
+      required: [name, classCode]
+      properties:
+        name: {type: string, maxLength: 255}
+        classCode: {type: string}
+        status: {type: string, enum: [planned, active, maintenance, retired], default: active}
+        environment: {type: string, pattern: '^[a-z][a-z0-9_]{0,31}$'}
+        criticality: {type: string, enum: [low, medium, high, critical], default: medium}
+        ownerGroupId: {type: string, format: uuid}
+        description: {type: string, maxLength: 10000}
+        attributes: {type: object, additionalProperties: true}
+
+    CiPatch:
+      type: object
+      description: Отсутствующее поле не меняется; null очищает environment, ownerGroupId, description и атрибут
+      properties:
+        name: {type: string}
+        classCode: {type: string, description: При смене класса остаются только атрибуты нового класса}
+        status: {type: string, enum: [planned, active, maintenance, retired]}
+        environment: {type: [string, 'null']}
+        criticality: {type: string, enum: [low, medium, high, critical]}
+        ownerGroupId: {type: [string, 'null'], format: uuid}
+        description: {type: [string, 'null']}
+        attributes: {type: object, additionalProperties: true, description: Только изменяемые атрибуты}
+
+    CiLink:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        classCode: {type: string}
+        className: {type: string}
+        layer: {$ref: '#/components/schemas/Layer'}
+        status: {type: string}
+
+    Relation:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        typeCode: {type: string}
+        label: {type: string, description: Название типа для outgoing, обратное — для incoming}
+        direction: {type: string, enum: [outgoing, incoming]}
+        impactDirection: {type: string, enum: [target_to_source, source_to_target, none]}
+        other: {$ref: '#/components/schemas/CiLink'}
+        origin: {type: string, description: manual или код источника данных}
+        validFrom: {type: string, format: date-time}
+
+    CiRef:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        classCode: {type: string}
+        className: {type: string}
+        layer: {$ref: '#/components/schemas/Layer'}
+        status: {type: string}
+        environment: {type: [string, 'null']}
+        criticality: {type: string}
+        ownerGroupId: {type: [string, 'null'], format: uuid}
+
+    Impacted:
+      type: object
+      properties:
+        ci: {$ref: '#/components/schemas/CiRef'}
+        depth: {type: integer, description: 0 для исходной КЕ-услуги}
+        path: {type: array, items: {type: string, format: uuid}, description: От исходной КЕ до этой}
+
+    Impact:
+      type: object
+      properties:
+        roots: {type: array, items: {$ref: '#/components/schemas/CiRef'}}
+        impacted: {type: array, items: {$ref: '#/components/schemas/Impacted'}}
+        services: {type: array, items: {$ref: '#/components/schemas/Impacted'}}
+        tickets:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string, format: uuid}
+              number: {type: string}
+              title: {type: string}
+              type: {type: string}
+              priority: {type: string}
+              statusCategory: {type: string}
+              ciId: {type: [string, 'null'], format: uuid}
+              serviceId: {type: [string, 'null'], format: uuid}
+        hiddenTickets: {type: integer, description: Открытые заявки, которые пользователь не видит}
+        depth: {type: integer}
+        truncated: {type: boolean}
+
+    IngestBatch:
+      type: object
+      required: [batchId, items]
+      properties:
+        batchId: {type: string, maxLength: 128, description: Уникален в источнике, повтор идемпотентен}
+        runId: {type: string, description: Пакеты одного полного обхода}
+        final: {type: boolean, default: false, description: Последний пакет обхода}
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required: [externalId, classCode, name]
+            properties:
+              externalId: {type: string, maxLength: 255}
+              classCode: {type: string}
+              name: {type: string}
+              status: {type: string}
+              environment: {type: string}
+              attributes: {type: object, additionalProperties: true}
+              relations:
+                type: array
+                description: Заменяют связи этого источника от этой КЕ
+                items:
+                  type: object
+                  required: [typeCode, target]
+                  properties:
+                    typeCode: {type: string}
+                    direction: {type: string, enum: [outgoing, incoming], default: outgoing}
+                    target:
+                      type: object
+                      properties:
+                        externalId: {type: string}
+                        ciId: {type: string, format: uuid}
+        removed: {type: array, items: {type: string}, description: externalId, которые источник больше не видит}
+
+    IngestResult:
+      type: object
+      properties:
+        batchId: {type: string}
+        status: {type: string, enum: [done, failed]}
+        received: {type: integer}
+        created: {type: integer}
+        updated: {type: integer}
+        unchanged: {type: integer}
+        conflicts: {type: integer}
+        errors: {type: integer}
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              externalId: {type: string}
+              ciId: {type: [string, 'null'], format: uuid}
+              outcome: {type: string, enum: [created, updated, unchanged, conflict, error]}
+              code: {type: string}
+              field: {type: string}
