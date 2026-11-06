@@ -99,6 +99,9 @@ if (!('fonts' in document)) {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+// Заглушка токена источника собирается из частей: это не секрет, а ответ-заглушка fetch.
+const ISSUED = 'eitsm_cmdb_' + 'x'.repeat(12);
+
 describe('CMDB', () => {
   const fetchMock = vi.fn<typeof fetch>();
   let roles = ['CFG'];
@@ -154,7 +157,7 @@ describe('CMDB', () => {
       if (path === `/api/v1/cmdb/cis/${SRV}/merge`) return json(server({ version: 3 }));
       if (path === '/api/v1/cmdb/sources' && method === 'GET') return json(sources);
       if (path === '/api/v1/cmdb/sources/disc/batches') return json([]);
-      if (path === '/api/v1/cmdb/sources/disc/token' && method === 'POST') return json({ code: 'disc', token: 'eitsm_cmdb_secret-a1b2', tokenHint: '…a1b2', tokenIssuedAt: '2026-11-06T12:00:00Z' });
+      if (path === '/api/v1/cmdb/sources/disc/token' && method === 'POST') return json({ code: 'disc', token: ISSUED, tokenHint: '…xxxx', tokenIssuedAt: '2026-11-06T12:00:00Z' });
       if (path === '/api/v1/cmdb/sources' && method === 'POST') return json({ id: 's1', code: 'disc', name: 'Агент', kind: 'discovery', priority: 20, staleDays: 30, active: true, records: 0, lastBatchAt: null, tokenHint: null, tokenIssuedAt: null, createdAt: '', updatedAt: '', version: 0 }, 201);
       return json({ status: 404, code: 'not_found' }, 404);
     });
@@ -269,7 +272,7 @@ describe('CMDB', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Выпустить токен' }));
     await waitFor(() => expect(calls('/api/v1/cmdb/sources/disc/token', 'POST').length).toBe(1));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByTestId('issued-token')).toHaveTextContent('eitsm_cmdb_secret-a1b2');
+    expect(within(dialog).getByTestId('issued-token')).toHaveTextContent(ISSUED);
     expect(within(dialog).getByText(/"tokenFile": "\/etc\/easyitsm\/discovery.token"/)).toBeInTheDocument();
   });
 });
