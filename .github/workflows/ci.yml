@@ -32,7 +32,8 @@ jobs:
           --health-cmd "curl -fs http://localhost:9200/_cluster/health" --health-interval 10s --health-timeout 5s
           --health-retries 30
       s3:
-        image: motoserver/moto:5.1.4
+        # Не ниже 5.2: старые версии не подменяют Content-Disposition по параметрам подписанной ссылки.
+        image: motoserver/moto:5.2.5
         ports: ["5000:5000"]
       clamav:
         image: clamav/clamav:1.4
