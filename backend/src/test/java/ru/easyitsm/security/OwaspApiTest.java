@@ -72,7 +72,8 @@ class OwaspApiTest {
             "/api/v1/licenses/{id}/assignments/{assignmentId}", // освободить лицензию, как вернуть актив на склад
             "/api/v1/notifications/push/subscriptions",     // своя подписка на push в этом браузере
             "/api/v1/notification-settings/templates/{kind}/{locale}", // сброс шаблона к стандартному
-            "/api/v1/cmdb/relations/{relationId}");         // связь КЕ закрывается датой и остаётся в истории
+            "/api/v1/cmdb/relations/{relationId}",          // связь КЕ закрывается датой и остаётся в истории
+            "/api/v1/cab/meetings/{id}/items/{itemId}");    // снять изменение с повестки CAB до решения
 
     @Autowired
     MockMvc mvc;

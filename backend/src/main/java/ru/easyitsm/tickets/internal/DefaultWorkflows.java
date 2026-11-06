@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import ru.easyitsm.tickets.api.TicketType;
 
-/** Циклы по умолчанию: инцидент 5.1, запрос 5.4, заготовки проблем, изменений и подзадач. */
+/** Циклы по умолчанию: инцидент 5.1, запрос 5.4, изменение 5.6, заготовки проблем и подзадач. */
 final class DefaultWorkflows {
 
     private static final List<String> SUPPORT = List.of("AGT", "LEAD", "MIM");
@@ -18,7 +18,7 @@ final class DefaultWorkflows {
             case INCIDENT -> incident();
             case REQUEST -> request();
             case PROBLEM -> generic(type, List.of("AGT", "LEAD", "PRB", "MIM"));
-            case CHANGE -> generic(type, List.of("AGT", "LEAD", "CHG"));
+            case CHANGE -> change();
             case TASK -> task();
         };
     }
@@ -106,6 +106,46 @@ final class DefaultWorkflows {
             tr.add(t(from, "cancelled", "Отменить", List.of("requester", "AGT", "LEAD"), "comment"));
         }
         return new Workflow("request", statuses, tr, null);
+    }
+
+    /**
+     * Изменение (5.6). Переходы выполняет только модуль changes от имени системы: он проверяет планы, риск,
+     * маршрут согласования, окно и разбор, поэтому пользователь не может сменить статус в обход этих проверок.
+     */
+    static Workflow change() {
+        var statuses = List.of(
+                initial("draft", "Черновик", "draft"),
+                s("assessment", "Оценка", "new"),
+                s("approval", "Согласование", "approval"),
+                s("scheduled", "Запланировано", "assigned"),
+                s("implementation", "Внедрение", "in_progress"),
+                s("verification", "Проверка", "in_progress"),
+                s("review", "Разбор", "resolved"),
+                s("closed", "Закрыто", "closed"),
+                s("rejected", "Отклонено", "cancelled"),
+                s("cancelled", "Отменено", "cancelled"));
+        var system = List.of("system");
+        var tr = new ArrayList<Workflow.Transition>();
+        tr.add(t("draft", "assessment", "На оценку", system));
+        tr.add(t("draft", "approval", "На согласование", system));
+        tr.add(t("draft", "scheduled", "Запланировать", system));
+        tr.add(t("assessment", "draft", "Вернуть на доработку", system));
+        tr.add(t("assessment", "approval", "На согласование", system));
+        tr.add(t("approval", "scheduled", "Согласовано", system));
+        tr.add(t("approval", "rejected", "Отклонено", system));
+        tr.add(t("approval", "assessment", "Вернуть на оценку", system));
+        tr.add(t("scheduled", "approval", "Пересогласовать", system));
+        tr.add(t("scheduled", "assessment", "Вернуть на оценку", system));
+        tr.add(t("scheduled", "implementation", "Начать внедрение", system));
+        tr.add(t("implementation", "verification", "На проверку", system));
+        tr.add(t("implementation", "review", "Завершить", system));
+        tr.add(t("verification", "implementation", "Вернуть во внедрение", system));
+        tr.add(t("verification", "review", "Завершить", system));
+        tr.add(t("review", "closed", "Закрыть", system));
+        for (String from : List.of("draft", "assessment", "approval", "scheduled")) {
+            tr.add(t(from, "cancelled", "Отменить", system));
+        }
+        return new Workflow("change", statuses, tr, null);
     }
 
     static Workflow generic(TicketType type, List<String> roles) {

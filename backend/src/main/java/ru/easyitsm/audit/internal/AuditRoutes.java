@@ -31,7 +31,10 @@ final class AuditRoutes {
             new Rule("/api/v1/directory/", "identity", List.of()),
             new Rule("/api/v1/admin/", "platform", List.of()),
             new Rule("/api/v1/automation/rules", "automation", List.of()),
-            new Rule("/api/v1/audit/siem", "audit", List.of("/test")));
+            new Rule("/api/v1/audit/siem", "audit", List.of("/test")),
+            new Rule("/api/v1/change-templates", "changes", List.of()),
+            new Rule("/api/v1/change-freezes", "changes", List.of()),
+            new Rule("/api/v1/change-settings", "changes", List.of()));
 
     private AuditRoutes() {
     }
