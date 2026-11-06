@@ -188,7 +188,23 @@
       "kinds": { "import": "Import", "api": "API", "discovery": "Discovery", "kubernetes": "Kubernetes", "cloud": "Cloud" },
       "editTitle": "Source “{{name}}”",
       "createTitle": "New source",
-      "disabled": "disabled"
+      "disabled": "disabled",
+      "token": {
+        "title": "Agent token",
+        "none": "No token: only a user with the CFG role can send batches.",
+        "hint": "Token {{hint}} issued {{at}}",
+        "issue": "Issue token",
+        "reissue": "Reissue",
+        "revoke": "Revoke",
+        "revokeConfirm": "Revoke the token? The agent using it will stop loading data.",
+        "issuedTitle": "Token for source “{{name}}”",
+        "once": "The token is shown only now. Save it to a file on the agent host; the previous token no longer works.",
+        "copy": "Copy",
+        "copied": "Copied",
+        "setup": "Save the token to /etc/easyitsm/discovery.token (mode 600) and set the system address in /etc/easyitsm/discovery.json:",
+        "check": "Check the setup: discovery-agent -config /etc/easyitsm/discovery.json check",
+        "done": "Done"
+      }
     }
   }
 }

@@ -7,6 +7,7 @@
 # Результат в dist/:
 #   easyitsm-<версия>-offline.tar (+ .sha256, .sig) — образы с подписями, чарт, SBOM, установщик, утилиты
 #   easyitsm-<версия>.tgz (+ .sig)                   — Helm-чарт с закреплёнными digest образов
+# AGENT_DIR — архивы агента обнаружения с подписями (discovery-agent/build.sh), кладутся в agent/ комплекта.
 #   cosign.pub                                       — открытый ключ для проверки
 set -euo pipefail
 
@@ -44,6 +45,13 @@ done
 
 echo "== SBOM"
 cp "$root"/sbom/*.cdx.json "$stage/sbom/" 2>/dev/null || cp sbom/*.cdx.json "$stage/sbom/"
+
+if [ -n "${AGENT_DIR:-}" ]; then
+  echo "== Агент обнаружения"
+  mkdir -p "$stage/agent"
+  cp "$AGENT_DIR"/easyitsm-discovery-agent-* "$stage/agent/"
+  cp "$AGENT_DIR"/sbom-discovery-agent.cdx.json "$stage/sbom/" 2>/dev/null || true
+fi
 
 echo "== Утилиты для установки без интернета (linux-amd64)"
 tmp="$(mktemp -d)"

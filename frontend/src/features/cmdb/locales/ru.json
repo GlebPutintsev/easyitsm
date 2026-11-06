@@ -190,7 +190,23 @@
       "kinds": { "import": "Импорт", "api": "API", "discovery": "Обнаружение", "kubernetes": "Kubernetes", "cloud": "Облако" },
       "editTitle": "Источник «{{name}}»",
       "createTitle": "Новый источник",
-      "disabled": "отключён"
+      "disabled": "отключён",
+      "token": {
+        "title": "Токен агента",
+        "none": "Токена нет: пакеты может присылать только пользователь с ролью CFG.",
+        "hint": "Настроен токен {{hint}}, выпущен {{at}}",
+        "issue": "Выпустить токен",
+        "reissue": "Перевыпустить",
+        "revoke": "Отозвать",
+        "revokeConfirm": "Отозвать токен? Агент с ним перестанет загружать данные.",
+        "issuedTitle": "Токен источника «{{name}}»",
+        "once": "Токен виден только сейчас. Сохраните его в файл на сервере агента, прежний токен уже не действует.",
+        "copy": "Копировать",
+        "copied": "Скопировано",
+        "setup": "Сохраните токен в /etc/easyitsm/discovery.token (права 600) и укажите адрес системы в /etc/easyitsm/discovery.json:",
+        "check": "Проверка настройки: discovery-agent -config /etc/easyitsm/discovery.json check",
+        "done": "Готово"
+      }
     }
   }
 }

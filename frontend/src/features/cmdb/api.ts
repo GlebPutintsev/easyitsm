@@ -181,9 +181,20 @@ export interface Source {
   active: boolean;
   records: number;
   lastBatchAt: string | null;
+  /** Последние символы токена агента; null — токена нет. */
+  tokenHint: string | null;
+  tokenIssuedAt: string | null;
   createdAt: string;
   updatedAt: string;
   version: number;
+}
+
+/** Токен источника виден один раз, в ответе на выпуск. */
+export interface IssuedToken {
+  code: string;
+  token: string;
+  tokenHint: string;
+  tokenIssuedAt: string;
 }
 
 export interface Batch {
@@ -408,6 +419,22 @@ export function useBatches(code: string | null) {
     queryKey: [...cmdbKeys.sources, code, 'batches'],
     queryFn: ({ signal }) => api.get<Batch[]>(`/cmdb/sources/${code}/batches`, { query: { limit: 10 }, signal }),
     enabled: !!code,
+  });
+}
+
+export function useIssueSourceToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.post<IssuedToken>(`/cmdb/sources/${code}/token`, {}),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: cmdbKeys.sources }),
+  });
+}
+
+export function useRevokeSourceToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.delete<Source>(`/cmdb/sources/${code}/token`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: cmdbKeys.sources }),
   });
 }
 

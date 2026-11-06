@@ -64,7 +64,9 @@ Java: `ru.easyitsm.cmdb.api` и `ru.easyitsm.cmdb.events`. REST: `/api/v1/cmdb/*
 | Читать КЕ, связи, классы, влияние | `AGT`, `LEAD`, `MIM`, `CHG`, `PRB`, `CFG`, `AST`, `ADM`, `AUD` |
 | Создать и изменить КЕ, связи | `CFG` |
 | Настроить классы, типы связей, источники | `CFG`, `ADM` |
-| Загрузить пакет, разобрать конфликт сверки, слить дубликаты | `CFG`; сервисный токен агента (`SVC`) — когда появится в identity |
+| Загрузить пакет, разобрать конфликт сверки, слить дубликаты | `CFG` |
+| Загрузить пакет без входа пользователя | токен источника (`eitsm_cmdb_…`): только пакеты своего источника |
+| Выпустить и отозвать токен источника | `CFG`, `ADM` с повторной аутентификацией |
 | Смотреть источники, пакеты, конфликты | роли чтения |
 
 ## Java API для модулей
@@ -120,6 +122,8 @@ ImpactedCi(ci, depth, path)   // path: id от исходной КЕ до это
 | `GET /cmdb/quality/issues?kind=incomplete\|stale\|orphan`, `GET /cmdb/quality/duplicates` | Списки для экрана «Качество», до 200 |
 | `GET, POST /cmdb/sources`, `GET, PATCH /cmdb/sources/{code}` | Источники данных (CFG-04): код, вид, приоритет, срок актуальности, включён ли; число объектов и время последнего пакета |
 | `POST /cmdb/sources/{code}/batches`, `GET …/batches`, `GET …/batches/{batchId}` | Пакет объектов источника и результаты (ниже) |
+| `POST, DELETE /cmdb/sources/{code}/token` | Выпустить (показывается один раз) и отозвать токен источника |
+| `POST /cmdb/ingest/batches`, `GET /cmdb/ingest/source` | Пакет и проверка настройки по токену источника, без сессии |
 | `GET /cmdb/conflicts?status=&kind=&source=&ciId=` | Экран «Сверка» (CFG-05): по умолчанию открытые, новые первыми, курсор |
 | `POST /cmdb/conflicts/{id}/resolve` | `{"action": "accept"\|"ignore"\|"merge", "ciId"}` |
 | `POST /cmdb/cis/{id}/merge` | `{"mergedId"}`: слить дубликат в эту КЕ (одна ветка классов) |
@@ -140,7 +144,7 @@ ImpactedCi(ci, depth, path)   // path: id от исходной КЕ до это
 
 ```http
 POST /api/v1/cmdb/sources/{source}/batches
-Authorization: пользователь с ролью CFG; позже — сервисный токен агента (роль SVC, область cmdb:ingest)
+Authorization: пользователь с ролью CFG
 Content-Type: application/json
 
 {
@@ -194,6 +198,27 @@ Content-Type: application/json
   409 `source_inactive`, пакет больше 5 МБ — 413 `batch_too_large`.
 - События `CiCreated`, `CiUpdated`, `CiStatusChanged` идут с `source` = код источника и только для успешно
   применённых объектов; изменения связей пакета — одним `CiImpactChanged` с `reason = source_sync`.
+
+### Токен источника (агент обнаружения)
+
+Агент обнаружения (`discovery-agent/`, Go) и коннекторы шлют пакеты без входа пользователя:
+
+```http
+POST /api/v1/cmdb/ingest/batches        // тело и ответ — как у POST /cmdb/sources/{code}/batches
+GET  /api/v1/cmdb/ingest/source         // {code, name, kind, priority, active} — проверка настройки
+Authorization: Bearer eitsm_cmdb_…
+```
+
+- Токен выпускает CFG или ADM: `POST /cmdb/sources/{code}/token` → `{code, token, tokenHint, tokenIssuedAt}`
+  (кнопка «Выпустить токен» на экране «Источники»), отзыв — `DELETE`. Токен показывается один раз, в БД —
+  SHA-256 (`ci_source.token_hash`), в списке источников — `tokenHint`. Перевыпуск сразу отменяет прежний токен.
+  Выпуск и отзыв пишет журнал аудита (`AuditRoutes`, раздел cmdb).
+- Токен действует только для пакетов своего источника; источник и арендатор определяются по нему
+  (функция `cmdb_source_by_token`, SECURITY DEFINER). Остальное API с токеном недоступно (401).
+- Токен проверяется до чтения тела. Ошибки: 401 `invalid_token`, 409 `source_inactive`, 413 `batch_too_large`,
+  400 `invalid_batch` с `field`. Автор изменений КЕ — источник (`actorId` = null).
+- Несколько агентов на серверах шлют в один источник без `final`; сканер сети с `final` — отдельный источник.
+  Подробно — `discovery-agent/README.md`.
 
 ### Сверка и слияние
 

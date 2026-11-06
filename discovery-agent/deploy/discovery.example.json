@@ -1,0 +1,21 @@
+{
+  "server": "https://itsm.example.ru",
+  "tokenFile": "/etc/easyitsm/discovery.token",
+  "environment": "production",
+  "interval": "6h",
+  "host": {
+    "enabled": true,
+    "databases": true
+  },
+  "scan": {
+    "enabled": false,
+    "fullSweep": false,
+    "networks": [
+      { "cidr": "10.0.10.0/24", "classCode": "server" },
+      { "cidr": "10.0.0.0/27", "classCode": "network_device" }
+    ],
+    "exclude": ["10.0.10.1"],
+    "timeout": "500ms",
+    "concurrency": 64
+  }
+}

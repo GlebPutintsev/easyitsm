@@ -36,9 +36,19 @@ class SourceService {
     /**
      * @param records    объекты источника, связанные с КЕ (без удалённых источником)
      * @param lastBatchAt время последнего пакета
+     * @param tokenHint   последние символы токена источника, {@code null} — токена нет
      */
     record Source(UUID id, String code, String name, String kind, int priority, int staleDays, boolean active,
-                  long records, Instant lastBatchAt, Instant createdAt, Instant updatedAt, long version) {
+                  long records, Instant lastBatchAt, String tokenHint, Instant tokenIssuedAt, Instant createdAt,
+                  Instant updatedAt, long version) {
+    }
+
+    /** Новый токен показывается один раз: в БД остаётся только его хеш. */
+    record IssuedToken(String code, String token, String tokenHint, Instant tokenIssuedAt) {
+    }
+
+    /** Источник, которому принадлежит токен. */
+    record TokenMatch(UUID tenantId, String code) {
     }
 
     record CreateSource(
@@ -54,8 +64,8 @@ class SourceService {
     }
 
     private static final String SELECT = """
-            select s.id, s.code, s.name, s.kind, s.priority, s.stale_days, s.active, s.created_at, s.updated_at,
-                   s.version,
+            select s.id, s.code, s.name, s.kind, s.priority, s.stale_days, s.active, s.token_hint,
+                   s.token_issued_at, s.created_at, s.updated_at, s.version,
                    (select count(*) from ci_source_record r where r.source_id = s.id and r.removed_at is null)
                        as records,
                    (select max(b.created_at) from ci_ingest_batch b where b.source_id = s.id) as last_batch_at
@@ -120,6 +130,46 @@ class SourceService {
         return get(code);
     }
 
+    /**
+     * Выпускает токен источника для агента обнаружения или коннектора (CFG-04). Прежний токен перестаёт
+     * приниматься сразу.
+     */
+    @Transactional
+    public IssuedToken issueToken(String code) {
+        Source cur = get(code);
+        String token = SourceTokens.generate();
+        Instant now = Sql.now();
+        jdbc.sql("""
+                update ci_source set token_hash = :hash, token_hint = :hint, token_issued_at = :now,
+                                     updated_at = :now, updated_by = :actor, version = version + 1
+                 where id = :id""")
+                .param("id", cur.id()).param("hash", SourceTokens.hash(token)).param("hint", SourceTokens.hint(token))
+                .param("now", Sql.ts(now)).param("actor", CurrentActor.userId().orElse(null))
+                .update();
+        return new IssuedToken(code, token, SourceTokens.hint(token), now);
+    }
+
+    /** Отзывает токен: пакеты с ним больше не принимаются, пользователь с ролью CFG по-прежнему может их слать. */
+    @Transactional
+    public Source revokeToken(String code) {
+        Source cur = get(code);
+        jdbc.sql("""
+                update ci_source set token_hash = null, token_hint = null, token_issued_at = null,
+                                     updated_at = :now, updated_by = :actor, version = version + 1
+                 where id = :id""")
+                .param("id", cur.id()).param("now", Sql.ts(Sql.now()))
+                .param("actor", CurrentActor.userId().orElse(null))
+                .update();
+        return get(code);
+    }
+
+    /** Ищет источник по токену во всех арендаторах (функция SECURITY DEFINER), до установки арендатора. */
+    Optional<TokenMatch> byToken(String token) {
+        return jdbc.sql("select tenant_id, code from cmdb_source_by_token(:h)").param("h", SourceTokens.hash(token))
+                .query((rs, n) -> new TokenMatch(rs.getObject("tenant_id", UUID.class), rs.getString("code")))
+                .optional();
+    }
+
     /** Приоритет владельца значения атрибута: {@code manual} или код источника. */
     int priorityOf(String owner) {
         if (owner == null || CiService.MANUAL.equals(owner)) {
@@ -131,7 +181,8 @@ class SourceService {
     private Source map(ResultSet rs, int n) throws SQLException {
         return new Source(Sql.uuid(rs, "id"), rs.getString("code"), rs.getString("name"), rs.getString("kind"),
                 rs.getInt("priority"), rs.getInt("stale_days"), rs.getBoolean("active"), rs.getLong("records"),
-                Sql.instant(rs, "last_batch_at"), Sql.instant(rs, "created_at"), Sql.instant(rs, "updated_at"),
+                Sql.instant(rs, "last_batch_at"), rs.getString("token_hint"), Sql.instant(rs, "token_issued_at"),
+                Sql.instant(rs, "created_at"), Sql.instant(rs, "updated_at"),
                 rs.getLong("version"));
     }
 }
