@@ -38,4 +38,25 @@ public interface TicketCommands {
      * пересчёте целей; null — целей нет или все выполнены. Версия заявки и лента не меняются.
      */
     void updateSlaDue(UUID ticketId, Instant slaDueAt);
+
+    /**
+     * Изменение полей от имени системы (автоматизация): приоритет, влияние, срочность, группа, исполнитель.
+     * Закрытая заявка — {@code ticket_closed}. Группа и исполнитель не сверяются со справочником identity:
+     * вызывающий модуль проверяет их сам. Ничего не изменилось — версия и события остаются прежними.
+     */
+    TicketRef change(UUID ticketId, TicketChange change);
+
+    /**
+     * Переход от имени системы по любому ручному переходу цикла из текущего статуса. {@code trigger} попадает
+     * в {@code TicketStatusChanged.trigger}, например {@code automation}. Нет такого перехода —
+     * {@code transition_not_allowed}, не хватает полей — {@code field_required}.
+     */
+    TicketRef transition(UUID ticketId, TicketTransition transition, String trigger);
+
+    /**
+     * Подписывает пользователя на заявку. Причина — {@code added} (по умолчанию), {@code mention} или {@code creator}.
+     *
+     * @return true — подписан впервые
+     */
+    boolean addWatcher(UUID ticketId, UUID userId, String reason);
 }
