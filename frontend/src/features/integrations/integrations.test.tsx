@@ -4,8 +4,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '@/app/theme';
-import type { Delivery, EventEntry, SourceView, Webhook } from './api';
+import type { Delivery, EventEntry, Messenger, MyMessenger, SourceView, Webhook } from './api';
 import { IntegrationsPage } from './IntegrationsPage';
+import { MyMessengersPage } from './MyMessengersPage';
 import { alertmanagerConfig } from './snippets';
 
 if (!('fonts' in document)) {
@@ -44,6 +45,43 @@ const DEAD: Delivery = {
   ticketNumber: 'INC-000778',
   createdAt: '2026-11-06T10:06:00Z',
 };
+
+const BOT: Messenger = {
+  id: '00000000-0000-7000-8000-00000000b001',
+  kind: 'telegram',
+  name: 'Поддержка',
+  tokenHint: '…wxyz',
+  baseUrl: null,
+  botUsername: 'itsm_help_bot',
+  enabled: true,
+  allowTickets: true,
+  ticketType: 'incident',
+  groupId: null,
+  dataFields: ['title', 'link'],
+  lastPollAt: '2026-11-06T10:00:00Z',
+  lastError: null,
+  lastEventAt: null,
+  linkedUsers: 3,
+  version: 2,
+  createdAt: '2026-11-06T10:00:00Z',
+  updatedAt: '2026-11-06T10:00:00Z',
+};
+
+const MY_BOT: MyMessenger = {
+  id: BOT.id,
+  kind: 'telegram',
+  name: 'Поддержка',
+  botUsername: 'itsm_help_bot',
+  linked: false,
+  externalName: null,
+  linkedAt: null,
+};
+
+// Код привязки в ответе-заглушке: тоже из частей.
+const LINK_CODE = 'L' + 'k'.repeat(19);
+
+// Токен бота во вводе: тоже из частей.
+const BOT_TOKEN = 'bot-' + 'z'.repeat(8);
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -126,6 +164,19 @@ describe('экран интеграций', () => {
       if (url.pathname === '/api/v1/integrations/webhook-deliveries') return json({ items: [DEAD], nextCursor: null });
       if (url.pathname === '/api/v1/integrations/webhook-deliveries/d1/retry')
         return json({ ...DEAD, status: 'pending', attempts: 0 });
+      if (url.pathname === '/api/v1/integrations/messengers' && method === 'GET') return json({ items: [BOT], nextCursor: null });
+      if (url.pathname === '/api/v1/integrations/messengers' && method === 'POST') {
+        const body = JSON.parse(String(init?.body));
+        return json({ ...BOT, id: 'b2', name: body.name, kind: body.kind }, 201);
+      }
+      if (url.pathname === `/api/v1/integrations/messengers/${BOT.id}` && method === 'PATCH')
+        return json({ ...BOT, ...JSON.parse(String(init?.body)), version: 3 });
+      if (url.pathname === `/api/v1/integrations/messengers/${BOT.id}/check`)
+        return json({ ok: true, botUsername: 'itsm_help_bot', error: null });
+      if (url.pathname === '/api/v1/integrations/my-messengers' && method === 'GET') return json([MY_BOT]);
+      if (url.pathname === `/api/v1/integrations/my-messengers/${BOT.id}/link`)
+        return json({ url: `https://t.me/itsm_help_bot?start=${LINK_CODE}`, code: LINK_CODE, expiresAt: '2026-11-06T10:15:00Z' });
+      if (url.pathname === `/api/v1/integrations/my-messengers/${BOT.id}` && method === 'DELETE') return new Response(null, { status: 204 });
       if (url.pathname === '/api/v1/groups') return json({ items: [], nextCursor: null });
       if (url.pathname === '/api/v1/admin/dictionaries')
         return json([{ kind: 'resolution', version: 0, items: [{ code: 'fixed', name: 'Устранено', active: true }] }]);
@@ -139,9 +190,13 @@ describe('экран интеграций', () => {
   });
 
   function renderAt(path: string) {
-    const router = createMemoryRouter([{ path: '/admin/integrations', element: <IntegrationsPage /> }], {
-      initialEntries: [path],
-    });
+    const router = createMemoryRouter(
+      [
+        { path: '/admin/integrations', element: <IntegrationsPage /> },
+        { path: '/profile/messengers', element: <MyMessengersPage /> },
+      ],
+      { initialEntries: [path] },
+    );
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <MantineProvider theme={theme} env="test">
@@ -236,5 +291,56 @@ describe('экран интеграций', () => {
     expect(within(table).getByText('INC-000778')).toBeInTheDocument();
     fireEvent.click(within(table).getByRole('button', { name: 'Повторить' }));
     await waitFor(() => expect(calls('POST', '/d1/retry')).toHaveLength(1));
+  });
+
+  it('мессенджеры: список ботов, перечень данных и проверка связи', async () => {
+    renderAt('/admin/integrations?tab=messengers');
+    const table = await screen.findByTestId('messengers-table');
+    expect(within(table).getByText('Поддержка')).toBeInTheDocument();
+    expect(within(table).getByText('@itsm_help_bot')).toBeInTheDocument();
+    expect(within(table).getByText('3')).toBeInTheDocument();
+
+    fireEvent.click(within(table).getByRole('button', { name: 'Поддержка' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Сохранён токен …wxyz/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByLabelText('Текст уведомления'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Проверить связь' }));
+    expect(await within(dialog).findByTestId('messenger-check')).toHaveTextContent('@itsm_help_bot');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(calls('PATCH', `/messengers/${BOT.id}`)).toHaveLength(1));
+    const [, patch] = calls('PATCH', `/messengers/${BOT.id}`)[0]!;
+    expect((patch?.headers as Record<string, string>)['If-Match']).toBe('"2"');
+    const body = JSON.parse(String(patch?.body));
+    expect(body.dataFields).toEqual(['title', 'link', 'text']);
+    expect(body).not.toHaveProperty('token');
+  });
+
+  it('новый бот требует токен', async () => {
+    renderAt('/admin/integrations?tab=messengers');
+    fireEvent.click(await screen.findByRole('button', { name: 'Подключить бота' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByText('MAX'));
+    fireEvent.change(within(dialog).getByLabelText(/Название/), { target: { value: 'MAX поддержка' } });
+    const connect = within(dialog).getByRole('button', { name: 'Подключить' });
+    expect(connect).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Токен бота/), { target: { value: BOT_TOKEN } });
+    fireEvent.click(connect);
+    await waitFor(() => expect(calls('POST', '/integrations/messengers')).toHaveLength(1));
+    const body = JSON.parse(String(calls('POST', '/integrations/messengers')[0]![1]?.body));
+    expect(body).toMatchObject({ kind: 'max', name: 'MAX поддержка', token: BOT_TOKEN, clearGroup: true });
+  });
+
+  it('профиль: привязка выдаёт ссылку на бота и команду', async () => {
+    renderAt('/profile/messengers');
+    expect(await screen.findByText('Не привязан')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Привязать' }));
+    const box = await screen.findByTestId('link-code');
+    expect(within(box).getByText(`/start ${LINK_CODE}`)).toBeInTheDocument();
+    expect(within(box).getByRole('link', { name: 'Открыть бота' })).toHaveAttribute(
+      'href',
+      `https://t.me/itsm_help_bot?start=${LINK_CODE}`,
+    );
+    fireEvent.click(within(box).getByRole('button', { name: 'Я нажал «Старт»' }));
+    await waitFor(() => expect(calls('GET', '/my-messengers').length).toBeGreaterThan(1));
   });
 });

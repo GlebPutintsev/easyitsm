@@ -3,7 +3,8 @@
     "showMore": "Show more"
   },
   "nav": {
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "messengers": "Messengers"
   },
   "integrations": {
     "title": "Integrations",
@@ -12,7 +13,8 @@
       "monitoring": "Monitoring",
       "events": "Event log",
       "webhooks": "Webhooks",
-      "deliveries": "Webhook deliveries"
+      "deliveries": "Webhook deliveries",
+      "messengers": "Messengers"
     },
     "kinds": {
       "zabbix": "Zabbix",
@@ -158,6 +160,61 @@
         "delivered": "Delivered",
         "dead": "Failed"
       }
+    },
+    "messengers": {
+      "intro": "A Telegram or MAX bot accepts tickets from direct messages and sends notifications to people who linked their account in the profile. The server polls the messenger itself, so no inbound internet access is needed. A reply to a bot message becomes a ticket comment.",
+      "add": "Connect a bot",
+      "empty": "No bots yet",
+      "newTitle": "New bot",
+      "columns": {
+        "name": "Name",
+        "kind": "Messenger",
+        "users": "Linked",
+        "state": "State"
+      },
+      "kinds": {
+        "telegram": "Telegram",
+        "max": "MAX"
+      },
+      "polled": "Polled {{time}}",
+      "waiting": "Waiting for the first poll",
+      "token": "Bot token",
+      "tokenHint": {
+        "telegram": "Issued by @BotFather with the /newbot command.",
+        "max": "Issued by the MAX partner platform under Chat bots."
+      },
+      "tokenKeep": "Token {{hint}} is saved. Leave the field empty to keep it.",
+      "baseUrl": "API address",
+      "baseUrlHint": "Empty means the official messenger address. A custom address (for example, a proxy) must be in the allowed addresses on the Webhooks tab.",
+      "allowTickets": "Create tickets from messages",
+      "ticketType": "Ticket type",
+      "types": {
+        "incident": "Incident",
+        "request": "Service request"
+      },
+      "fields": "What to send to the messenger",
+      "fieldsHint": "The ticket number is always sent. The messenger's servers store messages, so send only what may leave your perimeter. Confidential tickets never include details.",
+      "field": {
+        "title": "Notification subject and ticket title",
+        "text": "Notification text",
+        "link": "Link to the ticket"
+      },
+      "check": "Check connection",
+      "connect": "Connect",
+      "confirmDelete": "Delete the bot and all links"
+    },
+    "my": {
+      "title": "Messengers",
+      "subtitle": "Link your account to get notifications, create tickets and reply to them right in the messenger.",
+      "empty": "The administrator has not connected any bots yet",
+      "linked": "Linked",
+      "linkedAs": "Linked: {{name}}",
+      "notLinked": "Not linked",
+      "link": "Link",
+      "unlink": "Unlink",
+      "openBot": "Open the bot",
+      "codeHint": "Open the bot and press Start. The link is valid until {{time}}. If the messenger did not open, send the bot this command:",
+      "done": "I pressed Start"
     }
   }
 }

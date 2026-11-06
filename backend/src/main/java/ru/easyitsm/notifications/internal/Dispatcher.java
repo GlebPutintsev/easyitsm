@@ -1,6 +1,7 @@
 package ru.easyitsm.notifications.internal;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -8,9 +9,12 @@ import org.springframework.stereotype.Service;
 import ru.easyitsm.identity.api.UserSummary;
 import ru.easyitsm.mail.api.MailOutbox;
 import ru.easyitsm.mail.api.OutgoingMail;
+import ru.easyitsm.notifications.api.ExternalChannel;
+import ru.easyitsm.notifications.api.ExternalNotice;
 
 /**
- * Доставка одного уведомления одному получателю по каналам: центр уведомлений, письмо, Web Push.
+ * Доставка одного уведомления одному получателю по каналам: центр уведомлений, письмо, Web Push и внешние
+ * каналы ({@link ExternalChannel}, мессенджеры) — вместе с центром уведомлений.
  * Шаблон выбирается по языку получателя.
  */
 @Service
@@ -21,9 +25,11 @@ class Dispatcher {
     private final MailOutbox mail;
     private final NotificationProperties props;
     private final JdbcClient jdbc;
+    private final List<ExternalChannel> external;
 
     Dispatcher(TemplateStore templates, NotificationStore center, MailOutbox mail, NotificationProperties props,
-               JdbcClient jdbc) {
+               JdbcClient jdbc, List<ExternalChannel> external) {
+        this.external = external;
         this.templates = templates;
         this.center = center;
         this.mail = mail;
@@ -57,6 +63,13 @@ class Dispatcher {
         if (channels.inApp() && r.userId() != null) {
             boolean push = channels.push() && props.pushEnabled() && hasSubscription(r.userId());
             center.add(r.userId(), m.model().getOrDefault("_kind", m.kind()), subject, summary(text), m.path(), m.ticketId(), push);
+            if (!external.isEmpty()) {
+                String title = model.get("ticket.title");
+                ExternalNotice notice = new ExternalNotice(r.userId(), r.locale(), m.model().getOrDefault("_kind", m.kind()),
+                        subject, summary(text), m.ticketId(), m.ticketNumber(), title == null || title.isBlank() ? null : title,
+                        m.path() == null ? null : props.url(m.path()), "yes".equals(model.get("confidential")));
+                external.forEach(c -> c.deliver(notice));
+            }
         }
         if (channels.email() && r.email() != null && !r.email().isBlank()) {
             mail.enqueue(new OutgoingMail(m.kind(), r.email(), r.name(), r.userId(), m.ticketId(), m.ticketNumber(),

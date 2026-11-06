@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { DeliveriesPanel } from './DeliveriesPanel';
 import { EventsPanel } from './EventsPanel';
+import { MessengersPanel } from './MessengersPanel';
 import { SourcesPanel } from './SourcesPanel';
 import { WebhooksPanel } from './WebhooksPanel';
 
-/** «Управление → Интеграции» (раздел 8): мониторинг, его журнал, исходящие вебхуки и их доставки. */
+/** «Управление → Интеграции» (раздел 8): мониторинг, его журнал, исходящие вебхуки, их доставки и боты мессенджеров. */
 export function IntegrationsPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -30,6 +31,7 @@ export function IntegrationsPage() {
           <Tabs.Tab value="events">{t('integrations.tabs.events')}</Tabs.Tab>
           <Tabs.Tab value="webhooks">{t('integrations.tabs.webhooks')}</Tabs.Tab>
           <Tabs.Tab value="deliveries">{t('integrations.tabs.deliveries')}</Tabs.Tab>
+          <Tabs.Tab value="messengers">{t('integrations.tabs.messengers')}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="monitoring" pt="md">
           <SourcesPanel />
@@ -42,6 +44,9 @@ export function IntegrationsPage() {
         </Tabs.Panel>
         <Tabs.Panel value="deliveries" pt="md">
           <DeliveriesPanel />
+        </Tabs.Panel>
+        <Tabs.Panel value="messengers" pt="md">
+          <MessengersPanel />
         </Tabs.Panel>
       </Tabs>
     </Stack>
