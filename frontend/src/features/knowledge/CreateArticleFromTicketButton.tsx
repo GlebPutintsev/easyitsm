@@ -1,40 +1,20 @@
 import { Button, type ButtonProps } from '@mantine/core';
 import { IconBook2 } from '@tabler/icons-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
-import { newIdempotencyKey, useCreateFromTicket, type CreateFromTicketInput } from './api';
-import { notifyError } from './ui';
+import { Link } from 'react-router';
 
 /**
- * KB-05: кнопка «Создать статью» для карточки решённой заявки. Создаёт черновик по шаблону
- * «Решение проблемы» (видимость — агенты) и открывает редактор. Карточку заявки делает рабочее место агента.
+ * KB-05: кнопка «Создать статью» для карточки решённой или закрытой заявки. Открывает форму
+ * «Статья из заявки»: тема, описание и решение подставляются из заявки, затем открывается редактор.
  */
-export function CreateArticleFromTicketButton({ ticket, ...props }: { ticket: CreateFromTicketInput } & ButtonProps) {
+export function CreateArticleFromTicketButton({ ticketNumber, ...props }: { ticketNumber: string } & ButtonProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const create = useCreateFromTicket();
-  const [key, setKey] = useState(newIdempotencyKey);
-
   return (
     <Button
-      variant="light"
+      component={Link}
+      to={`/agent/kb/new?fromTicket=${encodeURIComponent(ticketNumber)}`}
+      variant="default"
       leftSection={<IconBook2 size={16} />}
-      loading={create.isPending}
-      disabled={!ticket.solution?.trim()}
-      title={!ticket.solution?.trim() ? t('kb.fromTicket.needSolution') : undefined}
-      onClick={() =>
-        create.mutate(
-          { input: ticket, key },
-          {
-            onSuccess: (a) => navigate(`/agent/kb/${a.id}/edit`),
-            onError: (e) => {
-              notifyError(t, e);
-              setKey(newIdempotencyKey());
-            },
-          },
-        )
-      }
       {...props}
     >
       {t('kb.fromTicket.button')}

@@ -1,9 +1,10 @@
-import { Anchor, Badge, Button, Card, Group, Stack, Text } from '@mantine/core';
+import { Button, Group, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
 import { useArticleList, useCategories, type ListFilter } from './api';
 import { StatusBadge, useDateFormat } from './ui';
+import './knowledge.css';
 
 interface Props {
   filter: ListFilter;
@@ -41,39 +42,27 @@ export function ArticleList({ filter, linkTo, filtered, onResetFilters, emptyTit
   return (
     <Stack gap="sm" style={{ opacity: list.isPlaceholderData ? 0.6 : 1 }}>
       {items.map((a) => (
-        <Card key={a.id} withBorder padding="md" radius="md">
+        <Link key={a.id} to={linkTo(a.id)} className="kb-card">
           <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
             <Stack gap={4} style={{ minWidth: 0 }}>
-              <Anchor component={Link} to={linkTo(a.id)} fw={600} size="md" c="var(--mantine-color-text)">
-                {a.title}
-              </Anchor>
+              <span className="kb-card-title">{a.title}</span>
               {a.snippet && (
-                <Text size="sm" c="dimmed" lineClamp={2}>
+                <Text size="sm" c="var(--ei-text-2)" lineClamp={2}>
                   {a.snippet}
                 </Text>
               )}
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">
-                  {a.key}
-                </Text>
-                {categoryName(a.categoryId) && (
-                  <Badge size="xs" variant="light" color="gray">
-                    {categoryName(a.categoryId)}
-                  </Badge>
-                )}
-                <Text size="xs" c="dimmed">
-                  {showStatus ? t('kb.list.updated', { date: fmt.date(a.updatedAt) }) : fmt.date(a.publishedAt)}
-                </Text>
+              <Group gap="xs" className="kb-meta" mb={0}>
+                <span className="ei-mono">{a.key}</span>
+                {categoryName(a.categoryId) && <span>{categoryName(a.categoryId)}</span>}
+                <span>{showStatus ? t('kb.list.updated', { date: fmt.date(a.updatedAt) }) : fmt.date(a.publishedAt)}</span>
                 {showStatus && a.publishedVersionNo != null && a.currentVersionNo > a.publishedVersionNo && (
-                  <Text size="xs" c="blue">
-                    {t('kb.list.publishedVersion', { no: a.publishedVersionNo })}
-                  </Text>
+                  <span>{t('kb.list.publishedVersion', { no: a.publishedVersionNo })}</span>
                 )}
               </Group>
             </Stack>
             {showStatus && <StatusBadge status={a.status} />}
           </Group>
-        </Card>
+        </Link>
       ))}
       {list.hasNextPage && (
         <Button variant="subtle" onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage} w="fit-content" mx="auto">

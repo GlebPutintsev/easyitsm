@@ -29,6 +29,11 @@ import ru.easyitsm.platform.web.CursorPage;
 import ru.easyitsm.platform.web.ETags;
 import ru.easyitsm.platform.web.KeysetCursor;
 import ru.easyitsm.platform.web.PageParams;
+import ru.easyitsm.tickets.api.StatusCategory;
+import ru.easyitsm.tickets.api.TicketCommands;
+import ru.easyitsm.tickets.api.TicketQueries;
+import ru.easyitsm.tickets.api.TicketSnapshot;
+import ru.easyitsm.tickets.api.Visibility;
 
 /**
  * Статьи базы знаний: правка, версии, жизненный цикл (5.7) и чтение с учётом аудитории (KB-04).
@@ -40,6 +45,8 @@ import ru.easyitsm.platform.web.PageParams;
 class ArticleService implements ArticleQueries {
 
     static final String SECRETS_DETECTED = "secrets_detected";
+    static final String TICKET_NOT_RESOLVED = "ticket_not_resolved";
+    private static final int MAX_TITLE = 255;
 
     private final ArticleRepository articles;
     private final ArticleVersionRepository versions;
@@ -49,11 +56,14 @@ class ArticleService implements ArticleQueries {
     private final JdbcClient jdbc;
     private final ApplicationEventPublisher events;
     private final KnowledgeProperties props;
+    private final TicketQueries tickets;
+    private final TicketCommands ticketCommands;
     private final Clock clock;
 
     ArticleService(ArticleRepository articles, ArticleVersionRepository versions, KbCategoryRepository categories,
                    ArticleFeedbackRepository feedback, ArticleSearch search, JdbcClient jdbc,
-                   ApplicationEventPublisher events, KnowledgeProperties props, Optional<Clock> clock) {
+                   ApplicationEventPublisher events, KnowledgeProperties props, TicketQueries tickets,
+                   TicketCommands ticketCommands, Optional<Clock> clock) {
         this.articles = articles;
         this.versions = versions;
         this.categories = categories;
@@ -62,6 +72,8 @@ class ArticleService implements ArticleQueries {
         this.jdbc = jdbc;
         this.events = events;
         this.props = props;
+        this.tickets = tickets;
+        this.ticketCommands = ticketCommands;
         this.clock = clock.orElse(Clock.systemUTC());
     }
 
@@ -166,18 +178,40 @@ class ArticleService implements ArticleQueries {
         return details(r, a, version(a, 1), true);
     }
 
-    /** KB-05: черновик из решённой заявки, видимый агентам, пока редактор не решит иначе. */
+    /**
+     * KB-05: черновик из решённой заявки, видимый агентам, пока редактор не решит иначе.
+     * <p>
+     * Заявку проверяет модуль заявок ({@link TicketQueries#findVisible}): она должна быть видна автору
+     * (иначе 404) и решена или закрыта (иначе 409 {@code ticket_not_resolved}). Номер и тема по умолчанию
+     * берутся из заявки, текст разделов — из формы: описание и решение агент правит перед созданием.
+     * В ленту заявки добавляется внутренняя заметка со ссылкой на статью.
+     */
     @Transactional
     public ArticleDetails createFromTicket(KnowledgeDtos.CreateFromTicket cmd) {
         Reader r = requireEditor();
-        // TODO(tickets): проверить через api модуля tickets, что заявка решена и доступна пользователю,
-        // и брать поля из неё. Пока поля приходят из карточки заявки и только переносятся в черновик.
+        TicketSnapshot ticket = tickets.findVisible(cmd.ticketId()).orElseThrow(() -> ApiException.notFound("Заявка"));
+        if (ticket.statusCategory() != StatusCategory.RESOLVED && ticket.statusCategory() != StatusCategory.CLOSED) {
+            throw ApiException.conflict(TICKET_NOT_RESOLVED,
+                    "Статью можно создать только из решённой или закрытой заявки");
+        }
+        String title = cmd.title() == null || cmd.title().isBlank() ? ticket.title() : cmd.title();
+        title = title.strip();
+        if (title.length() > MAX_TITLE) {
+            title = title.substring(0, MAX_TITLE);
+        }
         String body = ArticleTemplates.fromTicket(cmd.symptoms(), cmd.cause(), cmd.solution());
-        Article a = newArticle(r, cmd.title(), body, checkCategory(cmd.categoryId()), ArticleAudience.AGENTS, null,
-                cmd.ticketId(), cmd.ticketRef());
-        events.publishEvent(new ArticleCreatedFromTicket(a.getTenantId(), a.getId(), a.key(), cmd.ticketId(),
+        Article a = newArticle(r, title, body, checkCategory(cmd.categoryId()), ArticleAudience.AGENTS, null,
+                ticket.id(), ticket.number());
+        ticketCommands.addComment(ticket.id(), r.userId(), feedNote(a), Visibility.INTERNAL);
+        events.publishEvent(new ArticleCreatedFromTicket(a.getTenantId(), a.getId(), a.key(), ticket.id(),
                 r.userId()));
         return details(r, a, version(a, 1), true);
+    }
+
+    /** Заметка в ленте заявки. Ссылка относительная: адрес рабочего места знает только клиент. */
+    static String feedNote(Article a) {
+        return "Создан черновик статьи базы знаний [" + a.key() + " · " + a.title().replace("]", ")")
+                + "](/agent/kb/" + a.getId() + ")";
     }
 
     @Transactional

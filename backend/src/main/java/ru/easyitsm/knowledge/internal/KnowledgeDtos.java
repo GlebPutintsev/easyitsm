@@ -40,11 +40,14 @@ final class KnowledgeDtos {
             UUID ownerId) {
     }
 
-    /** KB-05: черновик из решённой заявки. Поля приходят из карточки заявки. */
+    /**
+     * KB-05: черновик из решённой заявки. Номер заявки берётся из модуля заявок, {@code ticketRef} оставлен
+     * для совместимости и не используется. Пустая тема — тема заявки. Разделы агент заполняет в форме.
+     */
     record CreateFromTicket(
             @NotNull UUID ticketId,
             @Size(max = 64) String ticketRef,
-            @NotBlank @Size(max = 255) String title,
+            @Size(max = 255) String title,
             @Size(max = 50_000) String symptoms,
             @Size(max = 50_000) String cause,
             @NotBlank @Size(max = 50_000) String solution,

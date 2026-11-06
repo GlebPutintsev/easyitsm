@@ -1,13 +1,24 @@
 import { Button, Group, Radio, Select, SimpleGrid, Stack, Text, TextInput, Title, UnstyledButton } from '@mantine/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AUDIENCES, newIdempotencyKey, useCreateArticle, useTemplates, type Audience, type TemplateCode } from './api';
+import { ArticleFromTicket } from './ArticleFromTicket';
 import { CategoryField } from './CategoryField';
 import { notifyError } from './ui';
+import './knowledge.css';
 
-/** Новая статья (10.12): шаблон, категория, аудитория. Затем открывается редактор черновика. */
+/**
+ * Новая статья (10.12): шаблон, категория, аудитория. Затем открывается редактор черновика.
+ * С параметром {@code ?fromTicket=INC-000123} — статья из решённой заявки (KB-05).
+ */
 export function NewArticle() {
+  const [params] = useSearchParams();
+  const fromTicket = params.get('fromTicket');
+  return fromTicket ? <ArticleFromTicket ticketRef={fromTicket} /> : <BlankArticle />;
+}
+
+function BlankArticle() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const templates = useTemplates();
@@ -35,7 +46,7 @@ export function NewArticle() {
 
   return (
     <Stack maw={760} mx="auto" gap="lg" py="md">
-      <Title order={2}>{t('kb.new.title')}</Title>
+      <Title order={1}>{t('kb.new.title')}</Title>
       <TextInput
         label={t('kb.fields.title')}
         placeholder={t('kb.new.titlePlaceholder')}
@@ -49,15 +60,7 @@ export function NewArticle() {
       <Radio.Group label={t('kb.new.template')} value={template} onChange={(v) => setTemplate(v as TemplateCode)}>
         <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }} mt="xs">
           {codes.map((code) => (
-            <UnstyledButton
-              key={code}
-              onClick={() => setTemplate(code)}
-              p="sm"
-              style={{
-                border: `1px solid ${template === code ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-default-border)'}`,
-                borderRadius: 'var(--mantine-radius-md)',
-              }}
-            >
+            <UnstyledButton key={code} onClick={() => setTemplate(code)} className="kb-template" data-checked={template === code || undefined}>
               <Group gap="xs" wrap="nowrap" align="flex-start">
                 <Radio value={code} aria-label={t(`kb.templates.${code}.name`)} />
                 <div>

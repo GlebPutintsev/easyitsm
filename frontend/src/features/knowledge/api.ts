@@ -217,10 +217,10 @@ export interface CreateArticleInput {
   body?: string;
 }
 
+/** KB-05: номер берётся из заявки на сервере; пустое название — тема заявки. */
 export interface CreateFromTicketInput {
   ticketId: string;
-  ticketRef?: string;
-  title: string;
+  title?: string;
   symptoms?: string;
   cause?: string;
   solution: string;

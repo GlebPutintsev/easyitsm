@@ -1,4 +1,4 @@
-import { Alert, Anchor, Badge, Box, Button, Code, Group, Modal, Paper, Radio, ScrollArea, Stack, Table, Text, Title } from '@mantine/core';
+import { Anchor, Box, Button, Code, Group, Modal, Paper, Radio, ScrollArea, Stack, Table, Text, Title } from '@mantine/core';
 import { IconArrowLeft, IconRestore } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,11 +6,11 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { ListState } from '@/shared/ui/ListState';
 import { useArticle, useRestoreVersion, useVersion, useVersions } from './api';
 import { collapseUnchanged, lineDiff } from './lineDiff';
-import { notifyDone, notifyError, useDateFormat } from './ui';
+import { Notice, notifyDone, notifyError, useDateFormat } from './ui';
 
-const rowColor = {
-  added: 'var(--mantine-color-green-light)',
-  removed: 'var(--mantine-color-red-light)',
+const rowClass = {
+  added: 'kb-diff-added',
+  removed: 'kb-diff-removed',
   same: undefined,
 } as const;
 
@@ -83,8 +83,16 @@ export function ArticleHistory() {
                       <Text size="sm" fw={500}>
                         {t('kb.article.version', { no: v.versionNo })}
                       </Text>
-                      {v.published && <Badge size="xs" color="green">{t('kb.history.published')}</Badge>}
-                      {v.current && <Badge size="xs" variant="light">{t('kb.history.current')}</Badge>}
+                      {v.published && (
+                        <span className="kb-badge" data-tone="ok">
+                          {t('kb.history.published')}
+                        </span>
+                      )}
+                      {v.current && (
+                        <span className="kb-badge" data-tone="outline">
+                          {t('kb.history.current')}
+                        </span>
+                      )}
                     </Group>
                     <Text size="xs" c="dimmed" lineClamp={1}>
                       {v.title}
@@ -120,18 +128,18 @@ export function ArticleHistory() {
           {!rows ? (
             <ListState state="loading" rows={4} />
           ) : rows.every((r) => r.kind === 'same' || r.kind === 'gap') ? (
-            <Alert color="gray">{t('kb.history.noChanges')}</Alert>
+            <Notice tone="neutral">{t('kb.history.noChanges')}</Notice>
           ) : (
             <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
               <ScrollArea>
                 <Box component="pre" m={0} style={{ fontFamily: 'var(--mantine-font-family-monospace)', fontSize: 13 }}>
                   {rows.map((r, i) =>
                     r.kind === 'gap' ? (
-                      <Box key={i} px="sm" py={2} c="dimmed" bg="var(--mantine-color-default-hover)">
+                      <Box key={i} px="sm" py={2} className="kb-diff-same">
                         {t('kb.history.unchanged', { count: r.count })}
                       </Box>
                     ) : (
-                      <Box key={i} px="sm" style={{ background: rowColor[r.kind], whiteSpace: 'pre-wrap' }}>
+                      <Box key={i} px="sm" className={rowClass[r.kind]} style={{ whiteSpace: 'pre-wrap' }}>
                         <Text span c="dimmed" inherit>
                           {r.kind === 'added' ? '+ ' : r.kind === 'removed' ? '− ' : '  '}
                         </Text>

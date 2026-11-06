@@ -1,9 +1,10 @@
-import { Anchor, Paper, Stack, Text } from '@mantine/core';
+import { Stack, Text } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconBulb } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useArticleSuggestions } from './api';
+import './knowledge.css';
 
 /**
  * Подсказки статей по тексту обращения (INC-05, PRT-02): для формы заявки на портале и в рабочем месте.
@@ -17,24 +18,27 @@ export function ArticleSuggestions({ text, space = 'portal' }: { text: string; s
   if (items.length === 0) return null;
 
   return (
-    <Paper withBorder radius="md" p="sm" bg="var(--mantine-color-yellow-light)">
+    <section className="kb-suggest" aria-live="polite">
       <Stack gap={6}>
-        <Text size="sm" fw={500}>
-          <IconBulb size={16} style={{ verticalAlign: 'text-bottom' }} /> {t('kb.suggestions.title')}
+        <Text size="sm" fw={600}>
+          <IconBulb size={16} style={{ verticalAlign: 'text-bottom', color: 'var(--ei-accent-text)' }} aria-hidden />{' '}
+          {t('kb.suggestions.title')}
         </Text>
         {items.map((a) => (
           <div key={a.id}>
-            <Anchor component={Link} to={`/${space}/kb/${a.id}`} target="_blank" size="sm" fw={500}>
-              {a.title}
-            </Anchor>
+            <Link to={`/${space}/kb/${a.id}`} target="_blank">
+              <Text span size="sm" inherit>
+                {a.title}
+              </Text>
+            </Link>
             {a.snippet && (
-              <Text size="xs" c="dimmed" lineClamp={1}>
+              <Text size="xs" c="var(--ei-text-2)" lineClamp={1}>
                 {a.snippet}
               </Text>
             )}
           </div>
         ))}
       </Stack>
-    </Paper>
+    </section>
   );
 }

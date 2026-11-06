@@ -5,6 +5,8 @@
  *   <li>{@code api} — {@link ru.easyitsm.knowledge.api.ArticleQueries}: подсказки и чтение статей для других модулей;</li>
  *   <li>{@code events} — публикация, отправка на проверку, пересмотр, архив, статья из заявки;</li>
  *   <li>{@code internal} — сущности, правила доступа, сервис, контроллеры и задача пересмотра.</li>
+ *   <li>зависит от {@code tickets.api}: статья из заявки проверяет заявку через
+ *       {@link ru.easyitsm.tickets.api.TicketQueries#findVisible} и пишет заметку в её ленту.</li>
  * </ul>
  */
 @org.springframework.modulith.ApplicationModule(displayName = "Knowledge")

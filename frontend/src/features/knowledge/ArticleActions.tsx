@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Group, List, Modal, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { Button, Checkbox, Group, List, Modal, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
 import {
   IconArchive,
   IconArrowBackUp,
@@ -22,7 +22,7 @@ import {
   type Audience,
   type SecretFinding,
 } from './api';
-import { dateInputToIso, monthsFromNow, notifyDone, notifyError } from './ui';
+import { Notice, dateInputToIso, monthsFromNow, notifyDone, notifyError } from './ui';
 
 type Dialog = 'submit' | 'publish' | 'reject' | 'archive' | 'confirmReview' | null;
 
@@ -77,12 +77,12 @@ export function ArticleActions({
           </Button>
         )}
         {p.publish && (
-          <Button size={size} color="green" leftSection={<IconWorldUpload size={16} />} onClick={() => setDialog('publish')}>
+          <Button size={size} leftSection={<IconWorldUpload size={16} />} onClick={() => setDialog('publish')}>
             {t('kb.actions.publish')}
           </Button>
         )}
         {p.reject && (
-          <Button size={size} variant="light" color="orange" leftSection={<IconArrowBackUp size={16} />} onClick={() => setDialog('reject')}>
+          <Button size={size} variant="default" leftSection={<IconArrowBackUp size={16} />} onClick={() => setDialog('reject')}>
             {t('kb.actions.reject')}
           </Button>
         )}
@@ -207,7 +207,7 @@ function SubmitDialog({ article, opened, onClose }: { article: ArticleDetails; o
         </Text>
         <Textarea label={t('kb.submit.comment')} value={comment} onChange={(e) => setComment(e.currentTarget.value)} autosize minRows={2} maxLength={2000} />
         {findings.length > 0 && (
-          <Alert color="red" title={t('kb.submit.secretsTitle')}>
+          <Notice tone="danger" title={t('kb.submit.secretsTitle')}>
             <Stack gap="xs">
               <Text size="sm">{t('kb.submit.secretsText')}</Text>
               <List size="sm">
@@ -222,7 +222,7 @@ function SubmitDialog({ article, opened, onClose }: { article: ArticleDetails; o
               </List>
               <Checkbox label={t('kb.submit.confirmNoSecrets')} checked={confirmed} onChange={(e) => setConfirmed(e.currentTarget.checked)} />
             </Stack>
-          </Alert>
+          </Notice>
         )}
         <Group justify="flex-end">
           <Button variant="default" onClick={close}>
@@ -276,7 +276,6 @@ function PublishDialog({
             {t('kb.actions.cancel')}
           </Button>
           <Button
-            color="green"
             loading={pending}
             disabled={audience === 'group' && !groupId.trim()}
             onClick={() =>
