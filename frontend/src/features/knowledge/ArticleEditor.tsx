@@ -1,6 +1,6 @@
-import { Alert, Button, Group, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Group, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { useWindowEvent } from '@mantine/hooks';
-import { IconAlertTriangle, IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
@@ -10,7 +10,7 @@ import { AUDIENCES, useArticle, useUpdateArticle, type ArticleDetails, type Audi
 import { ArticleActions } from './ArticleActions';
 import { CategoryField } from './CategoryField';
 import { MarkdownEditor } from './MarkdownEditor';
-import { StatusBadge, notifyError, useDateFormat } from './ui';
+import { Notice, StatusBadge, notifyError, useDateFormat } from './ui';
 
 const AUTOSAVE_MS = 2500;
 
@@ -76,9 +76,9 @@ export function ArticleEditor() {
   if (!article.data.permissions.edit) {
     return (
       <Stack maw={720} mx="auto" py="md">
-        <Alert color="yellow" icon={<IconAlertTriangle />} title={t('kb.editor.readOnly')}>
+        <Notice tone="warn" title={t('kb.editor.readOnly')}>
           {t(`kb.editor.readOnlyReason.${article.data.status}`, { defaultValue: t('states.forbidden') })}
-        </Alert>
+        </Notice>
         <Button component={Link} to={`/agent/kb/${id}`} variant="default" w="fit-content">
           {t('kb.editor.back')}
         </Button>
@@ -167,12 +167,12 @@ function EditorForm({ article, onReload }: { article: ArticleDetails; onReload: 
             {t('kb.editor.back')}
           </Button>
           <Text size="sm" c="dimmed">
-            {article.key} · {t('kb.article.version', { no: article.currentVersionNo })}
+            <span className="ei-mono">{article.key}</span> · {t('kb.article.version', { no: article.currentVersionNo })}
           </Text>
           <StatusBadge status={article.status} />
         </Group>
         <Group gap="sm">
-          <Text size="sm" c={dirty ? 'orange' : 'dimmed'} aria-live="polite">
+          <Text size="sm" c={dirty ? 'var(--ei-warn)' : 'dimmed'} aria-live="polite">
             {saveState}
           </Text>
           <Button variant="default" leftSection={<IconDeviceFloppy size={16} />} onClick={save} disabled={!pending || conflict} loading={update.isPending}>
@@ -183,24 +183,22 @@ function EditorForm({ article, onReload }: { article: ArticleDetails; onReload: 
       </Group>
 
       {conflict && (
-        <Alert color="red" icon={<IconAlertTriangle />} title={t('kb.editor.conflictTitle')}>
+        <Notice tone="danger" title={t('kb.editor.conflictTitle')}>
           <Group justify="space-between">
             <Text size="sm">{t('kb.editor.conflictText')}</Text>
-            <Button size="xs" color="red" variant="light" onClick={onReload}>
+            <Button size="xs" variant="default" onClick={onReload}>
               {t('kb.editor.reload')}
             </Button>
           </Group>
-        </Alert>
+        </Notice>
       )}
       {newVersionHint && (
-        <Alert color="blue" p="xs">
-          <Text size="sm">{t('kb.editor.newVersionHint')}</Text>
-        </Alert>
+        <Notice tone="accent">{t('kb.editor.newVersionHint')}</Notice>
       )}
       {article.reviewComment && article.status === 'draft' && (
-        <Alert color="orange" title={t('kb.article.returned')} p="sm">
+        <Notice tone="warn" title={t('kb.article.returned')}>
           {article.reviewComment}
-        </Alert>
+        </Notice>
       )}
 
       <TextInput

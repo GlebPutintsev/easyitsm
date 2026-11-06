@@ -1,33 +1,62 @@
-import { Badge } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconAlertTriangle, IconArchive, IconClockHour4, IconInfoCircle } from '@tabler/icons-react';
 import type { TFunction } from 'i18next';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/shared/api/client';
 import type { ArticleStatus, Audience } from './api';
+import './knowledge.css';
 
-export const statusColor: Record<ArticleStatus, string> = {
-  draft: 'gray',
-  review: 'yellow',
-  published: 'green',
-  review_due: 'orange',
-  archived: 'dark',
+/**
+ * Тон статуса статьи по DESIGN.md: черновик и архив нейтральные, проверка — «ожидание» (фиолетовый),
+ * опубликована — ok, на пересмотре — warn. Цвет всегда дублируется словом.
+ */
+export const statusTone: Record<ArticleStatus, 'neutral' | 'wait' | 'ok' | 'warn'> = {
+  draft: 'neutral',
+  review: 'wait',
+  published: 'ok',
+  review_due: 'warn',
+  archived: 'neutral',
 };
 
 export function StatusBadge({ status }: { status: ArticleStatus }) {
   const { t } = useTranslation();
   return (
-    <Badge color={statusColor[status]} variant="light" style={{ flexShrink: 0 }}>
+    <span className="kb-badge" data-tone={statusTone[status]}>
       {t(`kb.status.${status}`)}
-    </Badge>
+    </span>
   );
 }
 
 export function AudienceBadge({ audience }: { audience: Audience }) {
   const { t } = useTranslation();
   return (
-    <Badge color="blue" variant="outline">
+    <span className="kb-badge" data-tone="outline">
       {t(`kb.audience.${audience}`)}
-    </Badge>
+    </span>
+  );
+}
+
+export type NoticeTone = 'warn' | 'danger' | 'wait' | 'accent' | 'neutral';
+
+const noticeIcon: Record<NoticeTone, ReactNode> = {
+  warn: <IconAlertTriangle size={20} aria-hidden />,
+  danger: <IconAlertTriangle size={20} aria-hidden />,
+  wait: <IconClockHour4 size={20} aria-hidden />,
+  accent: <IconInfoCircle size={20} aria-hidden />,
+  neutral: <IconArchive size={20} aria-hidden />,
+};
+
+/** Плашка над статьёй или редактором: мягкий фон токена, значок и текст (без цвета как единственного признака). */
+export function Notice({ tone, title, children }: { tone: NoticeTone; title?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="kb-notice" data-tone={tone} role={tone === 'danger' ? 'alert' : 'status'}>
+      {noticeIcon[tone]}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        {title && <div className="kb-notice-title">{title}</div>}
+        {children}
+      </div>
+    </div>
   );
 }
 

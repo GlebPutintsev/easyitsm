@@ -1,0 +1,640 @@
+/*
+ * База знаний в дизайн-системе «Ясность» (DESIGN.md, раздел «Экраны → База знаний»).
+ * Цвета — только токены --ei-*, одинаковые имена в обеих темах.
+ * Раскладка зависит от ширины области содержимого (container queries), а не окна:
+ * у портала и рабочего места разные меню.
+ */
+
+.kb-shell {
+  container-type: inline-size;
+  container-name: kb;
+}
+
+/* Три колонки: разделы, статья до 720 px, «На этой странице» и метаданные. */
+.kb-page {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 720px) 220px;
+  grid-template-areas: 'nav main aside';
+  justify-content: center;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 0 48px;
+  align-items: start;
+}
+
+.kb-page > .kb-nav {
+  grid-area: nav;
+}
+
+.kb-page > .kb-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.kb-page > .kb-aside {
+  grid-area: aside;
+}
+
+/* Список статей: разделы слева и список. */
+.kb-page[data-variant='list'] {
+  grid-template-columns: 208px minmax(0, 880px);
+  grid-template-areas: 'nav main';
+}
+
+.kb-nav,
+.kb-aside {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 56px) + 16px);
+  display: flex;
+  flex-direction: column;
+}
+
+.kb-nav {
+  gap: 2px;
+}
+
+.kb-aside {
+  gap: 24px;
+}
+
+.kb-nav-search {
+  margin-bottom: 12px;
+}
+
+.kb-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kb-cat {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--ei-text-2);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.kb-cat:hover {
+  background: var(--ei-hover);
+  color: var(--ei-text);
+}
+
+.kb-cat[aria-current] {
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+  font-weight: 600;
+}
+
+.kb-cat:focus-visible,
+.kb-toc a:focus-visible,
+.kb-vote:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+}
+
+/* Средняя ширина: разделы строкой над статьёй, справа остаётся оглавление. */
+@container kb (max-width: 1100px) {
+  .kb-page {
+    grid-template-columns: minmax(0, 720px) 220px;
+    grid-template-areas:
+      'nav nav'
+      'main aside';
+    row-gap: 16px;
+  }
+
+  .kb-page[data-variant='list'] {
+    grid-template-columns: minmax(0, 880px);
+    grid-template-areas:
+      'nav'
+      'main';
+  }
+
+  .kb-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .kb-nav-search {
+    margin-bottom: 0;
+    flex: 1 1 240px;
+    max-width: 360px;
+  }
+
+  .kb-nav-list {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    flex: 1 1 100%;
+  }
+
+  .kb-cat {
+    white-space: nowrap;
+  }
+}
+
+/* Узко (от 360 px): одна колонка, оглавление и метаданные под статьёй. */
+@container kb (max-width: 760px) {
+  .kb-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'nav'
+      'main'
+      'aside';
+  }
+
+  .kb-aside {
+    position: static;
+  }
+
+  .kb-aside .kb-toc {
+    display: none;
+  }
+}
+
+.kb-crumbs {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ei-text-3);
+  margin-bottom: 12px;
+}
+
+.kb-crumbs a {
+  color: var(--ei-text-3);
+  text-decoration: none;
+}
+
+.kb-crumbs a:hover {
+  color: var(--ei-text);
+  text-decoration: underline;
+}
+
+.kb-title {
+  margin: 0 0 12px;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ei-text);
+  overflow-wrap: anywhere;
+}
+
+@container kb (max-width: 760px) {
+  .kb-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+.kb-meta {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ei-text-3);
+}
+
+/* Текст статьи для чтения: 16 / 26 (DESIGN.md, «Типографика»). */
+.kb-prose {
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--ei-text);
+  overflow-wrap: break-word;
+}
+
+.kb-prose > :first-child {
+  margin-top: 0;
+}
+
+.kb-prose p,
+.kb-prose ul,
+.kb-prose ol,
+.kb-prose blockquote,
+.kb-prose pre,
+.kb-prose table {
+  margin: 0 0 14px;
+}
+
+.kb-prose ul,
+.kb-prose ol {
+  padding-left: 22px;
+}
+
+.kb-prose li + li {
+  margin-top: 8px;
+}
+
+.kb-prose h1,
+.kb-prose h2 {
+  margin: 28px 0 10px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.kb-prose h3,
+.kb-prose h4 {
+  margin: 20px 0 8px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.kb-prose h1,
+.kb-prose h2,
+.kb-prose h3 {
+  scroll-margin-top: calc(var(--app-shell-header-offset, 56px) + 16px);
+}
+
+.kb-prose a {
+  color: var(--ei-accent-text);
+}
+
+.kb-prose a:hover {
+  color: var(--ei-accent-hover);
+}
+
+.kb-prose code {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 14px;
+  background: var(--ei-surface-2);
+  border: 1px solid var(--ei-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.kb-prose pre {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--ei-surface-2);
+  border: 1px solid var(--ei-border);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 14px;
+  line-height: 21px;
+  overflow-x: auto;
+}
+
+.kb-prose pre code {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+.kb-prose blockquote {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--ei-surface-2);
+  color: var(--ei-text-2);
+}
+
+.kb-prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.kb-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.kb-prose th,
+.kb-prose td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ei-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.kb-prose th {
+  font-weight: 600;
+  color: var(--ei-text-2);
+}
+
+.kb-prose img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.kb-prose hr {
+  border: 0;
+  border-top: 1px solid var(--ei-border);
+  margin: 24px 0;
+}
+
+/* Подписи блоков правой колонки. */
+.kb-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--ei-text-3);
+  margin-bottom: 4px;
+}
+
+.kb-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kb-toc a {
+  display: block;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid var(--ei-border);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ei-text-2);
+  text-decoration: none;
+}
+
+.kb-toc a[data-level='3'] {
+  padding-left: 24px;
+}
+
+.kb-toc a:hover {
+  color: var(--ei-text);
+}
+
+.kb-toc a[aria-current] {
+  border-left-color: var(--ei-accent);
+  color: var(--ei-accent-text);
+  font-weight: 600;
+}
+
+.kb-related a {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ei-accent-text);
+  text-decoration: none;
+}
+
+.kb-related a:hover {
+  text-decoration: underline;
+}
+
+.kb-version {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ei-border);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ei-text-3);
+}
+
+.kb-version a {
+  color: var(--ei-accent-text);
+  text-decoration: none;
+}
+
+.kb-version a:hover {
+  text-decoration: underline;
+}
+
+/* Плашки статуса статьи: тон по смыслу, всегда со словом. */
+.kb-notice {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ei-text);
+}
+
+.kb-notice > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.kb-notice[data-tone='warn'] {
+  background: var(--ei-warn-soft);
+}
+
+.kb-notice[data-tone='warn'] > svg {
+  color: var(--ei-warn);
+}
+
+.kb-notice[data-tone='danger'] {
+  background: var(--ei-danger-soft);
+}
+
+.kb-notice[data-tone='danger'] > svg {
+  color: var(--ei-danger);
+}
+
+.kb-notice[data-tone='wait'] {
+  background: var(--ei-wait-soft);
+}
+
+.kb-notice[data-tone='wait'] > svg {
+  color: var(--ei-wait);
+}
+
+.kb-notice[data-tone='accent'] {
+  background: var(--ei-accent-soft);
+}
+
+.kb-notice[data-tone='accent'] > svg {
+  color: var(--ei-accent-text);
+}
+
+.kb-notice[data-tone='neutral'] {
+  background: var(--ei-neutral-soft);
+}
+
+.kb-notice[data-tone='neutral'] > svg {
+  color: var(--ei-text-3);
+}
+
+.kb-notice-title {
+  font-weight: 600;
+}
+
+/* Метка статуса статьи. */
+.kb-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kb-badge[data-tone='neutral'] {
+  background: var(--ei-neutral-soft);
+  color: var(--ei-text-2);
+}
+
+.kb-badge[data-tone='wait'] {
+  background: var(--ei-wait-soft);
+  color: var(--ei-wait);
+}
+
+.kb-badge[data-tone='ok'] {
+  background: var(--ei-ok-soft);
+  color: var(--ei-ok);
+}
+
+.kb-badge[data-tone='warn'] {
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+}
+
+.kb-badge[data-tone='outline'] {
+  border: 1px solid var(--ei-border-strong);
+  color: var(--ei-text-2);
+}
+
+/* «Статья помогла?» */
+.kb-feedback {
+  margin-top: 32px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kb-feedback-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.kb-vote {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid var(--ei-border-strong);
+  background: var(--ei-surface);
+  color: var(--ei-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.kb-vote:hover {
+  background: var(--ei-hover);
+}
+
+.kb-vote[aria-pressed='true'] {
+  background: var(--ei-accent-soft);
+  border-color: var(--ei-accent);
+  color: var(--ei-accent-text);
+}
+
+.kb-vote:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Список статей. */
+.kb-card {
+  display: block;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.kb-card:hover {
+  border-color: var(--ei-border-strong);
+}
+
+.kb-card:focus-visible {
+  outline: 2px solid var(--ei-accent);
+  outline-offset: 2px;
+}
+
+.kb-card-title {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ei-text);
+}
+
+.kb-card:hover .kb-card-title {
+  color: var(--ei-accent-text);
+}
+
+/* Подсказки статей в форме обращения. */
+.kb-suggest {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ei-accent-soft);
+  color: var(--ei-text);
+}
+
+.kb-suggest a {
+  color: var(--ei-accent-text);
+  font-weight: 500;
+}
+
+/* Сравнение версий: знак +/− и фон, цвет не единственный признак. */
+.kb-diff-added {
+  background: var(--ei-ok-soft);
+}
+
+.kb-diff-removed {
+  background: var(--ei-danger-soft);
+}
+
+.kb-diff-same {
+  background: var(--ei-surface-2);
+  color: var(--ei-text-3);
+}
+
+/* Заявка-источник на форме «Статья из заявки». */
+.kb-source {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--ei-surface);
+  border: 1px solid var(--ei-border);
+}
+
+/* Выбор шаблона новой статьи. */
+.kb-template {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ei-border);
+  background: var(--ei-surface);
+  text-align: left;
+}
+
+.kb-template:hover {
+  background: var(--ei-hover);
+}
+
+.kb-template[data-checked] {
+  border-color: var(--ei-accent);
+  background: var(--ei-accent-soft);
+}

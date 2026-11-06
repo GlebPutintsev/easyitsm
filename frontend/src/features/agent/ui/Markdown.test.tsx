@@ -14,6 +14,9 @@ describe('Markdown без HTML', () => {
   it('пропускает только безопасные ссылки', () => {
     expect(safeHref('javascript:alert(1)')).toBeNull();
     expect(safeHref('https://example.ru')).toBe('https://example.ru');
+    expect(safeHref('/agent/kb/0193')).toBe('/agent/kb/0193');
+    expect(safeHref('//evil.example/agent')).toBeNull();
+    expect(safeHref('/agent/../x?y')).toBeNull();
     renderWithProviders(<Markdown text="[плохая](javascript:alert(1)) и [хорошая](https://example.ru)" />);
     expect(screen.queryByRole('link', { name: 'плохая' })).toBeNull();
     expect(screen.getByRole('link', { name: 'хорошая' })).toHaveAttribute('rel', expect.stringContaining('noopener'));

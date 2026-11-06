@@ -3,7 +3,8 @@ import { Fragment, type ReactNode } from 'react';
 
 /**
  * Безопасный рендер Markdown без HTML (контракт tickets: описание и лента — Markdown без HTML).
- * Строит React-элементы, dangerouslySetInnerHTML не используется, ссылки только http(s) и mailto.
+ * Строит React-элементы, dangerouslySetInnerHTML не используется, ссылки только http(s), mailto и пути
+ * внутри приложения (/agent/…, /portal/…), например на статью базы знаний из заметки в ленте.
  * Поддерживается то, что даёт панель редактора: абзацы, списки, **жирный**, *курсив*, `код`,
  * блоки ```кода```, [ссылки](url), автоссылки и @упоминания.
  */
@@ -71,7 +72,12 @@ function renderBlocks(text: string, size: 'xs' | 'sm' | 'md'): ReactNode[] {
 const INLINE = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[[^\]]+\]\([^)\s]+\))|(https?:\/\/[^\s<>()]+[^\s<>().,;:!?])|(@[\p{L}][\p{L}.-]*(?:\s[\p{Lu}][\p{L}-]+)?)/gu;
 
 export function safeHref(url: string): string | null {
-  return /^(https?:\/\/|mailto:)/i.test(url) ? url : null;
+  return /^(https?:\/\/|mailto:)/i.test(url) || isInternal(url) ? url : null;
+}
+
+/** Путь внутри приложения: открывается в той же вкладке. */
+export function isInternal(url: string): boolean {
+  return /^\/(agent|portal)\/[\w\-/]*$/.test(url);
 }
 
 export function renderInline(text: string): ReactNode[] {
@@ -89,7 +95,11 @@ export function renderInline(text: string): ReactNode[] {
       const [, label = '', url = ''] = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token) ?? [];
       const href = safeHref(url);
       out.push(
-        href ? (
+        href && isInternal(href) ? (
+          <Anchor key={key++} href={href}>
+            {label}
+          </Anchor>
+        ) : href ? (
           <Anchor key={key++} href={href} target="_blank" rel="noopener noreferrer nofollow">
             {label}
           </Anchor>

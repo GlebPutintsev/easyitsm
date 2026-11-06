@@ -40,7 +40,7 @@ export function KnowledgeWorkspace() {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={2}>{t('kb.title')}</Title>
+        <Title order={1}>{t('kb.title')}</Title>
         <Button component={Link} to="/agent/kb/new" leftSection={<IconPlus size={16} />}>
           {t('kb.actions.new')}
         </Button>

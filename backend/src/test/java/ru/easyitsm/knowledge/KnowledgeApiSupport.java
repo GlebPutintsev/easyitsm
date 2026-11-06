@@ -84,6 +84,30 @@ public final class KnowledgeApiSupport {
         return id;
     }
 
+    /** Инцидент от заявителя, взятый в работу агентом. Возвращает id заявки. */
+    public String ticketInProgress(User requester, User agent, String title) throws Exception {
+        String res = json(requester, post("/api/v1/tickets"),
+                "{\"type\":\"incident\",\"title\":%s,\"description\":\"Описание\"}".formatted(q(title)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(res, "$.id");
+        mvc.perform(agent.sign(post("/api/v1/tickets/" + id + "/take")).header("If-Match", ticketEtag(agent, id)))
+                .andExpect(status().isOk());
+        return id;
+    }
+
+    /** Решает заявку, взятую агентом. */
+    public void resolveTicket(User agent, String id) throws Exception {
+        mvc.perform(agent.sign(post("/api/v1/tickets/" + id + "/transitions")).header("If-Match", ticketEtag(agent, id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"to\":\"resolved\",\"resolutionCode\":\"fixed\",\"resolutionText\":\"Создали профиль\"}"))
+                .andExpect(status().isOk());
+    }
+
+    private String ticketEtag(User u, String id) throws Exception {
+        return perform(u, get("/api/v1/tickets/" + id)).andExpect(status().isOk()).andReturn().getResponse()
+                .getHeader("ETag");
+    }
+
     public static String q(String s) {
         return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
     }
