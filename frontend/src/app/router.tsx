@@ -27,6 +27,9 @@ import { NotFound } from './NotFound';
  * доступно только после входа (RequireAuth).
  * Каждый модуль добавляет свои маршруты в children нужного пространства.
  */
+/** Экран сам задаёт поля и ширину содержимого (портал «Ясность»). */
+const bleed = { bleed: true };
+
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
@@ -40,13 +43,13 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/portal" replace /> },
-      { path: 'portal', element: <PortalHome /> },
-      { path: 'portal/catalog', element: <CatalogPage /> },
-      { path: 'portal/catalog/:itemId', element: <OrderPage /> },
-      { path: 'portal/report', element: <ReportProblemPage /> },
-      { path: 'portal/tickets', element: <MyTicketsPage /> },
-      { path: 'portal/tickets/:ref', element: <TicketPage /> },
-      { path: 'portal/approvals', element: <ApprovalsPage /> },
+      { path: 'portal', element: <PortalHome />, handle: bleed },
+      { path: 'portal/catalog', element: <CatalogPage />, handle: bleed },
+      { path: 'portal/catalog/:itemId', element: <OrderPage />, handle: bleed },
+      { path: 'portal/report', element: <ReportProblemPage />, handle: bleed },
+      { path: 'portal/tickets', element: <MyTicketsPage />, handle: bleed },
+      { path: 'portal/tickets/:ref', element: <TicketPage />, handle: bleed },
+      { path: 'portal/approvals', element: <ApprovalsPage />, handle: bleed },
       { path: 'agent/approvals', element: <ApprovalsPage /> },
       { path: 'admin/catalog', element: <CatalogAdminPage /> },
       { path: 'admin/catalog/items/:id', element: <ItemEditorPage /> },

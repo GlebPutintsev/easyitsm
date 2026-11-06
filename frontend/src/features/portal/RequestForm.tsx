@@ -1,8 +1,6 @@
 import {
   Alert,
-  Badge,
   Button,
-  Card,
   Checkbox,
   Code,
   Group,
@@ -13,14 +11,13 @@ import {
   Text,
   TextInput,
   Textarea,
-  ThemeIcon,
-  Title,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconAlertCircle, IconCircleCheck, IconClock, IconLock, IconShieldCheck } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
+import { PersonPicker } from '@/shared/ui/PersonPicker';
 import { ApiError, newIdempotencyKey } from '@/shared/api/client';
 import { type ItemDetail, type OrderResult, useOrder } from '@/features/catalog/api';
 import { DynamicForm } from '@/features/catalog/form/DynamicForm';
@@ -28,10 +25,11 @@ import { initialValues, validateForm } from '@/features/catalog/form/validate';
 import type { FieldErrors, FormValues } from '@/features/catalog/form/types';
 import { ServiceIcon } from '@/features/catalog/icons';
 import { leadTime } from '@/features/catalog/ItemTile';
-import { UserPicker } from '@/features/catalog/UserPicker';
 import { clearDraft, loadDraft, saveDraft, useAutosaveDraft } from './drafts';
 import { ArticleSuggestions } from '@/features/knowledge';
-import { scanSecrets, type SecretFinding, useCreateTicket } from './tickets';
+import { type SecretFinding, useCreateTicket } from '@/features/tickets/api';
+import { scanSecrets } from './requester';
+import './portal.css';
 
 type Impact = 'only_me' | 'department' | 'everyone';
 
@@ -84,7 +82,7 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
   const [idemKey, setIdemKey] = useState(newIdempotencyKey);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const order = useOrder(item?.id ?? '', idemKey);
-  const createTicket = useCreateTicket(idemKey);
+  const createTicket = useCreateTicket();
   const pending = order.isPending || createTicket.isPending;
   const dirty = !!(draft.description.trim() || Object.keys(draft.values).length || (draft.title && draft.title !== item?.name));
 
@@ -130,15 +128,18 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
         setCreated({ ticketId: r.ticketId, number: r.number, expectedBy: r.expectedBy, awaitingApproval: r.awaitingApproval });
       } else {
         const r = await createTicket.mutateAsync({
-          type: 'incident',
-          title: draft.title.trim(),
-          description,
-          impact: IMPACT_LEVEL[draft.impact],
-          createdForId: forUserId ?? undefined,
-          channel: 'portal',
-          secrets: maskSecrets ? 'mask' : 'warn',
+          key: idemKey,
+          input: {
+            type: 'incident',
+            title: draft.title.trim(),
+            description,
+            impact: IMPACT_LEVEL[draft.impact],
+            createdForId: forUserId ?? undefined,
+            channel: 'portal',
+            secrets: maskSecrets ? 'mask' : 'warn',
+          },
         });
-        setCreated({ ticketId: r.id, number: r.number, expectedBy: r.dueAt, awaitingApproval: false });
+        setCreated({ ticketId: r.id, number: r.number, expectedBy: r.dueAt ?? r.slaDueAt, awaitingApproval: false });
       }
       clearDraft(draftKey);
     } catch (e) {
@@ -181,30 +182,44 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
         void submit();
       }}
     >
-    <Stack maw={760} mx="auto" gap="lg" py="md">
+    <div className="ep-page" data-width="narrow">
+      <nav className="ep-crumbs" aria-label={t('portal.breadcrumbs')}>
+        <Link to="/portal">{t('nav.home')}</Link> /{' '}
+        {item ? (
+          <>
+            <Link to="/portal/catalog">{t('catalog.title')}</Link> / {item.name}
+          </>
+        ) : (
+          t('portal.reportProblem')
+        )}
+      </nav>
       <Group gap="md" wrap="nowrap" align="flex-start">
         <ServiceIcon name={item?.icon} kind={kind} size={48} />
         <Stack gap={4}>
-          <Title order={2}>{item?.name ?? t('portal.reportProblem')}</Title>
-          {item?.summary && <Text c="dimmed">{item.summary}</Text>}
+          <h1 className="ep-h1">{item?.name ?? t('portal.reportProblem')}</h1>
+          {item?.summary && <p className="ep-lead">{item.summary}</p>}
           <Group gap={6}>
             {item?.leadTimeHours != null && (
-              <Badge variant="light" color="gray" leftSection={<IconClock size={12} />}>
+              <span className="ep-chip">
+                <IconClock size={12} style={{ marginRight: 4 }} aria-hidden="true" />
                 {t('request.leadTime', { time: leadTime(t, item.leadTimeHours) })}
-              </Badge>
+              </span>
             )}
             {item?.approvalFlowId && (
-              <Badge variant="light" color="violet" leftSection={<IconShieldCheck size={12} />}>
+              <span className="ep-chip" data-tone="wait">
+                <IconShieldCheck size={12} style={{ marginRight: 4 }} aria-hidden="true" />
                 {t('request.needsApproval')}
-              </Badge>
+              </span>
             )}
           </Group>
         </Stack>
       </Group>
+      <div className="ep-card" style={{ padding: 24 }}>
+      <Stack gap="lg">
       {item?.description && (
-        <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+        <p className="ep-msg-text" style={{ color: 'var(--ei-text-2)' }}>
           {item.description}
-        </Text>
+        </p>
       )}
 
       {(!item || item.allowOnBehalf) && (
@@ -215,7 +230,7 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
             onChange={(e) => update('forOther', e.currentTarget.checked)}
           />
           {draft.forOther && (
-            <UserPicker
+            <PersonPicker
               label={t('request.forWhom')}
               description={t('request.forWhomHint')}
               value={draft.forUserId}
@@ -263,7 +278,7 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
       )}
 
       {schema.fields.length > 0 && (
-        <Card withBorder padding="md">
+        <div style={{ borderTop: '1px solid var(--ei-border)', paddingTop: 16 }}>
           <DynamicForm
             schema={schema}
             values={draft.values}
@@ -271,7 +286,7 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
             disabled={pending}
             onChange={(key, value) => setDraft((d) => ({ ...d, values: { ...d.values, [key]: value } }))}
           />
-        </Card>
+        </div>
       )}
 
       {secrets && (
@@ -338,7 +353,9 @@ export function RequestForm({ item }: { item?: ItemDetail }) {
           </Button>
         </Group>
       </Group>
-    </Stack>
+      </Stack>
+      </div>
+    </div>
     </form>
   );
 }
@@ -347,15 +364,15 @@ function Success({ created, onMore }: { created: Created; onMore: () => void }) 
   const { t, i18n } = useTranslation();
   const fmt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long', timeStyle: 'short' });
   return (
-    <Stack maw={560} mx="auto" py="xl" align="center" gap="md" ta="center" role="status">
-      <ThemeIcon size={64} radius="xl" color="teal" variant="light">
+    <Stack maw={560} mx="auto" py={48} px="md" align="center" gap="md" ta="center" role="status">
+      <span className="ep-icon" style={{ width: 64, height: 64, borderRadius: 999, background: 'var(--ei-ok-soft)', color: 'var(--ei-ok)' }} aria-hidden="true">
         <IconCircleCheck size={40} />
-      </ThemeIcon>
-      <Title order={2}>{t('request.created', { number: created.number })}</Title>
+      </span>
+      <h1 className="ep-h1">{t('request.created', { number: created.number })}</h1>
       {created.awaitingApproval && <Text>{t('request.createdApproval')}</Text>}
       {created.expectedBy && <Text c="dimmed">{t('request.expectedBy', { date: fmt.format(new Date(created.expectedBy)) })}</Text>}
       <Group>
-        <Button component={Link} to={`/portal/tickets/${created.ticketId}`}>
+        <Button component={Link} to={`/portal/tickets/${created.number}`}>
           {t('request.open')}
         </Button>
         <Button variant="default" onClick={onMore}>
@@ -368,11 +385,11 @@ function Success({ created, onMore }: { created: Created; onMore: () => void }) 
 
 export function RequestFormSkeleton() {
   return (
-    <Stack maw={760} mx="auto" gap="md" py="md" aria-busy="true">
+    <div className="ep-page" data-width="narrow" aria-busy="true">
       <Skeleton height={48} width="60%" />
       <Skeleton height={36} />
       <Skeleton height={120} />
       <Skeleton height={36} />
-    </Stack>
+    </div>
   );
 }

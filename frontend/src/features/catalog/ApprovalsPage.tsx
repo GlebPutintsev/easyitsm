@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Button, Card, Group, Indicator, Modal, Stack, Tabs, Text, Textarea, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Indicator, Modal, Stack, Tabs, Text, Textarea, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconArrowForward, IconCheck, IconChecklist, IconHelp, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -7,8 +7,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
 import { type Approval, useApprovalCount, useApprovals, useDecide, useDelegate } from './api';
-import { UserPicker } from './UserPicker';
-import { useUserName } from './users';
+import { usePersonName } from '@/shared/api/people';
+import { PersonPicker } from '@/shared/ui/PersonPicker';
+import { useMe } from '@/features/auth/api';
+import '@/features/portal/portal.css';
 
 /** Согласования (10.8): вкладки «Ждут меня» и «Мои решения». Доступно на портале и в рабочем месте. */
 export function ApprovalsPage() {
@@ -17,8 +19,8 @@ export function ApprovalsPage() {
   const tab = params.get('tab') === 'decided' ? 'decided' : 'pending';
   const count = useApprovalCount();
   return (
-    <Stack maw={1000} mx="auto" gap="md" py="md">
-      <Title order={2}>{t('approvals.title')}</Title>
+    <div className="ep-page" data-width="medium">
+      <h1 className="ep-h1">{t('approvals.title')}</h1>
       <Tabs value={tab} onChange={(v) => setParams(v === 'decided' ? { tab: 'decided' } : {}, { replace: true })} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="pending" rightSection={count.data ? <Badge size="xs" circle>{count.data}</Badge> : undefined}>
@@ -33,7 +35,7 @@ export function ApprovalsPage() {
           <ApprovalsList tab="decided" />
         </Tabs.Panel>
       </Tabs>
-    </Stack>
+    </div>
   );
 }
 
@@ -68,31 +70,35 @@ export function ApprovalsList({ tab }: { tab: 'pending' | 'decided' }) {
 
 type Action = 'approve' | 'reject' | 'request_info' | 'delegate';
 
+const decisionTone: Record<string, 'ok' | 'danger' | undefined> = { approved: 'ok', rejected: 'danger' };
+
 function ApprovalCard({ approval: a }: { approval: Approval }) {
   const { t, i18n } = useTranslation();
-  const requester = useUserName(a.requesterId);
-  const createdFor = useUserName(a.createdForId);
+  const requester = usePersonName(a.requesterId);
+  const createdFor = usePersonName(a.createdForId);
   const [action, setAction] = useState<Action | null>(null);
   const dt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' });
   const overdue = a.dueAt && a.decision === 'pending' && new Date(a.dueAt) < new Date();
 
   return (
-    <Card withBorder padding="md">
+    <article className="ep-card" style={{ padding: 16, borderColor: a.decision === 'pending' ? 'var(--ei-wait)' : undefined }}>
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
         <Stack gap={4} style={{ flex: 1, minWidth: 240 }}>
           <Group gap="xs">
-            <Text ff="monospace" size="sm" c="dimmed" component={Link} to={`/portal/tickets/${a.ticketId}`} td="none">
+            <Link className="ep-mono" to={`/portal/tickets/${a.ticketNumber}`} style={{ textDecoration: 'none', fontSize: 13 }}>
               {a.ticketNumber}
-            </Text>
-            <Badge variant="light" color="gray">
-              {a.stepName}
-            </Badge>
+            </Link>
+            <span className="ep-chip">{a.stepName}</span>
             {a.decision !== 'pending' && (
-              <Badge color={a.decision === 'approved' ? 'teal' : a.decision === 'rejected' ? 'red' : 'gray'}>
+              <span className="ep-chip" data-tone={decisionTone[a.decision] ?? undefined}>
                 {t(`approvals.decisions.${a.decision}`)}
-              </Badge>
+              </span>
             )}
-            {a.infoRequestedAt && a.decision === 'pending' && <Badge color="yellow">{t('approvals.infoRequested')}</Badge>}
+            {a.infoRequestedAt && a.decision === 'pending' && (
+              <span className="ep-chip" data-tone="wait">
+                {t('approvals.infoRequested')}
+              </span>
+            )}
           </Group>
           <Text fw={600}>{a.title}</Text>
           <Text size="sm" c="dimmed">
@@ -102,7 +108,7 @@ function ApprovalCard({ approval: a }: { approval: Approval }) {
             {dt.format(new Date(a.createdAt))}
           </Text>
           {a.dueAt && a.decision === 'pending' && (
-            <Text size="sm" c={overdue ? 'red' : 'dimmed'}>
+            <Text size="sm" c={overdue ? 'var(--ei-danger)' : 'dimmed'} fw={overdue ? 600 : undefined}>
               {t('approvals.due', { date: dt.format(new Date(a.dueAt)) })}
             </Text>
           )}
@@ -114,10 +120,10 @@ function ApprovalCard({ approval: a }: { approval: Approval }) {
         </Stack>
         {a.decision === 'pending' && (
           <Group gap="xs">
-            <Button size="sm" color="teal" leftSection={<IconCheck size={16} />} onClick={() => setAction('approve')}>
+            <Button size="sm" leftSection={<IconCheck size={16} />} onClick={() => setAction('approve')}>
               {t('approvals.approve')}
             </Button>
-            <Button size="sm" color="red" variant="light" leftSection={<IconX size={16} />} onClick={() => setAction('reject')}>
+            <Button size="sm" color="red" variant="default" c="var(--ei-danger)" leftSection={<IconX size={16} />} onClick={() => setAction('reject')}>
               {t('approvals.reject')}
             </Button>
             <Tooltip label={t('approvals.requestInfo')}>
@@ -136,7 +142,7 @@ function ApprovalCard({ approval: a }: { approval: Approval }) {
         )}
       </Group>
       {action && <DecisionDialog approval={a} action={action} onClose={() => setAction(null)} />}
-    </Card>
+    </article>
   );
 }
 
@@ -145,6 +151,7 @@ function DecisionDialog({ approval, action, onClose }: { approval: Approval; act
   const { t } = useTranslation();
   const decide = useDecide();
   const delegate = useDelegate();
+  const me = useMe();
   const [comment, setComment] = useState('');
   const [to, setTo] = useState<string | null>(null);
   const needsText = action === 'reject' || action === 'request_info';
@@ -167,7 +174,9 @@ function DecisionDialog({ approval, action, onClose }: { approval: Approval; act
     <Modal opened onClose={onClose} title={t(`approvals.dialog.${action}`, { number: approval.ticketNumber })} centered>
       <Stack gap="sm">
         <Text size="sm">{approval.title}</Text>
-        {action === 'delegate' && <UserPicker label={t('approvals.delegateTo')} value={to} onChange={setTo} />}
+        {action === 'delegate' && (
+          <PersonPicker label={t('approvals.delegateTo')} value={to} onChange={setTo} exclude={me.data ? [me.data.id] : []} />
+        )}
         <Textarea
           label={t(needsText ? `approvals.text.${action}` : 'approvals.text.comment')}
           required={needsText}
@@ -188,7 +197,7 @@ function DecisionDialog({ approval, action, onClose }: { approval: Approval; act
             {t('actions.cancel')}
           </Button>
           <Button
-            color={action === 'reject' ? 'red' : action === 'approve' ? 'teal' : undefined}
+            color={action === 'reject' ? 'red' : undefined}
             loading={pending}
             disabled={(needsText && !comment.trim()) || (action === 'delegate' && !to)}
             onClick={submit}

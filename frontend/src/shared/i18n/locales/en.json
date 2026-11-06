@@ -197,7 +197,10 @@
       "reviewDue": "Review was due {{date}}. Check that the article is still accurate.",
       "archived": "Archived: hidden from search, links to tickets are kept.",
       "nextReview": "Next review: {{date}}",
-      "fromTicket": "Created from ticket {{ref}}"
+      "fromTicket": "Created from ticket {{ref}}",
+      "updatedAt": "Updated {{date}}",
+      "readingTime": "{{count}} min read",
+      "breadcrumbs": "Breadcrumbs"
     },
     "editor": {
       "toolbar": "Formatting",
@@ -306,21 +309,51 @@
     },
     "feedback": {
       "question": "Was this article helpful?",
-      "thanks": "Thanks for your feedback",
+      "thanks": "Thank you! This helps us improve articles.",
       "helpful": "Helpful",
       "notHelpful": "Not helpful",
-      "whatWrong": "What was wrong?",
-      "commentPlaceholder": "What was missing",
-      "send": "Send",
-      "createTicket": "Create a request",
-      "stats": "Helpful: {{helpful}} · Not helpful: {{notHelpful}}"
+      "whatWrong": "What went wrong?",
+      "commentPlaceholder": "Optional",
+      "send": "Send feedback",
+      "createTicket": "Create a ticket",
+      "stats": "Helpful: {{helpful}} · Not helpful: {{notHelpful}}",
+      "yes": "Yes, it helped",
+      "no": "No"
     },
     "fromTicket": {
       "button": "Create article",
-      "needSolution": "Fill in the ticket resolution first"
+      "needSolution": "Describe the solution",
+      "title": "Article from ticket",
+      "notFound": "Ticket not found or not available",
+      "notResolvedTitle": "The ticket is not resolved yet",
+      "notResolved": "An article can be created from a resolved or closed ticket. Resolve the ticket and come back.",
+      "symptoms": "Symptoms",
+      "symptomsHint": "From the ticket description. Remove the requester's personal data.",
+      "cause": "Cause",
+      "causeHint": "Why it happened, if known",
+      "solution": "Solution",
+      "solutionHint": "From the ticket resolution. Describe the steps so another agent can repeat them.",
+      "audienceNote": "Only agents will see the draft. A knowledge editor chooses the audience on publishing. A note with a link to the article is added to the ticket feed."
     },
     "suggestions": {
       "title": "Maybe the answer is already here"
+    },
+    "nav": {
+      "label": "Knowledge base sections",
+      "search": "Search articles"
+    },
+    "audienceFor": {
+      "all": "For everyone",
+      "employees": "For all employees",
+      "agents": "Agents only",
+      "group": "For a group"
+    },
+    "aside": {
+      "label": "About this article",
+      "toc": "On this page",
+      "related": "Related articles",
+      "version": "Version {{no}}",
+      "reviewUntil": "Review by {{date}}"
     }
   },
   "ticket": {
@@ -874,5 +907,11 @@
       "blocked": "Account blocked",
       "unknown_user": "Unknown user"
     }
+  },
+  "people": {
+    "placeholder": "Employee name or email",
+    "notFound": "Nobody found. You can paste the employee ID",
+    "typeToSearch": "Start typing a name or email",
+    "you": "You"
   }
 }

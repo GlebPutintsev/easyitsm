@@ -3,6 +3,7 @@ import { useClipboard, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
   IconArrowBackUp,
+  IconBook2,
   IconArrowLeft,
   IconCheck,
   IconChevronDown,
@@ -21,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { ListState } from '@/shared/ui/ListState';
+import { CreateArticleFromTicketButton, canMakeArticle } from '@/features/knowledge';
 import { mainActionOf, transitionTo } from '../api/domain';
 import { useDirectory, useTake, useTicket } from '../api/hooks';
 import type { AvailableTransition, Ticket } from '../api/model';
@@ -95,6 +97,8 @@ function TicketView({ ticket }: { ticket: Ticket }) {
   const resolve = transitionTo(ticket, 'resolved');
   const resume = transitionTo(ticket, 'in_progress');
   const pause = transitionTo(ticket, 'pending');
+  // Статья из заявки (KB-05): только из решённой или закрытой.
+  const canArticle = canMakeArticle(ticket.status.category);
   const others = ticket.transitions.filter((x) => x !== resolve && x !== resume && x !== pause);
 
   const queue = nav?.queue ?? [];
@@ -202,6 +206,7 @@ function TicketView({ ticket }: { ticket: Ticket }) {
               </Button>
             </Tooltip>
           )}
+          {canArticle && <CreateArticleFromTicketButton ticketNumber={ticket.number} visibleFrom="sm" />}
           {ticket.permissions.assign && (
             <Button variant="default" leftSection={<IconUserPlus size={16} />} onClick={() => setAssignOpen(true)} visibleFrom="sm">
               {t('workspace.actions.assign')}
@@ -240,6 +245,15 @@ function TicketView({ ticket }: { ticket: Ticket }) {
               <Menu.Item leftSection={<IconCopy size={16} />} onClick={copyLink}>
                 {t('workspace.ticket.copyLink')}
               </Menu.Item>
+              {canArticle && (
+                <Menu.Item
+                  leftSection={<IconBook2 size={16} />}
+                  component={Link}
+                  to={`/agent/kb/new?fromTicket=${encodeURIComponent(ticket.number)}`}
+                >
+                  {t('kb.fromTicket.button')}
+                </Menu.Item>
+              )}
               {others.length > 0 && <Menu.Divider />}
               {others.map((x) => (
                 <Menu.Item key={x.to} color={x.category === 'cancelled' ? 'red' : undefined} onClick={() => setTransition(x)}>

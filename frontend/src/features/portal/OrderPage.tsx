@@ -14,12 +14,14 @@ export function OrderPage() {
   if (item.error) {
     const notFound = item.error instanceof ApiError && item.error.status === 404;
     return (
+      <div className="ep-page">
       <ListState
         state={notFound ? 'empty' : 'error'}
         title={notFound ? t('catalog.notFound') : undefined}
         error={item.error}
         onRetry={() => void item.refetch()}
       />
+      </div>
     );
   }
   // key: при переходе к другой услуге форма начинается заново со своим черновиком.

@@ -82,10 +82,13 @@ UUID          TicketCommands.addComment(id, authorId, body, visibility) // по�
 TicketRef     TicketCommands.escalate(id, kind, groupId, reason, actor) // SLA при нарушении
 void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: срок для sort=due
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
+Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
 ```
 
-Вызов идёт в арендаторе вызывающего (`TenantContext`) и без проверки прав пользователя.
+Вызов идёт в арендаторе вызывающего (`TenantContext`) и без проверки прав пользователя. Исключение —
+`findVisible`: те же правила, что у `GET /tickets/{id}` для текущего входа (участник, область видимости,
+конфиденциальность); невидимая заявка — пусто. Так база знаний проверяет заявку перед статьёй из неё (KB-05).
 `NewTicket.awaitingApproval = true` создаёт запрос в статусе категории `approval` (`pending_approval`).
 Влияние в `NewTicket` — `HIGH | MEDIUM | LOW`; портал сам сопоставляет «только я / подразделение / все».
 

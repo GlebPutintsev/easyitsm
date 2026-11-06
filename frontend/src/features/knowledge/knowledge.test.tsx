@@ -5,6 +5,7 @@ import { ArticleMarkdown } from './ArticleMarkdown';
 import { patchOf } from './ArticleEditor';
 import { collapseUnchanged, lineDiff } from './lineDiff';
 import { applyCommand, type EditLabels } from './markdownEditing';
+import { outline, readingMinutes } from './outline';
 
 const labels: EditLabels = { text: 'текст', code: 'код', linkText: 'ссылка', imageAlt: 'схема', column1: 'A', column2: 'B' };
 
@@ -76,5 +77,29 @@ describe('ArticleMarkdown', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(document.querySelector('img[onerror]')).toBeNull();
     expect(screen.getByText('клик').getAttribute('href') ?? '').not.toContain('javascript');
+  });
+});
+
+describe('оглавление статьи', () => {
+  const body = '# Заголовок\n\nТекст\n\n## Быстрая **проверка**\n\n```\n## не заголовок\n```\n\n### Шаг [1](https://x.ru)\n\n## Быстрая проверка\n';
+
+  it('берёт уровни 2 и 3, пропускает код и делает id уникальными', () => {
+    expect(outline(body)).toEqual([
+      { id: 'быстрая-проверка', text: 'Быстрая проверка', level: 2, line: 5 },
+      { id: 'шаг-1', text: 'Шаг 1', level: 3, line: 11 },
+      { id: 'быстрая-проверка-2', text: 'Быстрая проверка', level: 2, line: 13 },
+    ]);
+  });
+
+  it('ставит те же id заголовкам в тексте статьи', () => {
+    renderWithProviders(<ArticleMarkdown>{body}</ArticleMarkdown>);
+    const h2 = screen.getAllByRole('heading', { level: 2 });
+    expect(h2.map((h) => h.id)).toEqual(['быстрая-проверка', 'быстрая-проверка-2']);
+    expect(screen.getByRole('heading', { level: 3 }).id).toBe('шаг-1');
+  });
+
+  it('считает время чтения без кода, не меньше минуты', () => {
+    expect(readingMinutes('коротко')).toBe(1);
+    expect(readingMinutes(Array(540).fill('слово').join(' '))).toBe(3);
   });
 });

@@ -191,23 +191,71 @@ class KnowledgeApiTest {
 
     @Test
     void articleFromResolvedTicket() throws Exception {
-        UUID ticket = UUID.randomUUID();
+        String title = uniq("Outlook не открывается");
+        String ticket = kb.ticketInProgress(REQ, AGENT, title);
         String body = """
-                {"ticketId":"%s","ticketRef":"INC-000123","title":"Outlook не открывается",
+                {"ticketId":"%s","ticketRef":"INC-999999",
                  "symptoms":"Outlook зависает при запуске","cause":"Повреждён профиль","solution":"Создать новый профиль"}"""
                 .formatted(ticket);
+
+        // Заявка ещё в работе: статью из неё не создать.
         kb.json(AGENT, post(API + "/from-ticket"), body)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ticket_not_resolved"));
+
+        kb.resolveTicket(AGENT, ticket);
+        String number = JsonPath.read(kb.perform(AGENT, get("/api/v1/tickets/" + ticket)).andReturn().getResponse()
+                .getContentAsString(), "$.number");
+        String res = kb.json(AGENT, post(API + "/from-ticket"), body)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("draft"))
                 .andExpect(jsonPath("$.audience").value("agents"))
-                .andExpect(jsonPath("$.sourceTicketId").value(ticket.toString()))
-                .andExpect(jsonPath("$.sourceTicketRef").value("INC-000123"))
-                .andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("## Решение\n\nСоздать новый профиль")));
-        assertThat(events.stream(ArticleCreatedFromTicket.class).filter(e -> e.ticketId().equals(ticket))).hasSize(1);
+                // Тема и номер — из заявки, а не из тела запроса.
+                .andExpect(jsonPath("$.title").value(title))
+                .andExpect(jsonPath("$.sourceTicketId").value(ticket))
+                .andExpect(jsonPath("$.sourceTicketRef").value(number))
+                .andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("## Решение\n\nСоздать новый профиль")))
+                .andReturn().getResponse().getContentAsString();
+        String articleId = JsonPath.read(res, "$.id");
+        String key = JsonPath.read(res, "$.key");
+        assertThat(events.stream(ArticleCreatedFromTicket.class).filter(e -> e.ticketId().toString().equals(ticket)))
+                .hasSize(1);
+
+        // В ленте заявки — внутренняя заметка со ссылкой на статью, заявитель её не видит.
+        String feed = kb.perform(AGENT, get("/api/v1/tickets/" + ticket + "/activity")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(feed, "$.items[?(@.visibility == 'internal')].body"))
+                .anyMatch(b -> b.contains(key) && b.contains("/agent/kb/" + articleId));
+        String publicFeed = kb.perform(REQ, get("/api/v1/tickets/" + ticket + "/activity")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(publicFeed).doesNotContain(articleId);
+
+        // Своя тема вместо темы заявки.
+        kb.json(AGENT, post(API + "/from-ticket"),
+                        "{\"ticketId\":\"%s\",\"title\":\"Сброс профиля Outlook\",\"solution\":\"x\"}".formatted(ticket))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Сброс профиля Outlook"));
 
         kb.json(AGENT, post(API + "/from-ticket"),
                 "{\"ticketId\":\"%s\",\"title\":\"Без решения\"}".formatted(ticket)).andExpect(status().isBadRequest());
         kb.json(REQ, post(API + "/from-ticket"), body).andExpect(status().isForbidden());
+        // Неизвестная заявка неотличима от чужой: 404.
+        kb.json(AGENT, post(API + "/from-ticket"), body.replace(ticket, UUID.randomUUID().toString()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void articleFromTicketRespectsTicketVisibility() throws Exception {
+        String ticket = kb.ticketInProgress(REQ, AGENT, uniq("Нет доступа к папке"));
+        kb.resolveTicket(AGENT, ticket);
+        // Редактор знаний без роли поддержки видит только свои заявки (ACC-01).
+        kb.json(KNW, post(API + "/from-ticket"),
+                        "{\"ticketId\":\"%s\",\"solution\":\"Выдали права\"}".formatted(ticket))
+                .andExpect(status().isNotFound());
+        // Заявка другого арендатора не видна (RLS).
+        kb.json(AGENT.in(OTHER), post(API + "/from-ticket"),
+                        "{\"ticketId\":\"%s\",\"solution\":\"Выдали права\"}".formatted(ticket))
+                .andExpect(status().isNotFound());
     }
 
     @Test
