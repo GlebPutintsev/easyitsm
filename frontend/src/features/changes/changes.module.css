@@ -1,0 +1,209 @@
+/* Изменения и CAB: только токены --ei-*, вид — DESIGN.md («Адмирал»). */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ok { background: var(--ei-ok-soft); color: var(--ei-ok); }
+.warn { background: var(--ei-warn-soft); color: var(--ei-warn); }
+.danger { background: var(--ei-danger-soft); color: var(--ei-danger); }
+.wait { background: var(--ei-wait-soft); color: var(--ei-wait); }
+.neutral { background: var(--ei-neutral-soft); color: var(--ei-text-2); }
+.outline { color: var(--ei-text-2); box-shadow: inset 0 0 0 1px var(--ei-border-strong); }
+.emergency { background: var(--ei-danger); color: var(--ei-on-danger); }
+
+.number {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ei-text-2);
+}
+
+.card {
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+  padding: 16px 20px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ei-text-3);
+}
+
+.sectionLabel::after {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin-top: 6px;
+  background: var(--ei-brass-line);
+}
+
+.field dt {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ei-text-3);
+}
+
+.field dd {
+  margin: 2px 0 12px;
+  color: var(--ei-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.missing {
+  border: 1px solid var(--ei-warn);
+  background: var(--ei-warn-soft);
+  color: var(--ei-warn);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.phaseRow td {
+  background: var(--ei-brass-soft);
+  color: var(--ei-brass-text);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stepDone { color: var(--ei-ok); }
+.stepFailed { color: var(--ei-danger); }
+.stepSkipped { color: var(--ei-text-3); }
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+/* Календарь */
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ei-surface);
+}
+
+.dayHead {
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ei-text-3);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ei-border);
+}
+
+.day {
+  min-height: 112px;
+  padding: 6px;
+  border-right: 1px solid var(--ei-border);
+  border-bottom: 1px solid var(--ei-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.day:nth-child(7n) { border-right: 0; }
+
+.week .day { min-height: 320px; }
+
+.dayOther { background: var(--ei-bg); }
+.dayOther .dayNumber { color: var(--ei-text-3); }
+
+.dayToday .dayNumber {
+  background: var(--ei-accent);
+  color: var(--ei-on-accent);
+}
+
+.dayNumber {
+  align-self: flex-start;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
+  color: var(--ei-text-2);
+}
+
+.freezeBar {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--ei-danger);
+  background: repeating-linear-gradient(135deg, var(--ei-danger-soft), var(--ei-danger-soft) 6px, transparent 6px, transparent 10px);
+  border: 1px solid var(--ei-danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  border-left: 3px solid var(--ei-accent);
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event:hover { filter: brightness(0.97); }
+.event:focus-visible { outline: 2px solid var(--ei-accent); outline-offset: 2px; }
+.event[data-risk='high'] { border-left-color: var(--ei-danger); }
+.event[data-risk='medium'] { border-left-color: var(--ei-warn); }
+.event[data-type='emergency'] { background: var(--ei-danger-soft); color: var(--ei-danger); }
+.event[data-state='draft'], .event[data-state='assessment'] { background: var(--ei-neutral-soft); color: var(--ei-text-2); border-left-style: dashed; }
+.event[data-state='approval'] { background: var(--ei-wait-soft); color: var(--ei-wait); }
+
+/* Голоса CAB */
+
+.tally {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ei-text-3);
+}
+
+.agendaItem {
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+  padding: 14px 16px;
+}
+
+.agendaItem[data-decision='approved'] { box-shadow: inset 3px 0 0 var(--ei-ok); }
+.agendaItem[data-decision='rejected'] { box-shadow: inset 3px 0 0 var(--ei-danger); }
+.agendaItem[data-decision='deferred'] { box-shadow: inset 3px 0 0 var(--ei-wait); }
+
+@media (max-width: 720px) {
+  .day { min-height: 72px; }
+  .event { font-size: 11px; }
+}
