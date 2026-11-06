@@ -12,6 +12,7 @@ import {
   IconUsers,
   IconUsersGroup,
   IconWand,
+  IconSitemap,
   type Icon,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +30,7 @@ const SECTIONS: { key: string; to: string; icon: Icon }[] = [
   { key: 'dictionaries', to: '/admin/dictionaries', icon: IconBook2 },
   { key: 'catalog', to: '/admin/catalog', icon: IconClipboardList },
   { key: 'automation', to: '/admin/automation', icon: IconBolt },
+  { key: 'changes', to: '/admin/changes', icon: IconSitemap },
   { key: 'mail', to: '/admin/mail', icon: IconMail },
   { key: 'integrations', to: '/admin/integrations', icon: IconPlugConnected },
   { key: 'notificationTemplates', to: '/admin/notification-templates', icon: IconBellCog },

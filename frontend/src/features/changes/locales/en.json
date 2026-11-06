@@ -1,0 +1,421 @@
+{
+  "changes": {
+    "title": "Changes",
+    "subtitle": "Change requests: work plan, risk, approval and calendar",
+    "create": "New change",
+    "more": "Show more",
+    "empty": "No changes yet",
+    "pendingEmpty": "No changes are waiting for your decision",
+    "notFound": "Change not found or not available",
+    "fromPipeline": "Created by a CI/CD pipeline",
+    "missingTitle": "To submit for assessment, fill in",
+    "postApprovalOverdue": "Retrospective approval of this emergency change is overdue",
+    "stepsPending": "Record the result of every implementation step",
+    "windowHint": "Times are entered in your browser time zone and shown in the change time zone.",
+    "type": {
+      "standard": "Standard",
+      "normal": "Normal",
+      "emergency": "Emergency"
+    },
+    "state": {
+      "draft": "Draft",
+      "assessment": "Assessment",
+      "approval": "Approval",
+      "scheduled": "Scheduled",
+      "implementation": "Implementation",
+      "verification": "Verification",
+      "review": "Review",
+      "closed": "Closed",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "risk": {
+      "none": "Risk not assessed",
+      "aria": "Risk: {{level}}",
+      "level": {
+        "low": "Low risk",
+        "medium": "Medium risk",
+        "high": "High risk"
+      },
+      "title": "Risk assessment",
+      "score": "Score: {{score}}",
+      "computed": "by questionnaire: {{level}}",
+      "manualLevel": "Manual level",
+      "manualHint": "If the questionnaire does not reflect the risk, set the level and a reason",
+      "manualReason": "Reason for manual level",
+      "onlyManager": "The change manager assesses risk",
+      "save": "Save assessment"
+    },
+    "tabs": {
+      "active": "In progress",
+      "mine": "Mine",
+      "approvals": "Awaiting my decision",
+      "all": "All",
+      "overview": "Overview",
+      "plan": "Plan",
+      "risk": "Risk and impact",
+      "approvalsCard": "Approvals",
+      "review": "Review"
+    },
+    "filters": {
+      "search": "Number or subject",
+      "type": "Type",
+      "risk": "Risk",
+      "state": "Status"
+    },
+    "columns": {
+      "number": "Number",
+      "title": "Subject",
+      "type": "Type",
+      "state": "Status",
+      "risk": "Risk",
+      "window": "Change window",
+      "author": "Author"
+    },
+    "duration": {
+      "h": "{{h}} h",
+      "m": "{{m}} min",
+      "hm": "{{h}} h {{m}} min",
+      "min": "min"
+    },
+    "fields": {
+      "title": "Subject",
+      "goal": "Goal",
+      "justification": "Justification",
+      "impact": "Impact on users",
+      "risks": "Risks and mitigation",
+      "impactRows": "Impact on IT services",
+      "window": "Change window",
+      "windowStart": "Window start",
+      "windowEnd": "Window end",
+      "timeZone": "Time zone",
+      "prepStart": "Preparation start",
+      "downtime": "Service downtime",
+      "criticality": "System criticality",
+      "services": "Affected services",
+      "cis": "Configuration items",
+      "author": "Author",
+      "assignee": "Assignee",
+      "created": "Created",
+      "conflictsAck": "Overlaps acknowledged",
+      "cancelReason": "Cancellation reason",
+      "pipeline": "Pipeline",
+      "outcome": "Outcome",
+      "conclusion": "Conclusion"
+    },
+    "criticality": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "impactRows": {
+      "service": "IT service or system",
+      "description": "Impact",
+      "duration": "Duration"
+    },
+    "sections": {
+      "purpose": "Goal and impact",
+      "window": "Change window",
+      "affected": "What it affects",
+      "people": "People"
+    },
+    "missing": {
+      "goal": "goal",
+      "justification": "justification",
+      "impact": "impact",
+      "window": "change window",
+      "downtime": "downtime",
+      "affected": "services or CIs",
+      "plan.implement": "implementation plan",
+      "plan.verify": "verification plan",
+      "plan.rollback": "rollback plan",
+      "risk": "risk assessment"
+    },
+    "actions": {
+      "submit_normal": "Submit for assessment",
+      "submit_standard": "Schedule",
+      "submit_emergency": "Start emergency change",
+      "sendToApproval": "Send for approval",
+      "returnToDraft": "Return to draft",
+      "start": "Start work",
+      "verify": "Go to verification",
+      "reopen": "Back to implementation",
+      "complete": "Complete implementation",
+      "rollback": "Start rollback",
+      "reschedule": "Reschedule",
+      "cancel": "Cancel change",
+      "close": "Close change",
+      "save": "Save",
+      "addRow": "Add row",
+      "removeRow": "Remove row"
+    },
+    "export": {
+      "title": "Work plan",
+      "xlsx": "Download XLSX",
+      "docx": "Download DOCX",
+      "pdf": "Download PDF",
+      "ical": "Add to calendar (iCal)"
+    },
+    "dialogs": {
+      "reason": "Reason",
+      "reasonRequired": "Enter a reason",
+      "cancelReason": "Why is the change cancelled",
+      "returnReason": "What needs rework",
+      "rollbackReason": "Why is rollback starting",
+      "outsideWindowTitle": "The change window has not started or is over",
+      "outsideWindowReason": "Why work starts outside the window",
+      "rescheduleReapproval": "The change is already approved: rescheduling starts a new approval round."
+    },
+    "conflicts": {
+      "title": "Calendar overlaps",
+      "ci": "Same CI",
+      "service": "Same service",
+      "freeze": "Freeze",
+      "hint": "Other changes are scheduled on the same CIs or services in this window. You can proceed if you explain why it is safe.",
+      "ack": "Why the overlap is acceptable",
+      "proceed": "Proceed",
+      "none": "No overlaps",
+      "noWindow": "Set the change window to check overlaps"
+    },
+    "impact": {
+      "title": "Impact via CMDB relations",
+      "noCis": "Add CIs to see affected services",
+      "none": "No dependent services found",
+      "depth": "level {{n}}",
+      "notDeclared": "not listed in the change"
+    },
+    "approvals": {
+      "none": "No approvals yet",
+      "standard": "Standard change is pre-approved by its template",
+      "round": "Round {{n}}",
+      "postFactum": "Retrospective",
+      "postDue": "Retrospective approval due {{date}}",
+      "cabHint": "The CAB decides at a meeting",
+      "comment": "Decision comment",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectNeedsComment": "Rejection needs a comment",
+      "kind": {
+        "manager": "Change manager",
+        "group": "Group",
+        "user": "Approver",
+        "cab": "CAB"
+      },
+      "decision": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "superseded": "Superseded"
+      }
+    },
+    "phase": {
+      "prepare": "Preparation",
+      "implement": "Implementation",
+      "verify": "Verification",
+      "rollback": "Rollback"
+    },
+    "stepStatus": {
+      "pending": "Not started",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "plan": {
+      "edit": "Edit plan",
+      "save": "Save plan",
+      "add": "Add step",
+      "noSteps": "No steps",
+      "planEnd": "Planned end",
+      "overWindow": "Implementation and verification do not fit the change window",
+      "rollbackRef": "Rolls back step {{n}}",
+      "upto": "up to",
+      "record": "Record result",
+      "resetStatus": "Clear result",
+      "failNote": "What went wrong",
+      "team": "Team",
+      "contacts": "Contacts",
+      "plannedStart": "Step start",
+      "plannedStartHint": "Empty — right after the previous step",
+      "rollbackOf": "Undoes rollback step no.",
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove step",
+      "columns": {
+        "title": "Work",
+        "description": "Description",
+        "owner": "Owner",
+        "start": "Start",
+        "duration": "Duration",
+        "interruption": "Service interruption",
+        "check": "Check criterion",
+        "status": "Result"
+      }
+    },
+    "review": {
+      "outcome": "Implementation outcome",
+      "actual": "Actual",
+      "related": "Incidents within 72 hours after the work",
+      "noRelated": "No incidents on the same CIs or services",
+      "report": "Work completion report",
+      "conclusion": "Change manager conclusion",
+      "yes": "Yes",
+      "no": "No",
+      "q": {
+        "goalAchieved": "Did the change achieve its goal?",
+        "enoughInfo": "Was there enough information to do the work?",
+        "causedIncidents": "Did the work cause incidents?",
+        "incidentNumbers": "Incident numbers",
+        "incidentCauses": "What caused the incidents?",
+        "consequences": "How did consequences affect functionality, availability, performance?",
+        "correctiveActions": "Actions to prevent recurrence",
+        "onTime": "Was the work done in the approved time?",
+        "impactAsPlanned": "Did business impact time match the plan?",
+        "docsUpdated": "Were documentation, knowledge base and CMDB updated?",
+        "rollbackWorked": "If rollback was used, did it work?",
+        "comment": "Comment"
+      }
+    },
+    "outcome": {
+      "successful": "Successful",
+      "partial": "Partial",
+      "rolled_back": "Rolled back"
+    },
+    "ci": {
+      "search": "Find a CI by name",
+      "searchServices": "Find a service",
+      "nothing": "Nothing found"
+    },
+    "new": {
+      "title": "New change",
+      "type": "Change type",
+      "template": "Template",
+      "templateHint": "A standard change is created only from a pre-approved template",
+      "templateRequired": "Choose a template",
+      "noTemplates": "No templates of this type",
+      "titleRequired": "Enter a subject",
+      "goalHint": "Why the change is needed. The rest of the form is in the change card",
+      "submit": "Create draft",
+      "typeHint": {
+        "normal": "Risk assessment and approval route",
+        "standard": "Routine work from a pre-approved template",
+        "emergency": "Urgent restoration, approved afterwards"
+      }
+    },
+    "calendar": {
+      "title": "Change calendar",
+      "ical": "Download iCal",
+      "today": "Today",
+      "prev": "Previous",
+      "next": "Next",
+      "month": "Month",
+      "week": "Week",
+      "freeze": "Freeze",
+      "more": "{{n}} more",
+      "legend": "Stripe colour shows risk (green, orange, red); violet — awaiting approval, grey dashed — draft and assessment, hatching — freeze."
+    },
+    "cab": {
+      "title": "CAB",
+      "subtitle": "Change advisory board: meetings, agenda, decisions",
+      "create": "Schedule meeting",
+      "empty": "No meetings yet",
+      "defaultTitle": "CAB meeting",
+      "duration": "Duration",
+      "location": "Room or meeting link",
+      "members": "Members",
+      "typeName": "Start typing a name",
+      "membersCount": "members: {{n}}",
+      "agenda": "Agenda",
+      "agendaEmpty": "The agenda is empty. “Collect agenda” adds changes awaiting the CAB",
+      "collect": "Collect agenda",
+      "start": "Start meeting",
+      "complete": "Finish meeting",
+      "sendProtocol": "Send minutes",
+      "resendProtocol": "Send minutes again",
+      "cancel": "Cancel meeting",
+      "protocolSent": "Minutes sent {{date}}",
+      "remarks": "Remarks",
+      "commentPlaceholder": "Remark or vote comment",
+      "decisionLabel": "Decision:",
+      "approve": "Approve",
+      "reject": "Reject",
+      "defer": "Defer",
+      "removeItem": "Remove from agenda",
+      "addItem": "Add change",
+      "addItemHint": "Changes awaiting approval",
+      "add": "Add",
+      "minutes": "Meeting minutes",
+      "tallyAria": "For: {{approve}}, against: {{reject}}, abstained: {{abstain}}",
+      "columns": {
+        "title": "Meeting",
+        "startsAt": "Starts",
+        "chair": "Chair",
+        "items": "On agenda",
+        "state": "Status"
+      },
+      "meetingState": {
+        "planned": "Planned",
+        "in_progress": "In progress",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "decision": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "deferred": "Deferred"
+      },
+      "vote": {
+        "approve": "For",
+        "reject": "Against",
+        "abstain": "Abstain"
+      }
+    },
+    "settings": {
+      "title": "Changes",
+      "subtitle": "Standard change templates, freezes and approval routes",
+      "templates": "Templates",
+      "freezes": "Freezes",
+      "routes": "Routes",
+      "newTemplate": "New template",
+      "editTemplate": "Change template",
+      "noTemplates": "No templates yet",
+      "preapproved": "Pre-approved",
+      "inactive": "Disabled",
+      "edit": "Edit",
+      "delete": "Delete",
+      "riskLevel": "Risk level",
+      "pipelineHint": "Key for CI/CD: latin letters, digits, dot, hyphen",
+      "pipelineInvalid": "Only a–z, 0–9, dot, hyphen and underscore",
+      "standardHint": "A standard template is pre-approved: changes from it are scheduled without approval.",
+      "description": "Template description",
+      "steps": "Plan steps",
+      "stepsHint": "One step per line: “Title | minutes”. Step details are refined in the change.",
+      "active": "Template available for new changes",
+      "columns": {
+        "name": "Name",
+        "pipelineKey": "CI/CD key",
+        "steps": "Steps",
+        "updated": "Updated"
+      },
+      "freezesHint": "During a freeze, changes on affected services are not approved or deployed",
+      "newFreeze": "New freeze",
+      "editFreeze": "Freeze",
+      "noFreezes": "No freezes",
+      "freezeTitle": "Title",
+      "freezeReason": "Reason",
+      "from": "From",
+      "to": "To",
+      "scope": "Scope",
+      "scopeAll": "All changes",
+      "scopeTargeted": "Selected services and CIs: {{n}}",
+      "scopeTargetedLabel": "Selected services and CIs",
+      "routesTitle": "Approval by risk level",
+      "routesHint": "Who approves a normal change after risk assessment. If nothing is checked, the change is scheduled at once.",
+      "emergencyPre": "Emergency — short change manager approval before work starts",
+      "emergencyDays": "Retrospective approval term, business days",
+      "general": "General",
+      "requireAffected": "Require services or CIs in a change"
+    }
+  }
+}

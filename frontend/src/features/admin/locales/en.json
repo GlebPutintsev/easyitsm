@@ -36,6 +36,10 @@
         "title": "Automation",
         "text": "Event–condition–action rules and the run log"
       },
+      "changes": {
+        "title": "Changes",
+        "text": "Standard change templates, freezes, approval routes"
+      },
       "mail": {
         "title": "Email",
         "text": "Sending, support mailboxes, email logs"

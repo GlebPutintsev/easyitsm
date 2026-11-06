@@ -34,6 +34,7 @@ import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
+import { changeAdminRoutes, changeRoutes } from '@/features/changes/routes';
 import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
 import { MajorIncidentPage, MajorIncidentsPage, StatusPage } from '@/features/major';
 import { ProblemPage, ProblemsPage } from '@/features/problems';
@@ -95,6 +96,8 @@ export const router = createBrowserRouter([
       { path: 'agent/problems/:number', element: <ProblemPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
+      ...changeRoutes,
+      ...changeAdminRoutes,
       { path: 'admin', element: <AdminHome /> },
       { path: 'admin/audit', element: <AuditPage /> },
       { path: 'admin/automation', element: <AutomationPage /> },
