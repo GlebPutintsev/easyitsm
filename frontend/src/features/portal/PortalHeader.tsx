@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router';
 import { hasRole, useMe } from '@/features/auth/api';
 import { ApprovalsButton } from '@/features/catalog/ApprovalsPage';
+import { StatusNavLink } from '@/features/major';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { ProfileMenu, SpaceSwitcher } from '@/app/layout/TopBar';
 import { BrandMark } from '@/shared/ui/BrandMark';
@@ -37,6 +38,7 @@ export function PortalHeader() {
               {l.label}
             </NavLink>
           ))}
+          <StatusNavLink />
         </Group>
         <div style={{ flex: 1 }} />
         <Group gap={6} wrap="nowrap">
