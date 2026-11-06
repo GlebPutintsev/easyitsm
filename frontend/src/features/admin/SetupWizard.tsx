@@ -188,6 +188,11 @@ function CheckStep({ kind }: { kind: 'mail' | 'sso' }) {
             {t('admin.setup.check.mfaLink')}
           </Anchor>
         )}
+        {kind === 'mail' && (
+          <Anchor component={Link} to="/admin/mail" size="sm">
+            {t('admin.setup.check.mailLink')}
+          </Anchor>
+        )}
       </Group>
       {check.data && <CheckResult report={check.data} />}
       <ErrorLine error={check.error} />

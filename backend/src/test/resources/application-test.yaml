@@ -16,3 +16,12 @@ easyitsm:
     lockout:
       # Без задержек после неудачного входа, чтобы тесты шли быстро. Сама задержка проверяется отдельно.
       failure-delay: 0ms
+  mail:
+    # Тесты вызывают отправку и опрос сами: плановые задачи не должны забирать их письма.
+    initial-delay: PT1H
+    fallback:
+      host: ""
+    inbound-smtp:
+      enabled: false
+  notifications:
+    push-initial-delay: PT1H

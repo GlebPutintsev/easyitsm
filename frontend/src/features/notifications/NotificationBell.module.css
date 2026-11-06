@@ -1,0 +1,27 @@
+.item {
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--ei-border);
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.item[data-unread] {
+  background: var(--ei-surface-2);
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  border-radius: 4px;
+}
+
+.itemBody:focus-visible {
+  outline: 2px solid var(--ei-focus);
+  outline-offset: 2px;
+}
+
+.dot {
+  color: var(--ei-link);
+}

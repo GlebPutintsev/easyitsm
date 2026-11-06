@@ -13,6 +13,8 @@ import {
   IconHistory,
   IconHome,
   IconListDetails,
+  IconMail,
+  IconBellCog,
   IconSettings,
   IconShieldLock,
   IconSitemap,
@@ -73,6 +75,8 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
       { key: 'audit', to: '/admin/audit', icon: IconShieldLock },
       { key: 'import', to: '/admin/import', icon: IconFileImport },
       { key: 'journal', to: '/admin/journal', icon: IconHistory },
+      { key: 'mail', to: '/admin/mail', icon: IconMail },
+      { key: 'notificationTemplates', to: '/admin/notification-templates', icon: IconBellCog },
     ],
   },
 };

@@ -15,10 +15,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Component;
+import ru.easyitsm.mail.api.MailHealth;
 
 /**
  * Проверки мастера «Проверить почту» и «Проверить SSO» (10.16). Адреса берутся только из настроек приложения,
@@ -30,12 +30,13 @@ class SetupChecks {
 
     static final Duration TIMEOUT = Duration.ofSeconds(4);
 
-    private final Environment env;
     private final ObjectProvider<ClientRegistrationRepository> registrations;
+    private final ObjectProvider<MailHealth> mail;
 
-    SetupChecks(Environment env, ObjectProvider<ClientRegistrationRepository> registrations) {
-        this.env = env;
+    SetupChecks(ObjectProvider<ClientRegistrationRepository> registrations,
+                ObjectProvider<MailHealth> mail) {
         this.registrations = registrations;
+        this.mail = mail;
     }
 
     record Result(String target, boolean ok, String code, String detail, long latencyMs) {
@@ -44,16 +45,22 @@ class SetupChecks {
     record Report(boolean configured, boolean ok, List<Result> results) {
     }
 
-    /** SMTP: соединение, приветствие 220 и ответ 250 на EHLO. Письмо не отправляется. */
+    /**
+     * Почта: сервер отправки арендатора из «Управление → Почта» (модуль mail), иначе сервер установки.
+     * Подключение и вход без отправки письма.
+     */
     Report mail() {
-        String host = env.getProperty("spring.mail.host");
-        if (host == null || host.isBlank()) {
+        MailHealth health = mail.getIfAvailable();
+        if (health == null) {
             return new Report(false, false, List.of(new Result("", false, "not_configured",
-                    "Почтовый сервер не задан (spring.mail.host)", 0)));
+                    "Модуль почты недоступен", 0)));
         }
-        int port = env.getProperty("spring.mail.port", Integer.class, 25);
-        Result r = smtp(host.trim(), port);
-        return new Report(true, r.ok(), List.of(r));
+        MailHealth.Status st = health.checkTransport();
+        if (!st.configured()) {
+            return new Report(false, false, List.of(new Result("", false, "not_configured", st.detail(), 0)));
+        }
+        return new Report(true, st.ok(), List.of(new Result(st.target(), st.ok(), st.ok() ? "ok" : "failed",
+                st.detail(), st.latencyMs())));
     }
 
     static Result smtp(String host, int port) {

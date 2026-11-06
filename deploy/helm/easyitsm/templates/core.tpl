@@ -57,6 +57,11 @@ spec:
           env:
             - name: EASYITSM_WORKER_ENABLED
               value: {{ .workerEnabled | quote }}
+            # Приём писем по SMTP от почтового сервера организации (CHN-01) слушают только поды api.
+            - name: EASYITSM_INBOUND_SMTP_ENABLED
+              value: {{ and (eq .role "api") $root.Values.mail.inboundSmtp.enabled | quote }}
+            - name: EASYITSM_INBOUND_SMTP_PORT
+              value: {{ $root.Values.mail.inboundSmtp.port | quote }}
             {{- with $cfg.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -64,6 +69,10 @@ spec:
             {{- if eq .role "api" }}
             - name: http
               containerPort: 8080
+            {{- if $root.Values.mail.inboundSmtp.enabled }}
+            - name: smtp
+              containerPort: {{ $root.Values.mail.inboundSmtp.port }}
+            {{- end }}
             {{- end }}
             - name: management
               containerPort: 8081
@@ -107,6 +116,10 @@ spec:
                     - { key: app-password, path: EASYITSM_DB_APP_PASSWORD }
                     - { key: owner-username, path: EASYITSM_DB_OWNER_USER }
                     - { key: owner-password, path: EASYITSM_DB_OWNER_PASSWORD }
+              - secret:
+                  name: {{ include "easyitsm.appSecretName" $root }}
+                  items:
+                    - { key: secret-key, path: EASYITSM_IDENTITY_SECRET_KEY }
               {{- with $root.Values.license.existingSecret }}
               - secret:
                   name: {{ . }}

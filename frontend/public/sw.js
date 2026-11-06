@@ -2,7 +2,7 @@
  * Service worker портала (PRT-03): установка на телефон и открытие оболочки без сети.
  * API никогда не кэшируется: данные заявок всегда свежие и не остаются на устройстве.
  */
-const SHELL = 'easyitsm-shell-v1';
+const SHELL = 'easyitsm-shell-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon.svg'])));
@@ -42,4 +42,43 @@ self.addEventListener('fetch', (event) => {
       ),
     );
   }
+});
+
+/*
+ * Web Push (NTF-02). Сервер шифрует { id, title, body, link } по RFC 8291; показываем системное
+ * уведомление и по нажатию открываем ссылку в уже открытой вкладке или в новой.
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'Easy ITSM';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icon.svg',
+      badge: '/icon.svg',
+      tag: data.id,
+      data: { link: data.link || '/' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = new URL((event.notification.data && event.notification.data.link) || '/', self.location.origin);
+  if (link.origin !== self.location.origin) return;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+          return c.focus().then((w) => (w && 'navigate' in w ? w.navigate(link.href) : undefined));
+        }
+      }
+      return self.clients.openWindow(link.href);
+    }),
+  );
 });

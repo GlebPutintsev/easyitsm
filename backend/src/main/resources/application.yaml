@@ -47,6 +47,27 @@ easyitsm:
       admin-login: ${EASYITSM_BOOTSTRAP_ADMIN_LOGIN:}
       admin-password: ${EASYITSM_BOOTSTRAP_ADMIN_PASSWORD:}
       admin-email: ${EASYITSM_BOOTSTRAP_ADMIN_EMAIL:}
+  # Канал почты (модуль mail). Параметры и значения по умолчанию: MailProperties.
+  mail:
+    # Ключ шифрования паролей ящиков; пусто — используется easyitsm.identity.secret-key.
+    secret-key: ${EASYITSM_MAIL_SECRET_KEY:}
+    # Отправка по умолчанию для арендаторов без своей настройки (установка с одним арендатором).
+    fallback:
+      host: ${EASYITSM_SMTP_HOST:}
+      port: ${EASYITSM_SMTP_PORT:587}
+      security: ${EASYITSM_SMTP_SECURITY:starttls}
+      username: ${EASYITSM_SMTP_USERNAME:}
+      password: ${EASYITSM_SMTP_PASSWORD:}
+      from-address: ${EASYITSM_SMTP_FROM:}
+      from-name: ${EASYITSM_SMTP_FROM_NAME:Easy ITSM}
+    inbound-smtp:
+      enabled: ${EASYITSM_INBOUND_SMTP_ENABLED:false}
+      port: ${EASYITSM_INBOUND_SMTP_PORT:2525}
+  # Уведомления (модуль notifications). Параметры: NotificationProperties.
+  notifications:
+    public-url: ${EASYITSM_PUBLIC_URL:http://localhost:5173}
+    push-enabled: ${EASYITSM_PUSH_ENABLED:true}
+    push-subject: ${EASYITSM_PUSH_SUBJECT:mailto:support@easyitsm.local}
 
 management:
   endpoints:
@@ -89,6 +110,17 @@ easyitsm:
     mfa:
       # Демо-пользователи входят без обязательной настройки MFA. В поставке MFA обязательна (SEC-02).
       enforced: false
+  mail:
+    # Письма уходят в Mailpit из deploy/compose: http://localhost:8025
+    fallback:
+      host: localhost
+      port: 1025
+      security: none
+      from-address: support@easyitsm.local
+    # Входящий SMTP для ручной проверки: swaks --server localhost:2525 --to support@easyitsm.local
+    inbound-smtp:
+      enabled: true
+      port: 2525
 ---
 # Вход через Keycloak из deploy/compose (docker compose --profile sso up keycloak), реалм easyitsm.
 # Запуск: --spring.profiles.active=dev,sso
