@@ -22,6 +22,7 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
+        <jsoup.version>1.23.2</jsoup.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
         <pdfbox.version>3.0.8</pdfbox.version>
     </properties>
@@ -60,6 +61,12 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <!-- Очистка HTML по разрешённому списку тегов на сервере (SEC-24) -->
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
         </dependency>
         <dependency>
             <!-- WebAuthn и passkeys (SEC-02) -->

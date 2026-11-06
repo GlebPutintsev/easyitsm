@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.easyitsm.identity.api.RequiresRecentAuth;
 import ru.easyitsm.platform.web.CursorPage;
 import ru.easyitsm.platform.web.ETags;
 import ru.easyitsm.platform.web.PageParams;
@@ -68,6 +69,7 @@ class AutomationController {
 
     @DeleteMapping("/rules/{id}")
     @PreAuthorize("hasRole('ADM')")
+    @RequiresRecentAuth
     ResponseEntity<Void> delete(@PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

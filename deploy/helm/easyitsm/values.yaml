@@ -110,6 +110,20 @@ license:
   # Секрет с ключом license.json — подписанный файл лицензии (ADM-07). Без него работает пробный режим.
   existingSecret: ""
 
+# Журнал аудита (SEC-29…SEC-32): копия записей в SIEM по Syslog с TLS (RFC 5425), тело CEF или JSON.
+# Не забудьте разрешить соединение с SIEM в networkPolicy.coreEgress.
+audit:
+  siem:
+    enabled: false
+    host: ""
+    port: 6514
+    # TLS или TCP (TCP без шифрования — только в доверенном сегменте)
+    transport: TLS
+    # CEF или JSON
+    format: CEF
+    # Секрет с ключом ca.crt — сертификаты ЦС приёмника. Пусто — доверенные сертификаты образа.
+    caSecret: ""
+
 networkPolicy:
   # SEC-35: трафик запрещён по умолчанию, разрешения ниже.
   enabled: true

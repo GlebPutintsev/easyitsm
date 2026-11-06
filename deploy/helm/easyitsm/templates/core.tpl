@@ -113,6 +113,12 @@ spec:
                   items:
                     - { key: license.json, path: license/license.json }
               {{- end }}
+              {{- if and $root.Values.audit.siem.enabled $root.Values.audit.siem.caSecret }}
+              - secret:
+                  name: {{ $root.Values.audit.siem.caSecret }}
+                  items:
+                    - { key: ca.crt, path: siem/ca.crt }
+              {{- end }}
       {{- with $cfg.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

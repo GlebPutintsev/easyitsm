@@ -1,0 +1,103 @@
+{
+  "nav": { "audit": "Журнал аудита" },
+  "audit": {
+    "title": "Журнал аудита",
+    "subtitle": "Вход, права, настройки, выгрузки и отказы в доступе. Записи нельзя изменить: их связывает цепочка хешей.",
+    "verify": "Проверить целостность",
+    "export": "Экспорт",
+    "filters": {
+      "label": "Фильтры журнала",
+      "from": "С",
+      "to": "По",
+      "category": "Раздел",
+      "allCategories": "Все разделы",
+      "result": "Результат",
+      "allResults": "Любой результат",
+      "action": "Действие",
+      "actionPlaceholder": "auth. или access.denied",
+      "search": "Поиск",
+      "searchPlaceholder": "Логин, объект, адрес, трассировка"
+    },
+    "columns": { "at": "Время", "category": "Раздел", "action": "Действие", "actor": "Кто", "object": "Объект", "result": "Результат", "ip": "Адрес" },
+    "category": { "auth": "Вход", "access": "Доступ", "config": "Настройки", "data": "Данные", "security": "Безопасность", "audit": "Журнал" },
+    "result": { "success": "Успешно", "failure": "Ошибка", "denied": "Отказано" },
+    "actions": {
+      "auth.login": "Вход",
+      "auth.account.locked": "Учётная запись заблокирована",
+      "auth.password.reset_requested": "Запрошен сброс пароля",
+      "auth.factor.password_changed": "Пароль изменён",
+      "auth.factor.password_reset": "Пароль сброшен",
+      "auth.factor.totp_enabled": "Включён TOTP",
+      "auth.factor.totp_disabled": "Отключён TOTP",
+      "auth.factor.webauthn_added": "Добавлен ключ",
+      "auth.factor.webauthn_removed": "Удалён ключ",
+      "auth.factor.recovery_codes_generated": "Выпущены резервные коды",
+      "auth.factor.mfa_reset": "Сброшена MFA",
+      "access.denied": "Отказ в доступе",
+      "access.role.grant": "Выдана роль",
+      "access.role.revoke": "Отозвана роль",
+      "access.group.member_add": "Добавлен в группу",
+      "access.group.member_remove": "Удалён из группы",
+      "access.user.create": "Создан пользователь",
+      "access.user.block": "Пользователь заблокирован",
+      "access.user.unblock": "Пользователь разблокирован",
+      "config.change": "Изменены настройки",
+      "security.privileged_action": "Действие с повторным входом",
+      "data.export": "Массовая выгрузка",
+      "data.sensitive_read": "Чтение чувствительных данных",
+      "audit.verify": "Проверка целостности",
+      "audit.export": "Выгрузка журнала",
+      "audit.siem.test": "Проверка связи с SIEM"
+    },
+    "system": "Система",
+    "showMore": "Показать ещё",
+    "empty": "Записей пока нет",
+    "details": {
+      "title": "Запись № {{seq}}",
+      "when": "Когда",
+      "who": "Кто",
+      "what": "Что",
+      "object": "Объект",
+      "result": "Результат",
+      "where": "Откуда",
+      "browser": "Браузер",
+      "trace": "Трассировка",
+      "data": "Подробности",
+      "hash": "Хеш",
+      "prevHash": "Предыдущий хеш",
+      "noData": "Без подробностей"
+    },
+    "verification": {
+      "ok": "Цепочка цела: проверено {{count}} записей, последняя № {{head}}",
+      "broken": "Цепочка нарушена на записи № {{seq}}: {{problem}}",
+      "problem": {
+        "hash_mismatch": "запись изменена",
+        "link_mismatch": "нарушена связь с предыдущей записью",
+        "gap": "запись удалена",
+        "truncated": "удалены последние записи"
+      },
+      "hint": "Сообщите администратору безопасности и сверьте записи с копией в SIEM."
+    },
+    "exportDialog": {
+      "title": "Выгрузка журнала",
+      "text": "Выгрузка попадёт в журнал вместе с причиной и текущими фильтрами. Перед выгрузкой может понадобиться подтвердить вход.",
+      "reason": "Причина выгрузки",
+      "reasonPlaceholder": "Например, запрос службы безопасности № 42",
+      "reasonHint": "От 5 до 500 символов",
+      "submit": "Выгрузить CSV"
+    },
+    "siem": {
+      "title": "Передача в SIEM",
+      "off": "Не настроена. Включается в настройках установки: easyitsm.audit.siem.",
+      "target": "Получатель",
+      "lag": "Ждут отправки",
+      "delivered": "Доставлено до записи № {{seq}}",
+      "deliveredAt": "Последняя доставка",
+      "lastError": "Последняя ошибка",
+      "retry": "Повтор",
+      "test": "Проверить связь",
+      "testOk": "Тестовое сообщение отправлено",
+      "testFailed": "Не удалось отправить: {{error}}"
+    }
+  }
+}

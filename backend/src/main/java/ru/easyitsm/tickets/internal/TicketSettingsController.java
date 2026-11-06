@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.easyitsm.identity.api.RequiresRecentAuth;
 import ru.easyitsm.platform.web.ETags;
 import ru.easyitsm.tickets.api.TicketType;
 
@@ -152,6 +153,7 @@ class TicketSettingsController {
 
     @DeleteMapping("/routing-rules/{id}")
     @PreAuthorize("hasRole('ADM')")
+    @RequiresRecentAuth
     ResponseEntity<Void> deleteRule(@PathVariable UUID id) {
         routing.deleteRule(id);
         return ResponseEntity.noContent().build();
