@@ -1,0 +1,6 @@
+PRETTY_NAME="Astra Linux"
+NAME="Astra Linux"
+ID=astra
+ID_LIKE=debian
+VERSION_ID=1.8_x86-64
+VERSION_CODENAME=1.8_x86-64

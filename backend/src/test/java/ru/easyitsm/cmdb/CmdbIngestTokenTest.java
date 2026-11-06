@@ -134,6 +134,59 @@ class CmdbIngestTokenTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /** Пакеты в том виде, в каком их шлёт discovery-agent: сервер с базой, обход сети и завершающий пакет. */
+    @Test
+    void agentShapedRunsAndFullSweep() throws Exception {
+        String src = source(DEMO);
+        String token = JsonPath.read(body(mvc.perform(as(post("/api/v1/cmdb/sources/" + src + "/token"), DEMO, "CFG"))
+                .andExpect(status().isOk())), "$.token");
+        String host = "host:" + tag;
+        String run1 = """
+                {"batchId":"a-%1$s-r1-0001","runId":"a-%1$s-r1","items":[
+                  {"externalId":"%2$s","classCode":"virtual_machine","name":"app-%1$s","status":"active",
+                   "environment":"production","attributes":{"hostname":"app-%1$s","domain":"corp.local",
+                   "fqdn":"app-%1$s.corp.local","ip_address":"10.9.0.10","os":"Astra Linux","os_version":"1.8_x86-64",
+                   "cpu_count":4,"ram_gb":15.5,"vm_uuid":"vm-%1$s","hypervisor":"VMware"}},
+                  {"externalId":"%2$s/db/5432","classCode":"database","name":"PostgreSQL app-%1$s:5432",
+                   "status":"active","environment":"production","attributes":{"engine":"PostgreSQL","port":5432},
+                   "relations":[{"typeCode":"runs_on","direction":"outgoing","target":{"externalId":"%2$s"}}]},
+                  {"externalId":"ip:10.9.0.1","classCode":"network_device","name":"sw-%1$s","status":"active",
+                   "attributes":{"hostname":"sw-%1$s","ip_address":"10.9.0.1"}},
+                  {"externalId":"ip:10.9.0.2","classCode":"server","name":"10.9.0.2","status":"active",
+                   "attributes":{"ip_address":"10.9.0.2"}}]}""".formatted(tag, host);
+        String first = body(mvc.perform(agent(post("/api/v1/cmdb/ingest/batches"), token).content(run1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(4))
+                .andExpect(jsonPath("$.errors").value(0))
+                .andExpect(jsonPath("$.results[1].warnings.length()").value(0)));
+        String vm = JsonPath.read(first, "$.results[0].ciId");
+        String db = JsonPath.read(first, "$.results[1].ciId");
+        String gone = JsonPath.read(first, "$.results[3].ciId");
+        mvc.perform(as(get("/api/v1/cmdb/cis/" + db + "/relations"), DEMO, "AGT"))
+                .andExpect(jsonPath("$[0].typeCode").value("runs_on"))
+                .andExpect(jsonPath("$[0].other.id").value(vm));
+        mvc.perform(agent(post("/api/v1/cmdb/ingest/batches"), token)
+                        .content("{\"batchId\":\"a-%1$s-r1-final\",\"runId\":\"a-%1$s-r1\",\"final\":true,\"items\":[]}"
+                                .formatted(tag)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.final").value(true));
+
+        // Второй обход не нашёл 10.9.0.2: после завершающего пакета узел неактуален.
+        mvc.perform(agent(post("/api/v1/cmdb/ingest/batches"), token).content("""
+                        {"batchId":"a-%1$s-r2-0001","runId":"a-%1$s-r2","items":[
+                          {"externalId":"ip:10.9.0.1","classCode":"network_device","name":"sw-%1$s",
+                           "attributes":{"hostname":"sw-%1$s","ip_address":"10.9.0.1"}},
+                          {"externalId":"%2$s","classCode":"virtual_machine","name":"app-%1$s",
+                           "attributes":{"hostname":"app-%1$s","ram_gb":15.5}}]}""".formatted(tag, host)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unchanged").value(2));
+        mvc.perform(agent(post("/api/v1/cmdb/ingest/batches"), token)
+                        .content("{\"batchId\":\"a-%1$s-r2-final\",\"runId\":\"a-%1$s-r2\",\"final\":true,\"items\":[]}"
+                                .formatted(tag)))
+                .andExpect(status().isOk());
+        String stale = body(mvc.perform(as(get("/api/v1/cmdb/quality/issues").param("kind", "stale"), DEMO, "AGT")));
+        assertThat(stale).contains(gone).doesNotContain(vm);
+    }
+
     String source(String tenant) throws Exception {
         String code = "agent-" + Ids.newId().toString().substring(24);
         mvc.perform(as(post("/api/v1/cmdb/sources"), tenant, "CFG").content("""

@@ -471,6 +471,85 @@ paths:
             application/json:
               schema: {type: array, items: {$ref: '#/components/schemas/IngestResult'}}
 
+  /cmdb/sources/{code}/token:
+    post:
+      tags: [ingestion]
+      summary: Выпустить токен источника для агента обнаружения (CFG, ADM; повторная аутентификация)
+      description: Токен показывается один раз, в БД хранится SHA-256. Прежний токен сразу перестаёт приниматься.
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Новый токен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: {type: string}
+                  token: {type: string, example: eitsm_cmdb_…}
+                  tokenHint: {type: string, example: …a1b2}
+                  tokenIssuedAt: {type: string, format: date-time}
+        '401': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+    delete:
+      tags: [ingestion]
+      summary: Отозвать токен источника (CFG, ADM; повторная аутентификация)
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Источник без токена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+
+  /cmdb/ingest/batches:
+    post:
+      tags: [ingestion]
+      summary: Пакет от агента обнаружения или коннектора по токену источника
+      description: |
+        Источник и арендатор определяются по токену. Тело и ответ — как у POST /cmdb/sources/{source}/batches.
+        Токен проверяется до чтения тела. Повтор пакета с тем же batchId безопасен.
+      security:
+        - sourceToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IngestBatch'}
+      responses:
+        '200':
+          description: Пакет обработан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IngestResult'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '413': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/ingest/source:
+    get:
+      tags: [ingestion]
+      summary: Источник токена — проверка настройки агента (discovery-agent check)
+      security:
+        - sourceToken: []
+      responses:
+        '200':
+          description: Источник
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: {type: string}
+                  name: {type: string}
+                  kind: {type: string}
+                  priority: {type: integer}
+                  active: {type: boolean}
+        '401': {$ref: '#/components/responses/Problem'}
+
   /cmdb/sources/{source}/batches/{batchId}:
     get:
       tags: [ingestion]
@@ -637,6 +716,10 @@ components:
       in: cookie
       name: SESSION
       description: Сессия модуля identity. В профиле dev — заголовки X-Dev-User, X-Dev-Tenant, X-Dev-Roles.
+    sourceToken:
+      type: http
+      scheme: bearer
+      description: Токен источника CMDB (eitsm_cmdb_…), выпускается на экране «CMDB → Источники».
 
   parameters:
     CiId:
@@ -929,6 +1012,8 @@ components:
         active: {type: boolean}
         records: {type: integer, description: Объекты источника, связанные с КЕ}
         lastBatchAt: {type: [string, 'null'], format: date-time}
+        tokenHint: {type: [string, 'null'], description: Последние символы токена агента; null — токена нет}
+        tokenIssuedAt: {type: [string, 'null'], format: date-time}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
         version: {type: integer}
