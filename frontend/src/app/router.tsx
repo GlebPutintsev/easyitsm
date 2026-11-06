@@ -10,6 +10,12 @@ import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
 import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { DictionariesPage } from '@/features/admin/DictionariesPage';
+import { GroupsPage } from '@/features/admin/GroupsPage';
+import { ImportPage } from '@/features/admin/ImportPage';
+import { JournalPage } from '@/features/admin/JournalPage';
+import { SetupWizard } from '@/features/admin/SetupWizard';
+import { UsersPage } from '@/features/admin/UsersPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -65,6 +71,12 @@ export const router = createBrowserRouter([
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },
+      { path: 'admin/setup', element: <SetupWizard /> },
+      { path: 'admin/users', element: <UsersPage /> },
+      { path: 'admin/groups', element: <GroupsPage /> },
+      { path: 'admin/dictionaries', element: <DictionariesPage /> },
+      { path: 'admin/import', element: <ImportPage /> },
+      { path: 'admin/journal', element: <JournalPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
     ],
