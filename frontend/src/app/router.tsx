@@ -34,6 +34,7 @@ import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
+import { ProblemPage, ProblemsPage } from '@/features/problems';
 import { NotFound } from './NotFound';
 
 /**
@@ -85,6 +86,8 @@ export const router = createBrowserRouter([
       { path: 'agent/assets/directory', element: <DirectoryPage /> },
       { path: 'agent/assets/:id', element: <AssetPage /> },
       { path: 'portal/assets', element: <MyAssetsPage /> },
+      { path: 'agent/problems', element: <ProblemsPage /> },
+      { path: 'agent/problems/:number', element: <ProblemPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },

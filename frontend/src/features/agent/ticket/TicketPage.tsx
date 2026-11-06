@@ -2,6 +2,7 @@ import { ActionIcon, Anchor, Box, Button, Group, Menu, Paper, Skeleton, Stack, T
 import { useClipboard, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
+  IconAlertTriangle,
   IconArrowBackUp,
   IconBook2,
   IconArrowLeft,
@@ -24,6 +25,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { ListState } from '@/shared/ui/ListState';
 import { CreateArticleFromTicketButton, canMakeArticle } from '@/features/knowledge';
+import { CreateProblemDialog, KnownErrorsHint } from '@/features/problems';
 import { mainActionOf, transitionTo } from '../api/domain';
 import { useDirectory, useTake, useTicket } from '../api/hooks';
 import type { AvailableTransition, Ticket } from '../api/model';
@@ -93,6 +95,9 @@ function TicketView({ ticket }: { ticket: Ticket }) {
   const [transition, setTransition] = useState<AvailableTransition | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [escalateOpen, setEscalateOpen] = useState(false);
+  const [problemOpen, setProblemOpen] = useState(false);
+  // «Создать проблему» (10.7): из инцидента, тема и описание копируются, инцидент связывается.
+  const canProblem = ticket.type === 'incident' && ticket.permissions.edit;
 
   const main = mainActionOf(ticket, meId);
   const resolve = transitionTo(ticket, 'resolved');
@@ -255,6 +260,11 @@ function TicketView({ ticket }: { ticket: Ticket }) {
                   {t('kb.fromTicket.button')}
                 </Menu.Item>
               )}
+              {canProblem && (
+                <Menu.Item leftSection={<IconAlertTriangle size={16} />} onClick={() => setProblemOpen(true)}>
+                  {t('problems.create.button')}
+                </Menu.Item>
+              )}
               {others.length > 0 && <Menu.Divider />}
               {others.map((x) => (
                 <Menu.Item key={x.to} color={x.category === 'cancelled' ? 'red' : undefined} onClick={() => setTransition(x)}>
@@ -298,6 +308,7 @@ function TicketView({ ticket }: { ticket: Ticket }) {
           )}
         </Stack>
         <aside aria-label={t('workspace.side.label')}>
+          {ticket.type === 'incident' && <KnownErrorsHint ticketId={ticket.id} />}
           <TicketSidePanel ticket={ticket} />
         </aside>
       </div>
@@ -305,6 +316,11 @@ function TicketView({ ticket }: { ticket: Ticket }) {
       <TransitionDialog ticket={ticket} transition={transition} onClose={() => setTransition(null)} />
       <AssignDialog ticket={ticket} opened={assignOpen} onClose={() => setAssignOpen(false)} />
       <EscalateDialog ticket={ticket} opened={escalateOpen} onClose={() => setEscalateOpen(false)} />
+      <CreateProblemDialog
+        opened={problemOpen}
+        onClose={() => setProblemOpen(false)}
+        draft={{ title: ticket.title, description: ticket.description, incidentIds: [ticket.id], source: 'incident', fromNumber: ticket.number, groupId: ticket.group?.id ?? null }}
+      />
     </Box>
   );
 }
