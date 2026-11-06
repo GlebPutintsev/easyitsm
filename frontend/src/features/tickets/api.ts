@@ -229,7 +229,12 @@ export interface TicketFilter {
   /** Через запятую, `none` — без исполнителя (для «моих» используйте scope=assigned_to_me) */
   assigneeId?: string;
   requesterId?: string;
+  /** Через запятую, `none` — без услуги */
   serviceId?: string;
+  /** Позиция каталога, по которой заказана заявка: через запятую, `none` — не из каталога */
+  catalogItemId?: string;
+  /** serviceId, а если его нет — catalogItemId (как услуга показывается в заявке); через запятую */
+  serviceOrItemId?: string;
   categoryId?: string;
   q?: string;
   createdFrom?: string;

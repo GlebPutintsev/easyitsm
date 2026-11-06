@@ -67,7 +67,9 @@ class TicketController {
                                             @RequestParam(required = false) String groupId,
                                             @RequestParam(required = false) String assigneeId,
                                             @RequestParam(required = false) UUID requesterId,
-                                            @RequestParam(required = false) UUID serviceId,
+                                            @RequestParam(required = false) String serviceId,
+                                            @RequestParam(required = false) String catalogItemId,
+                                            @RequestParam(required = false) String serviceOrItemId,
                                             @RequestParam(required = false) UUID categoryId,
                                             @RequestParam(required = false) String q,
                                             @RequestParam(required = false) Instant createdFrom,
@@ -80,7 +82,8 @@ class TicketController {
                                             @RequestParam(required = false) String cursor,
                                             @RequestParam(required = false) Integer limit) {
         var filter = new TicketSearch.Filter(scope, state, type, status, statusCategory, priority, groupId, assigneeId,
-                requesterId, serviceId, categoryId, q, createdFrom, createdTo, updatedFrom, dueBefore, awaitingAgent, custom);
+                requesterId, serviceId, catalogItemId, serviceOrItemId, categoryId, q, createdFrom, createdTo, updatedFrom,
+                dueBefore, awaitingAgent, custom);
         var mapper = views.mapper();
         return search.page(filter, sort, PageParams.of(cursor, limit), Actor.current()).map(mapper::view);
     }
@@ -95,7 +98,9 @@ class TicketController {
                             @RequestParam(required = false) String groupId,
                             @RequestParam(required = false) String assigneeId,
                             @RequestParam(required = false) UUID requesterId,
-                            @RequestParam(required = false) UUID serviceId,
+                            @RequestParam(required = false) String serviceId,
+                            @RequestParam(required = false) String catalogItemId,
+                            @RequestParam(required = false) String serviceOrItemId,
                             @RequestParam(required = false) UUID categoryId,
                             @RequestParam(required = false) String q,
                             @RequestParam(required = false) Instant createdFrom,
@@ -105,7 +110,8 @@ class TicketController {
                             @RequestParam(required = false) Boolean awaitingAgent,
                             @RequestParam(required = false) List<String> custom) {
         var filter = new TicketSearch.Filter(scope, state, type, status, statusCategory, priority, groupId, assigneeId,
-                requesterId, serviceId, categoryId, q, createdFrom, createdTo, updatedFrom, dueBefore, awaitingAgent, custom);
+                requesterId, serviceId, catalogItemId, serviceOrItemId, categoryId, q, createdFrom, createdTo, updatedFrom,
+                dueBefore, awaitingAgent, custom);
         return Map.of("count", search.count(filter, Actor.current()));
     }
 
