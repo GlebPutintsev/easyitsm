@@ -1,17 +1,30 @@
 # Обновления зависимостей и базовых образов (SCA, раздел 9.4 ТЗ).
+#
+# Обновления безопасности приходят сразу, по мере выхода уведомлений (для этого
+# в настройках репозитория должны быть включены Dependabot security updates),
+# каждое отдельным PR. Остальные обновления — раз в месяц, одним
+# сгруппированным PR на экосистему.
+#
+# Правила ignore действуют и на обновления безопасности.
 version: 2
 updates:
   - package-ecosystem: maven
     directory: /backend
-    schedule: { interval: weekly }
-    open-pull-requests-limit: 10
-  - package-ecosystem: npm
-    directory: /frontend
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
     open-pull-requests-limit: 10
     groups:
-      dev-dependencies:
-        dependency-type: development
+      maven:
+        applies-to: version-updates
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 10
+    groups:
+      npm:
+        applies-to: version-updates
+        patterns: ["*"]
     ignore:
       # Типы Node идут в ногу с рантаймом: Node 22 LTS (см. web.Dockerfile, ci.yml).
       - dependency-name: "@types/node"
@@ -20,9 +33,14 @@ updates:
       # (peer typescript <6.1). Снять правило, когда поддержка появится.
       - dependency-name: typescript
         versions: [">= 7"]
+
   - package-ecosystem: docker
     directory: /deploy/docker
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    groups:
+      docker:
+        applies-to: version-updates
+        patterns: ["*"]
     ignore:
       # Только LTS: Java 21 и Node 22. Переход на следующий LTS (Java 25, Node 24)
       # делаем вручную вместе с CI, pom.xml и distroless-образом.
@@ -30,9 +48,19 @@ updates:
       - dependency-name: maven
       - dependency-name: node
         update-types: ["version-update:semver-major"]
+
   - package-ecosystem: gomod
     directory: /deploy/docker/web
     schedule: { interval: monthly }
+    groups:
+      gomod:
+        applies-to: version-updates
+        patterns: ["*"]
+
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns: ["*"]
