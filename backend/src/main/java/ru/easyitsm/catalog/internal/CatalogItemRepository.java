@@ -26,6 +26,9 @@ interface CatalogItemRepository extends ListCrudRepository<CatalogItem, UUID> {
     List<CatalogItem> page(boolean admin, String[] roles, boolean anyCategory, Collection<UUID> categoryIds, String q,
                            String team, UUID favoritesOf, String afterName, UUID afterId, int limit);
 
+    @Query("select * from catalog_item where active order by name, id")
+    List<CatalogItem> allActive();
+
     /** Популярные услуги для главной портала (10.4): до 8 плиток. */
     @Query("select * from catalog_item where active and " + VISIBLE + " order by order_count desc, name, id limit :limit")
     List<CatalogItem> popular(boolean admin, String[] roles, int limit);
