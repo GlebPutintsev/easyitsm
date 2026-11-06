@@ -2,6 +2,7 @@ package ru.easyitsm.cmdb.internal;
 
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,7 @@ class CmdbController {
 
     static final String READ = "hasAnyRole('AGT', 'LEAD', 'MIM', 'CHG', 'PRB', 'CFG', 'AST', 'ADM', 'AUD')";
     static final String WRITE = "hasRole('CFG')";
+    static final String CONFIGURE = "hasAnyRole('CFG', 'ADM')";
 
     record ClassView(UUID id, UUID parentId, String code, String name, String layer, boolean isAbstract,
                      boolean system, boolean active, List<AttributeDef> attributes, List<AttributeDef> ownAttributes,
@@ -76,25 +78,82 @@ class CmdbController {
     private final CiClasses classes;
     private final ImpactService impact;
     private final TicketQueries tickets;
+    private final CiHistoryService history;
+    private final MapService maps;
+    private final ClassAdminService admin;
+    private final QualityService quality;
 
     CmdbController(CiService cis, RelationService relations, CiClasses classes, ImpactService impact,
-                   TicketQueries tickets) {
+                   TicketQueries tickets, CiHistoryService history, MapService maps, ClassAdminService admin,
+                   QualityService quality) {
         this.cis = cis;
         this.relations = relations;
         this.classes = classes;
         this.impact = impact;
         this.tickets = tickets;
+        this.history = history;
+        this.maps = maps;
+        this.admin = admin;
+        this.quality = quality;
     }
 
     @GetMapping("/classes")
     @PreAuthorize(READ)
     List<ClassView> classes() {
         ClassTree tree = classes.tree();
-        return tree.all().stream()
-                .map(c -> new ClassView(c.id(), c.parentId(), c.code(), c.name(), c.layer().code(), c.isAbstract(),
-                        c.system(), c.active(), tree.effectiveAttributes(c), c.attributes(), tree.effectiveRules(c),
-                        c.version()))
-                .toList();
+        return tree.all().stream().map(c -> classView(tree, c)).toList();
+    }
+
+    @PostMapping("/classes")
+    @PreAuthorize(CONFIGURE)
+    ResponseEntity<ClassView> createClass(@Valid @RequestBody ClassAdminService.CreateClass cmd) {
+        admin.createClass(cmd);
+        ClassView view = classView(cmd.code());
+        return ResponseEntity.created(URI.create("/api/v1/cmdb/classes/" + view.code()))
+                .eTag(ETags.of(view.version())).body(view);
+    }
+
+    @PatchMapping("/classes/{code}")
+    @PreAuthorize(CONFIGURE)
+    ResponseEntity<ClassView> updateClass(@PathVariable String code,
+                                          @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+                                          @Valid @RequestBody ClassAdminService.UpdateClass cmd) {
+        admin.updateClass(code, ifMatch, cmd);
+        ClassView view = classView(code);
+        return ResponseEntity.ok().eTag(ETags.of(view.version())).body(view);
+    }
+
+    @PostMapping("/relation-types")
+    @PreAuthorize(CONFIGURE)
+    ResponseEntity<CiClasses.RelationType> createRelationType(
+            @Valid @RequestBody ClassAdminService.CreateRelationType cmd) {
+        return ResponseEntity.status(201).body(admin.createRelationType(cmd));
+    }
+
+    @PatchMapping("/relation-types/{code}")
+    @PreAuthorize(CONFIGURE)
+    CiClasses.RelationType updateRelationType(@PathVariable String code,
+                                              @Valid @RequestBody ClassAdminService.UpdateRelationType cmd) {
+        return admin.updateRelationType(code, cmd);
+    }
+
+    @GetMapping("/quality")
+    @PreAuthorize(READ)
+    QualityService.Summary quality() {
+        return quality.summary();
+    }
+
+    /** Список КЕ с замечанием: {@code incomplete}, {@code stale}, {@code orphan} — до 200. */
+    @GetMapping("/quality/issues")
+    @PreAuthorize(READ)
+    List<CiRefView> qualityIssues(@RequestParam String kind) {
+        return quality.issues(kind);
+    }
+
+    @GetMapping("/quality/duplicates")
+    @PreAuthorize(READ)
+    List<QualityService.DuplicateGroup> duplicates() {
+        return quality.duplicateGroups();
     }
 
     @GetMapping("/relation-types")
@@ -129,9 +188,13 @@ class CmdbController {
                 .eTag(ETags.of(view.version())).body(view);
     }
 
+    /** Карточка; с {@code at} — состояние на момент времени (CFG-06), без ETag: изменить его нельзя. */
     @GetMapping("/cis/{id}")
     @PreAuthorize(READ)
-    ResponseEntity<CiView> get(@PathVariable UUID id) {
+    ResponseEntity<CiView> get(@PathVariable UUID id, @RequestParam(required = false) Instant at) {
+        if (at != null) {
+            return ResponseEntity.ok(history.asOf(id, at));
+        }
         CiView view = cis.get(id);
         return ResponseEntity.ok().eTag(ETags.of(view.version())).body(view);
     }
@@ -147,8 +210,23 @@ class CmdbController {
 
     @GetMapping("/cis/{id}/relations")
     @PreAuthorize(READ)
-    List<RelationService.RelationView> relations(@PathVariable UUID id) {
-        return relations.list(id);
+    List<RelationService.RelationView> relations(@PathVariable UUID id,
+                                                 @RequestParam(required = false) Instant at) {
+        return relations.list(id, at);
+    }
+
+    @GetMapping("/cis/{id}/history")
+    @PreAuthorize(READ)
+    CursorPage<CiHistoryService.Entry> history(@PathVariable UUID id, @RequestParam(required = false) String cursor,
+                                               @RequestParam(required = false) Integer limit) {
+        return history.history(id, PageParams.of(cursor, limit));
+    }
+
+    @GetMapping("/cis/{id}/map")
+    @PreAuthorize(READ)
+    MapService.CiMap map(@PathVariable UUID id, @RequestParam(defaultValue = "2") int depth,
+                         @RequestParam(required = false) List<String> type) {
+        return maps.map(id, depth, CiService.split(type));
     }
 
     @PostMapping("/cis/{id}/relations")
@@ -178,6 +256,16 @@ class CmdbController {
                 report.impacted().stream().map(ImpactedView::of).toList(),
                 report.services().stream().map(ImpactedView::of).toList(), visible,
                 report.openTicketIds().size() - visible.size(), report.depth(), report.truncated());
+    }
+
+    private ClassView classView(String code) {
+        ClassTree tree = classes.tree();
+        return classView(tree, tree.byCode(code).orElseThrow());
+    }
+
+    private static ClassView classView(ClassTree tree, ClassTree.ClassInfo c) {
+        return new ClassView(c.id(), c.parentId(), c.code(), c.name(), c.layer().code(), c.isAbstract(), c.system(),
+                c.active(), tree.effectiveAttributes(c), c.attributes(), tree.effectiveRules(c), c.version());
     }
 
     private static TicketView ticket(TicketSnapshot t) {
