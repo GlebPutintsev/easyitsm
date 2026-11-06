@@ -12,9 +12,24 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Типы Node идут в ногу с рантаймом: Node 22 LTS (см. web.Dockerfile, ci.yml).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (компилятор на Go) пока не поддерживает typescript-eslint
+      # (peer typescript <6.1). Снять правило, когда поддержка появится.
+      - dependency-name: typescript
+        versions: [">= 7"]
   - package-ecosystem: docker
     directory: /deploy/docker
     schedule: { interval: weekly }
+    ignore:
+      # Только LTS: Java 21 и Node 22. Переход на следующий LTS (Java 25, Node 24)
+      # делаем вручную вместе с CI, pom.xml и distroless-образом.
+      # Тег maven:3.9-eclipse-temurin-21 и так получает патчи Maven и JDK 21.
+      - dependency-name: maven
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: gomod
     directory: /deploy/docker/web
     schedule: { interval: monthly }
