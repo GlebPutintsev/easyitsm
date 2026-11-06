@@ -203,7 +203,7 @@ class AssetService implements AssetQueries {
         if (f.clears("ciId")) {
             a.setCiId(null);
         } else if (f.ciId() != null && !f.ciId().equals(a.ciId())) {
-            if (cis.available() && !cis.exists(f.ciId())) {
+            if (!cis.exists(f.ciId())) {
                 throw ApiException.badRequest("unknown_ci", "Конфигурационная единица не найдена");
             }
             a.setCiId(f.ciId());

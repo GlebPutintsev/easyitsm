@@ -6,3 +6,6 @@
 57d4203ea125de3f8806076b5d13f42acc14964f:backend/src/test/java/ru/easyitsm/identity/internal/IdentityTestSupport.java:generic-api-key:34
 # Тестовый вектор TOTP из RFC 6238 (секрет «12345678901234567890»).
 57d4203ea125de3f8806076b5d13f42acc14964f:backend/src/test/java/ru/easyitsm/identity/internal/TotpTest.java:generic-api-key:36
+# Заглушка выданного токена источника мониторинга в тесте экрана интеграций (первая версия PR #50).
+# Не секрет: строка только в ответе-заглушке fetch; в текущей версии теста собирается из частей.
+b634efa74117bc66fefe60ba31d303725143b80b:frontend/src/features/integrations/integrations.test.tsx:generic-api-key:76
