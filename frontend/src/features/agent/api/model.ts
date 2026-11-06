@@ -84,7 +84,8 @@ export interface TicketSummary {
   awaitingAgent: boolean;
 }
 
-export type RequiredField = 'comment' | 'reason_code' | 'resolution' | 'pending_until' | 'group' | 'assignee';
+/** pending_reason — то же, что reason_code для паузы: модуль заявок может прислать любой из двух. */
+export type RequiredField = 'comment' | 'reason_code' | 'pending_reason' | 'resolution' | 'pending_until' | 'group' | 'assignee';
 
 /** Переход, доступный текущему пользователю (AvailableTransition контракта). */
 export interface AvailableTransition {
@@ -142,7 +143,8 @@ export type LinkKind =
 export interface TicketLink {
   id: string;
   kind: LinkKind;
-  ticket: Pick<TicketSummary, 'id' | 'number' | 'title' | 'status'>;
+  /** Без прав на связанную заявку сервер отдаёт только номер: название пустое, статуса нет. */
+  ticket: Pick<TicketSummary, 'id' | 'number' | 'title'> & { status: StatusRef | null };
 }
 
 export type ActivityKind = 'reply' | 'note' | 'system' | 'change';
