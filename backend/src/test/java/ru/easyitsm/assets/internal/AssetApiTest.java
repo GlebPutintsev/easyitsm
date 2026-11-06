@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -24,6 +26,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.support.TransactionTemplate;
+import ru.easyitsm.cmdb.api.CiDirectory;
+import ru.easyitsm.cmdb.api.CiRef;
+import ru.easyitsm.cmdb.events.CiMerged;
 import ru.easyitsm.platform.id.Ids;
 import ru.easyitsm.platform.tenant.TenantContext;
 
@@ -47,6 +53,15 @@ class AssetApiTest {
 
     @Autowired
     RenewalJob renewals;
+
+    @Autowired
+    CiDirectory directory;
+
+    @Autowired
+    ApplicationEventPublisher events;
+
+    @Autowired
+    TransactionTemplate tx;
 
     final String manager = Ids.newId().toString();
     final String employee = Ids.newId().toString();
@@ -323,6 +338,53 @@ class AssetApiTest {
     }
 
     // ------------------------------------------------------------------ помощники
+
+    // ------------------------------------------------------------------ связь с CMDB (AST-05)
+
+    @Test
+    void linksConfigurationItemAndFollowsMergeAndRetirement() throws Exception {
+        String id = create("CI-" + run);
+        String ci = createCi("ws-" + run);
+        String duplicate = createCi("ws-dup-" + run);
+
+        mvc.perform(as(patch("/api/v1/assets/" + id), manager, "AST").header("If-Match", "\"0\"")
+                        .content("{\"ciId\":\"" + Ids.newId() + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("unknown_ci"));
+        mvc.perform(as(patch("/api/v1/assets/" + id), manager, "AST").header("If-Match", "\"0\"")
+                        .content("{\"ciId\":\"" + duplicate + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ci.name").value("ws-dup-" + run))
+                .andExpect(jsonPath("$.ci.classCode").value("workstation"))
+                .andExpect(jsonPath("$.ci.status").value("active"));
+
+        // Сверка CMDB слила дубликат: ссылка актива переходит на выжившую КЕ.
+        UUID tenant = UUID.fromString(DEMO);
+        CiRef survivor = TenantContext.callAs(tenant, () -> directory.find(UUID.fromString(ci)).orElseThrow());
+        tx.executeWithoutResult(s -> TenantContext.runAs(tenant, () -> events.publishEvent(new CiMerged(tenant,
+                Instant.now(), null, "reconciliation", survivor, UUID.fromString(duplicate)))));
+        mvc.perform(as(get("/api/v1/assets/" + id), agent, "AGT"))
+                .andExpect(jsonPath("$.ci.id").value(ci))
+                .andExpect(jsonPath("$.ci.name").value("ws-" + run));
+        mvc.perform(as(get("/api/v1/assets?ciId=" + ci), agent, "AGT"))
+                .andExpect(jsonPath("$.items[0].id").value(id));
+
+        // КЕ выведена из эксплуатации: актив не меняется, в истории запись.
+        mvc.perform(as(patch("/api/v1/cmdb/cis/" + ci), manager, "CFG").header("If-Match", "\"0\"")
+                        .content("{\"status\":\"retired\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(as(get("/api/v1/assets/" + id), agent, "AGT"))
+                .andExpect(jsonPath("$.state").value("in_stock"))
+                .andExpect(jsonPath("$.ci.status").value("retired"));
+        String history = body(mvc.perform(as(get("/api/v1/assets/" + id + "/history"), agent, "AGT")));
+        assertThat(history).contains("выведена из эксплуатации").contains("объединена при сверке");
+    }
+
+    private String createCi(String name) throws Exception {
+        return JsonPath.read(body(mvc.perform(as(post("/api/v1/cmdb/cis"), manager, "CFG")
+                        .content("{\"name\":\"" + name + "\",\"classCode\":\"workstation\"}"))
+                .andExpect(status().isCreated())), "$.id");
+    }
 
     private String asset(String tag) {
         return """
