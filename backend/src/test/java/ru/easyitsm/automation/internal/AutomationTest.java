@@ -1,6 +1,7 @@
 package ru.easyitsm.automation.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -102,6 +103,13 @@ class AutomationTest {
                 .content("{\"enabled\":false}")).andExpect(status().isPreconditionFailed());
         perform(asAdmin(delete("/api/v1/automation/rules/" + id))).andExpect(status().isNoContent());
         perform(asAdmin(get("/api/v1/automation/rules/" + id))).andExpect(status().isNotFound());
+
+        // Каждое изменение правила попадает в журнал версий настроек «Управления».
+        perform(asAdmin(get("/api/v1/admin/config-versions").param("entity", "automation.rule").param("entityId", id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[*].action", containsInAnyOrder("create", "update", "delete")))
+                .andExpect(jsonPath("$.items[0].label").value("Переименовано " + marker));
     }
 
     @Test

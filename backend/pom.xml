@@ -23,6 +23,7 @@
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
     </properties>
 
     <dependencyManagement>
@@ -70,6 +71,12 @@
             <!-- Вход и синхронизация с AD, FreeIPA, ALD Pro (SEC-01, ACC-10) -->
             <groupId>org.springframework.ldap</groupId>
             <artifactId>spring-ldap-core</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Выгрузка отчётов в PDF (RPT-04), Apache License 2.0 -->
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

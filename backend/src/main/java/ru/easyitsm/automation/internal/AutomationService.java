@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.easyitsm.admin.api.ConfigHistory;
 import ru.easyitsm.platform.web.ApiException;
 import ru.easyitsm.platform.web.CursorPage;
 import ru.easyitsm.platform.web.ETags;
@@ -13,7 +14,10 @@ import ru.easyitsm.platform.web.PageParams;
 import ru.easyitsm.tickets.api.TicketQueries;
 import ru.easyitsm.tickets.api.TicketSnapshot;
 
-/** Правила, проверка правила на заявке и журнал запусков для REST. */
+/**
+ * Правила, проверка правила на заявке и журнал запусков для REST. Каждое изменение правила пишется в журнал
+ * версий настроек «Управления» как {@code automation.rule}.
+ */
 @Service
 class AutomationService {
 
@@ -22,19 +26,23 @@ class AutomationService {
                       List<Map<String, Object>> actions) {
     }
 
+    static final String HISTORY_ENTITY = "automation.rule";
+
     private final RuleStore rules;
     private final RunLog runs;
     private final RuleValidator validator;
     private final ActionRunner actions;
     private final TicketQueries tickets;
+    private final ConfigHistory history;
 
     AutomationService(RuleStore rules, RunLog runs, RuleValidator validator, ActionRunner actions,
-                      TicketQueries tickets) {
+                      TicketQueries tickets, ConfigHistory history) {
         this.rules = rules;
         this.runs = runs;
         this.validator = validator;
         this.actions = actions;
         this.tickets = tickets;
+        this.history = history;
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +58,9 @@ class AutomationService {
     @Transactional
     Rule create(RuleInput input) {
         validator.validate(input);
-        return find(rules.insert(input));
+        Rule created = find(rules.insert(input));
+        record(created, "create");
+        return created;
     }
 
     @Transactional
@@ -62,14 +72,22 @@ class AutomationService {
         if (!rules.update(id, current.version(), merged)) {
             throw ApiException.conflict("version_conflict", "Правило изменено другим пользователем. Обновите и повторите");
         }
-        return find(id);
+        Rule updated = find(id);
+        record(updated, "update");
+        return updated;
     }
 
     @Transactional
     void delete(UUID id) {
+        Rule current = find(id);
         if (!rules.delete(id)) {
             throw ApiException.notFound("Правило");
         }
+        record(current, "delete");
+    }
+
+    private void record(Rule rule, String action) {
+        history.record(HISTORY_ENTITY, rule.id().toString(), rule.name(), action, rule, null);
     }
 
     @Transactional(readOnly = true)

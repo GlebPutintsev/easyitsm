@@ -12,6 +12,12 @@ import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
 import { AutomationPage } from '@/features/automation/AutomationPage';
 import { RuleEditorPage } from '@/features/automation/RuleEditorPage';
+import { DictionariesPage } from '@/features/admin/DictionariesPage';
+import { GroupsPage } from '@/features/admin/GroupsPage';
+import { ImportPage } from '@/features/admin/ImportPage';
+import { JournalPage } from '@/features/admin/JournalPage';
+import { SetupWizard } from '@/features/admin/SetupWizard';
+import { UsersPage } from '@/features/admin/UsersPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/PasswordPages';
 import { RequireAuth } from '@/features/auth/RequireAuth';
@@ -22,6 +28,7 @@ import { ArticlePage } from '@/features/knowledge/ArticlePage';
 import { KnowledgePortal } from '@/features/knowledge/KnowledgePortal';
 import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
+import { ReportsPage } from '@/features/reports/ReportsPage';
 import { NotFound } from './NotFound';
 
 /**
@@ -63,9 +70,17 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
+      { path: 'agent/reports', element: <ReportsPage /> },
+      { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },
       { path: 'admin/automation', element: <AutomationPage /> },
       { path: 'admin/automation/rules/:id', element: <RuleEditorPage /> },
+      { path: 'admin/setup', element: <SetupWizard /> },
+      { path: 'admin/users', element: <UsersPage /> },
+      { path: 'admin/groups', element: <GroupsPage /> },
+      { path: 'admin/dictionaries', element: <DictionariesPage /> },
+      { path: 'admin/import', element: <ImportPage /> },
+      { path: 'admin/journal', element: <JournalPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
     ],
