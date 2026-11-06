@@ -11,6 +11,13 @@ afterEach(() => cleanup());
 // занимает дольше (1,4 с в PR #24), и тест падал, хотя экран был верным. 5 с хватает с запасом.
 configure({ asyncUtilTimeout: 5000 });
 
+// Без globals в vitest Testing Library не регистрирует очистку сама: экраны оставались смонтированными после
+// теста, их отложенные обновления (навигация после входа, React Query) срабатывали после закрытия jsdom
+// и роняли прогон ошибкой «window is not defined», хотя все тесты проходили.
+afterEach(() => {
+  cleanup();
+});
+
 // jsdom не реализует matchMedia и ResizeObserver, которые нужны Mantine.
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
