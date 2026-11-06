@@ -24,7 +24,7 @@ class CiStore {
             select c.id, c.class_id, k.code as class_code, k.name as class_name, k.layer, c.name, c.status,
                    c.environment, c.criticality, c.owner_group_id, c.description, c.attributes::text as attributes,
                    c.attribute_sources::text as attribute_sources, c.last_seen_at, c.created_at, c.created_by,
-                   c.updated_at, c.updated_by, c.version
+                   c.updated_at, c.updated_by, c.version, c.merged_into
               from ci c join ci_class k on k.id = c.class_id
             """;
 
@@ -127,6 +127,7 @@ class CiStore {
                 rs.getString("description"), json.readMap(rs.getString("attributes")),
                 json.readMap(rs.getString("attribute_sources")), Sql.instant(rs, "last_seen_at"),
                 Sql.instant(rs, "created_at"), Sql.uuid(rs, "created_by"), Sql.instant(rs, "updated_at"),
-                Sql.uuid(rs, "updated_by"), rs.getLong("version"));
+                Sql.uuid(rs, "updated_by"), rs.getLong("version"),
+                Sql.uuid(rs, "merged_into"));
     }
 }

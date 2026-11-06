@@ -161,13 +161,20 @@ class RelationService {
     }
 
     UUID insert(UUID typeId, UUID source, UUID target, String origin, UUID actor, Instant now) {
+        return insert(typeId, source, target, origin, null, actor, now);
+    }
+
+    /** @param originCiId КЕ, в объекте источника которой объявлена связь; для ручных связей {@code null} */
+    UUID insert(UUID typeId, UUID source, UUID target, String origin, UUID originCiId, UUID actor, Instant now) {
         UUID id = Ids.newId();
         jdbc.sql("""
-                insert into ci_relation (id, tenant_id, type_id, source_id, target_id, origin, valid_from,
-                                         created_at, created_by, updated_at, updated_by, version)
-                values (:id, :tenant, :type, :source, :target, :origin, :now, :now, :actor, :now, :actor, 0)""")
+                insert into ci_relation (id, tenant_id, type_id, source_id, target_id, origin, origin_ci_id,
+                                         valid_from, created_at, created_by, updated_at, updated_by, version)
+                values (:id, :tenant, :type, :source, :target, :origin, :originCi, :now, :now, :actor, :now,
+                        :actor, 0)""")
                 .param("id", id).param("tenant", TenantContext.require()).param("type", typeId)
                 .param("source", source).param("target", target).param("origin", origin)
+                .param("originCi", originCiId)
                 .param("now", Sql.ts(now)).param("actor", actor)
                 .update();
         return id;

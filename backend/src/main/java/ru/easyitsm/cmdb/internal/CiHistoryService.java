@@ -127,7 +127,7 @@ class CiHistoryService {
         return new CiView(cur.id(), name, classCode, className, layer, status.code(), environment, criticality.code(),
                 owner, description, attrs, Map.of(), null, cur.createdAt(), cur.createdBy(), updatedAt, updatedBy,
                 cur.version() - later.stream().filter(e -> !"relation".equals(e.field())).map(Entry::at)
-                        .distinct().count());
+                        .distinct().count(), null);
     }
 
     private Object value(String text) {

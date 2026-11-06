@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -168,7 +169,7 @@ class CiService implements CiDirectory {
                 cmd.status() == null ? CiStatus.ACTIVE : CiStatus.fromCode(cmd.status()), cmd.environment(),
                 cmd.criticality() == null ? CiCriticality.MEDIUM : CiCriticality.fromCode(cmd.criticality()),
                 cmd.ownerGroupId(), cmd.description() == null ? "" : cmd.description(), attrs, sources, null, now,
-                actor, now, actor, 0);
+                actor, now, actor, 0, null);
         store.insert(row);
         store.history(row.id(), "created", null, Map.of("name", row.name(), "class", cls.code()), MANUAL, actor,
                 now);
@@ -259,7 +260,7 @@ class CiService implements CiDirectory {
         Instant now = Sql.now();
         CiRow next = new CiRow(cur.id(), cls.id(), cls.code(), cls.name(), cls.layer(), name, status, environment,
                 criticality, owner, description, attrs, sources, cur.lastSeenAt(), cur.createdAt(), cur.createdBy(),
-                now, actor, cur.version() + 1);
+                now, actor, cur.version() + 1, cur.mergedInto());
         Set<String> changed = recordChanges(cur, next, MANUAL, actor, now);
         if (changed.isEmpty()) {
             return CiView.of(cur);
@@ -295,16 +296,22 @@ class CiService implements CiDirectory {
     }
 
     void publishChanges(CiRow before, CiRow after, Set<String> changed, String source, UUID actor, Instant at) {
+        publishChanges(before, after, changed, source, actor, at, events::publishEvent);
+    }
+
+    /** То же, но события уходят в {@code sink}: загрузка публикует их только после успешного объекта. */
+    void publishChanges(CiRow before, CiRow after, Set<String> changed, String source, UUID actor, Instant at,
+                        Consumer<Object> sink) {
         UUID tenant = TenantContext.require();
         Set<String> other = new LinkedHashSet<>(changed);
         other.remove("status");
         if (!other.isEmpty()) {
-            events.publishEvent(new CiUpdated(tenant, at, actor, source, after.ref(), other));
+            sink.accept(new CiUpdated(tenant, at, actor, source, after.ref(), other));
         }
         if (changed.contains("status")) {
-            events.publishEvent(new CiStatusChanged(tenant, at, actor, source, after.ref(), before.status()));
+            sink.accept(new CiStatusChanged(tenant, at, actor, source, after.ref(), before.status()));
             if (before.status() == CiStatus.RETIRED || after.status() == CiStatus.RETIRED) {
-                events.publishEvent(new CiImpactChanged(tenant, at, actor, source, Set.of(after.id()),
+                sink.accept(new CiImpactChanged(tenant, at, actor, source, Set.of(after.id()),
                         "status_changed"));
             }
         }

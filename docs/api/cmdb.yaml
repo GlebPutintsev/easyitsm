@@ -3,10 +3,9 @@ info:
   title: Easy ITSM — CMDB
   version: 0.1.0
   description: |
-    Модуль cmdb: классы КЕ, КЕ, связи, анализ влияния (CFG-01…09). Общие правила API: ошибки RFC 9457 с `code`,
+    Модуль cmdb: классы КЕ, КЕ, связи, анализ влияния, загрузка из источников и сверка (CFG-01…09). Общие правила API: ошибки RFC 9457 с `code`,
     `trace_id` и `field`, курсорная пагинация (`limit` до 200), `Idempotency-Key` на создание, `ETag`/`If-Match`
     на изменение. Коды значений в нижнем регистре. Описание решений: docs/api/cmdb-contract.md.
-    Операции с `x-status: planned` — проект следующих PR, схема может уточниться.
 servers:
   - url: /api/v1
 security:
@@ -441,7 +440,6 @@ paths:
   /cmdb/sources/{source}/batches:
     post:
       tags: [ingestion]
-      x-status: planned
       summary: Пакетная загрузка из источника (CFG-04, CFG-05) — агент обнаружения, импорт, коннекторы
       parameters:
         - {name: source, in: path, required: true, schema: {type: string, example: discovery}}
@@ -458,12 +456,24 @@ paths:
               schema: {$ref: '#/components/schemas/IngestResult'}
         '400': {$ref: '#/components/responses/Problem'}
         '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
         '413': {$ref: '#/components/responses/Problem'}
+    get:
+      tags: [ingestion]
+      summary: Последние пакеты источника без результатов по объектам
+      parameters:
+        - {name: source, in: path, required: true, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, default: 20, maximum: 100}}
+      responses:
+        '200':
+          description: Пакеты, новые первыми
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/IngestResult'}}
 
   /cmdb/sources/{source}/batches/{batchId}:
     get:
       tags: [ingestion]
-      x-status: planned
       summary: Результат пакета
       parameters:
         - {name: source, in: path, required: true, schema: {type: string}}
@@ -474,6 +484,151 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/IngestResult'}
+
+  /cmdb/sources:
+    get:
+      tags: [ingestion]
+      summary: Источники данных (CFG-04)
+      responses:
+        '200':
+          description: Источники по приоритету
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Source'}}
+    post:
+      tags: [ingestion]
+      summary: Завести источник (CFG, ADM)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, kind]
+              properties:
+                code: {type: string, pattern: '^[a-z][a-z0-9_-]{1,62}$', description: Не manual}
+                name: {type: string}
+                kind: {type: string, enum: [import, api, discovery, kubernetes, cloud]}
+                priority: {type: integer, minimum: 1, maximum: 100, default: 20, description: 1 — самый доверенный, ручной ввод — 10}
+                staleDays: {type: integer, minimum: 1, maximum: 3650, default: 30}
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/sources/{code}:
+    get:
+      tags: [ingestion]
+      summary: Источник с ETag
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Источник
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+    patch:
+      tags: [ingestion]
+      summary: Изменить название, приоритет, срок актуальности, включить или отключить (If-Match)
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+        - {name: If-Match, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                priority: {type: integer, minimum: 1, maximum: 100}
+                staleDays: {type: integer, minimum: 1, maximum: 3650}
+                active: {type: boolean}
+      responses:
+        '200':
+          description: Изменён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+        '412': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/conflicts:
+    get:
+      tags: [ingestion]
+      summary: Экран «Сверка» (CFG-05)
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [open, accepted, ignored, merged, dismissed, all], default: open}}
+        - {name: kind, in: query, schema: {type: string, enum: [attribute, duplicate]}}
+        - {name: source, in: query, schema: {type: string}}
+        - {name: ciId, in: query, schema: {type: string, format: uuid}, description: КЕ или кандидат дубликата}
+        - {name: cursor, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, maximum: 200}}
+      responses:
+        '200':
+          description: Конфликты, новые первыми
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Conflict'}}
+                  nextCursor: {type: [string, 'null']}
+
+  /cmdb/conflicts/{id}/resolve:
+    post:
+      tags: [ingestion]
+      summary: Разобрать конфликт (CFG)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [accept, ignore, merge]
+                  description: attribute — accept или ignore; duplicate — accept, merge (с ciId) или ignore
+                ciId: {type: string, format: uuid, description: Для duplicate — КЕ из candidates}
+      responses:
+        '200':
+          description: Разобран
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Conflict'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /cmdb/cis/{id}/merge:
+    post:
+      tags: [cis]
+      summary: Слить дубликат в эту КЕ (CFG-07, CFG)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mergedId]
+              properties:
+                mergedId: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Остающаяся КЕ
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ci'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
 
 components:
   securitySchemes:
@@ -594,6 +749,7 @@ components:
           additionalProperties: {type: string}
           description: Источник значения каждого атрибута, manual — ручной ввод
         lastSeenAt: {type: [string, 'null'], format: date-time, description: Последний раз видел источник данных}
+        mergedInto: {type: [string, 'null'], format: uuid, description: У слитого дубликата — КЕ, в которую он слит}
         createdAt: {type: string, format: date-time}
         createdBy: {type: [string, 'null'], format: uuid}
         updatedAt: {type: string, format: date-time}
@@ -695,9 +851,9 @@ components:
       type: object
       required: [batchId, items]
       properties:
-        batchId: {type: string, maxLength: 128, description: Уникален в источнике, повтор идемпотентен}
+        batchId: {type: string, pattern: '^[A-Za-z0-9._:-]{1,200}$', description: Уникален в источнике, повтор идемпотентен}
         runId: {type: string, description: Пакеты одного полного обхода}
-        final: {type: boolean, default: false, description: Последний пакет обхода}
+        final: {type: boolean, default: false, description: Последний пакет обхода, нужен runId}
         items:
           type: array
           maxItems: 1000
@@ -713,7 +869,7 @@ components:
               attributes: {type: object, additionalProperties: true}
               relations:
                 type: array
-                description: Заменяют связи этого источника от этой КЕ
+                description: Заменяют связи, которые этот источник объявил у этой КЕ; null — не трогать
                 items:
                   type: object
                   required: [typeCode, target]
@@ -731,13 +887,17 @@ components:
       type: object
       properties:
         batchId: {type: string}
-        status: {type: string, enum: [done, failed]}
+        runId: {type: [string, 'null']}
+        final: {type: boolean}
+        status: {type: string, enum: [done]}
         received: {type: integer}
         created: {type: integer}
         updated: {type: integer}
         unchanged: {type: integer}
-        conflicts: {type: integer}
+        conflicts: {type: integer, description: Поднятые конфликты сверки}
         errors: {type: integer}
+        removed: {type: integer}
+        createdAt: {type: string, format: date-time}
         results:
           type: array
           items:
@@ -745,6 +905,52 @@ components:
             properties:
               externalId: {type: string}
               ciId: {type: [string, 'null'], format: uuid}
-              outcome: {type: string, enum: [created, updated, unchanged, conflict, error]}
-              code: {type: string}
-              field: {type: string}
+              outcome: {type: string, enum: [created, updated, unchanged, conflict, error, removed, not_found]}
+              code: {type: [string, 'null']}
+              field: {type: [string, 'null']}
+              conflicts: {type: integer}
+              warnings:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code: {type: string, enum: [unknown_relation_type, unknown_target, self_relation, relations_failed]}
+                    field: {type: string}
+
+    Source:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        code: {type: string}
+        name: {type: string}
+        kind: {type: string, enum: [import, api, discovery, kubernetes, cloud]}
+        priority: {type: integer}
+        staleDays: {type: integer}
+        active: {type: boolean}
+        records: {type: integer, description: Объекты источника, связанные с КЕ}
+        lastBatchAt: {type: [string, 'null'], format: date-time}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer}
+
+    Conflict:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [attribute, duplicate]}
+        status: {type: string, enum: [open, accepted, ignored, merged, dismissed]}
+        source: {type: object, properties: {code: {type: string}, name: {type: string}}}
+        externalId: {type: string}
+        ci: {oneOf: [{$ref: '#/components/schemas/CiRef'}, {type: 'null'}]}
+        attribute: {type: [string, 'null']}
+        currentValue: {description: Текущее значение в КЕ}
+        proposedValue: {description: Значение источника}
+        currentSource: {type: [string, 'null'], description: Владелец текущего значения}
+        candidates: {type: array, items: {$ref: '#/components/schemas/CiRef'}}
+        itemName: {type: [string, 'null']}
+        itemClassCode: {type: [string, 'null']}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        resolvedAt: {type: [string, 'null'], format: date-time}
+        resolvedBy: {type: [string, 'null'], format: uuid}
+        version: {type: integer}
