@@ -29,7 +29,9 @@ class SlaActionsExecutor {
 
     SlaActionsExecutor(ObjectProvider<TicketCommands> tickets, TransactionTemplate tx) {
         this.tickets = tickets;
-        this.tx = tx;
+        // После фиксации транзакции события — только новая транзакция (см. SlaTicketEventsListener).
+        this.tx = new TransactionTemplate(tx.getTransactionManager());
+        this.tx.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @TransactionalEventListener

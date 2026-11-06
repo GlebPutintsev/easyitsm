@@ -1,0 +1,238 @@
+{
+  "actions": {
+    "showMore": "Show more"
+  },
+  "nav": {
+    "automation": "Automation"
+  },
+  "automation": {
+    "title": "Automation",
+    "subtitle": "Event–condition–action rules run as the system and log every run",
+    "tabs": {
+      "rules": "Rules",
+      "runs": "Run log"
+    },
+    "newRule": "New rule",
+    "noRules": "No rules yet",
+    "noRulesHint": "Create your first rule, e.g. “organisation-wide incident — P1 and on-call group right away”",
+    "columns": {
+      "name": "Rule",
+      "trigger": "When",
+      "actions": "Does",
+      "enabled": "Enabled",
+      "updated": "Updated",
+      "time": "Time",
+      "rule": "Rule",
+      "ticket": "Ticket",
+      "status": "Result",
+      "depth": "Depth",
+      "duration": "Duration"
+    },
+    "enable": "Enable",
+    "disable": "Disable",
+    "triggers": {
+      "ticket_created": "Ticket created",
+      "status_changed": "Status changed",
+      "priority_changed": "Priority changed",
+      "assignment_changed": "Assignment changed",
+      "ticket_updated": "Ticket fields changed",
+      "comment_added": "Reply or note added",
+      "escalated": "Ticket escalated",
+      "sla_warning": "SLA: threshold reached",
+      "sla_breached": "SLA: breached"
+    },
+    "fields": {
+      "type": "Type",
+      "priority": "Priority",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "statusCode": "Status",
+      "statusCategory": "Status category",
+      "groupId": "Group",
+      "assigneeId": "Assignee",
+      "serviceId": "Service (id)",
+      "categoryId": "Category (id)",
+      "catalogItemId": "Catalog item (id)",
+      "channel": "Channel",
+      "confidential": "Confidential",
+      "title": "Subject",
+      "requesterId": "Requester",
+      "organizationId": "Organisation (id)",
+      "fromStatusCode": "Previous status",
+      "fromStatusCategory": "Previous status category",
+      "transitionTrigger": "Transition cause",
+      "fromPriority": "Previous priority",
+      "fromGroupId": "Previous group",
+      "fromAssigneeId": "Previous assignee",
+      "changedFields": "Changed fields",
+      "visibility": "Entry visibility",
+      "fromRequester": "Written by requester",
+      "escalationKind": "Escalation kind",
+      "escalationLevel": "Escalation level",
+      "slaKind": "Agreement kind",
+      "slaMetric": "Target",
+      "slaPercent": "Threshold, %"
+    },
+    "eventField": "event field",
+    "ops": {
+      "eq": "is",
+      "neq": "is not",
+      "in": "is one of",
+      "not_in": "is none of",
+      "empty": "is empty",
+      "not_empty": "is set",
+      "contains": "contains",
+      "not_contains": "does not contain",
+      "gte": "at least",
+      "lte": "at most"
+    },
+    "values": {
+      "type": {
+        "incident": "Incident",
+        "request": "Request",
+        "problem": "Problem",
+        "change": "Change",
+        "task": "Task"
+      },
+      "impact": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "statusCategory": {
+        "draft": "Draft",
+        "new": "New",
+        "approval": "Approval",
+        "assigned": "Assigned",
+        "in_progress": "In progress",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "closed": "Closed",
+        "cancelled": "Cancelled"
+      },
+      "channel": {
+        "portal": "Portal",
+        "email": "Email",
+        "api": "API",
+        "chat": "Chat",
+        "monitoring": "Monitoring",
+        "agent": "Agent"
+      },
+      "boolean": {
+        "true": "Yes",
+        "false": "No"
+      },
+      "visibility": {
+        "public": "Public",
+        "internal": "Internal"
+      },
+      "escalationKind": {
+        "functional": "Functional",
+        "hierarchical": "Hierarchical"
+      },
+      "slaKind": {
+        "sla": "SLA",
+        "ola": "OLA",
+        "uc": "UC"
+      },
+      "slaMetric": {
+        "response": "Response",
+        "resolution": "Resolution"
+      }
+    },
+    "editor": {
+      "newTitle": "New rule",
+      "back": "All rules",
+      "name": "Name",
+      "description": "Description",
+      "enabled": "Rule enabled",
+      "enabledHint": "A disabled rule can be saved and tested but never fires",
+      "position": "Order",
+      "positionHint": "Rules of one event run in ascending order",
+      "when": "When",
+      "if": "If",
+      "then": "Then",
+      "trigger": "Event",
+      "matchAll": "all conditions match",
+      "matchAny": "any condition matches",
+      "noConditions": "Without conditions the rule fires on every event",
+      "addCondition": "Add condition",
+      "addAction": "Add action",
+      "field": "Field",
+      "op": "Operator",
+      "value": "Value",
+      "values": "Values",
+      "remove": "Remove",
+      "moveUp": "Up",
+      "moveDown": "Down",
+      "save": "Save",
+      "saved": "Rule saved",
+      "delete": "Delete rule",
+      "deleteConfirm": "Delete rule “{{name}}”? Run log entries stay.",
+      "unsaved": "There are unsaved changes",
+      "group": "Group",
+      "assignee": "Assignee",
+      "assigneeHint": "Empty — the group's distribution picks the assignee",
+      "user": "User",
+      "status": "Status",
+      "comment": "Transition comment",
+      "reasonCode": "Reason code",
+      "resolutionCode": "Resolution code",
+      "body": "Text",
+      "bodyHint": "Placeholders: {{number}}, {{title}}, {{priority}}, {{status}}, {{rule}}",
+      "visibility": "Visibility",
+      "kind": "Escalation kind",
+      "reason": "Reason",
+      "loopNote": "Loop protection: a rule chain is at most 5 deep, a rule never re-triggers itself through other rules and acts on one ticket at most 10 times in 5 minutes."
+    },
+    "actionTypes": {
+      "assign": "Assign",
+      "set_priority": "Set priority",
+      "set_status": "Move to status",
+      "add_comment": "Add feed entry",
+      "add_watcher": "Add watcher",
+      "escalate": "Escalate"
+    },
+    "test": {
+      "title": "Test on a ticket",
+      "hint": "Shows whether the rule fires and what it would do to the ticket now. The ticket is not changed.",
+      "ticket": "Ticket number",
+      "run": "Test",
+      "matched": "Conditions match — the rule fires",
+      "notMatched": "Conditions do not match — the rule does not fire",
+      "unknown": "Depends on the event: {{fields}}",
+      "conditionOk": "matches",
+      "conditionFail": "does not match",
+      "conditionUnknown": "known when the event happens",
+      "outcome": {
+        "change": "changes",
+        "no_change": "no change",
+        "error": "will fail"
+      }
+    },
+    "runs": {
+      "empty": "No runs yet",
+      "allRules": "All rules",
+      "allStatuses": "All results",
+      "ticketFilter": "Ticket number",
+      "status": {
+        "success": "Done",
+        "failed": "Error",
+        "skipped": "Stopped"
+      },
+      "skip": {
+        "depth_limit": "chain deeper than 5",
+        "loop": "loop: rule already in chain",
+        "rate_limit": "too often on this ticket"
+      },
+      "outcome": {
+        "applied": "done",
+        "unchanged": "no change"
+      },
+      "chain": "Chain",
+      "deletedRule": "another rule",
+      "details": "Details",
+      "ms": "{{n}} ms"
+    }
+  }
+}

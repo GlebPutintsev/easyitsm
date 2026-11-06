@@ -1,0 +1,135 @@
+/* Автоматизация: только токены --ei-*, вид — DESIGN.md («Адмирал»). */
+
+.step {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+}
+
+.stepLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ei-accent-text);
+}
+
+.stepLabel::after {
+  content: '';
+  width: 20px;
+  height: 2px;
+  margin-top: 6px;
+  background: var(--ei-brass-line);
+}
+
+.connector {
+  width: 1px;
+  height: 12px;
+  margin-left: 68px;
+  background: var(--ei-border-strong);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(120px, 160px) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.removeCondition {
+  margin-top: 26px;
+}
+
+.actionCard {
+  padding: 12px;
+  border: 1px solid var(--ei-border);
+  border-radius: 8px;
+  background: var(--ei-bg);
+}
+
+.eventTag {
+  font-size: 11px;
+  color: var(--ei-text-3);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.success {
+  color: var(--ei-ok);
+  background: var(--ei-ok-soft);
+}
+
+.failed {
+  color: var(--ei-danger);
+  background: var(--ei-danger-soft);
+}
+
+.skipped {
+  color: var(--ei-warn);
+  background: var(--ei-warn-soft);
+}
+
+.off {
+  color: var(--ei-text-2);
+  background: var(--ei-neutral-soft);
+}
+
+.testBox {
+  padding: 16px;
+  border: 1px dashed var(--ei-border-strong);
+  border-radius: 12px;
+  background: var(--ei-bg);
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+}
+
+@media (width < 760px) {
+  .step {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ei-border);
+  }
+
+  .removeCondition {
+    margin-top: 0;
+    justify-self: end;
+  }
+
+  .connector {
+    margin-left: 24px;
+  }
+}

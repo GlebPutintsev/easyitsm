@@ -10,6 +10,8 @@ import { OrderPage, ReportProblemPage } from '@/features/portal/OrderPage';
 import { TicketPage } from '@/features/portal/TicketPage';
 import { agentRoutes } from '@/features/agent/routes';
 import { AdminHome } from '@/features/admin/AdminHome';
+import { AutomationPage } from '@/features/automation/AutomationPage';
+import { RuleEditorPage } from '@/features/automation/RuleEditorPage';
 import { DictionariesPage } from '@/features/admin/DictionariesPage';
 import { GroupsPage } from '@/features/admin/GroupsPage';
 import { ImportPage } from '@/features/admin/ImportPage';
@@ -71,6 +73,8 @@ export const router = createBrowserRouter([
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },
+      { path: 'admin/automation', element: <AutomationPage /> },
+      { path: 'admin/automation/rules/:id', element: <RuleEditorPage /> },
       { path: 'admin/setup', element: <SetupWizard /> },
       { path: 'admin/users', element: <UsersPage /> },
       { path: 'admin/groups', element: <GroupsPage /> },

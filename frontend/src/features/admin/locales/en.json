@@ -32,6 +32,10 @@
         "title": "Service catalog",
         "text": "Categories, offerings and approval routes"
       },
+      "automation": {
+        "title": "Automation",
+        "text": "Event–condition–action rules and the run log"
+      },
       "import": {
         "title": "CSV import",
         "text": "Users, groups and departments with validation and rollback"
@@ -352,7 +356,8 @@
         "identity": "Users and groups",
         "sla": "SLA and schedules",
         "tickets": "Tickets",
-        "catalog": "Catalog"
+        "catalog": "Catalog",
+        "automation": "Automation"
       },
       "allActions": "All actions",
       "action": "Action",
