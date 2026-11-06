@@ -29,6 +29,11 @@ class TicketProblem extends ApiException {
         return new TicketProblem(HttpStatus.BAD_REQUEST, "field_required", detail).with("field", field);
     }
 
+    /** Группа не найдена или исполнитель не состоит в группе заявки. */
+    static TicketProblem invalidAssignment(String field, String detail) {
+        return new TicketProblem(HttpStatus.BAD_REQUEST, "invalid_assignment", detail).with("field", field);
+    }
+
     static TicketProblem invalidCustom(String field, String detail) {
         return new TicketProblem(HttpStatus.BAD_REQUEST, "invalid_custom_field", detail).with("field", field);
     }

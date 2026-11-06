@@ -75,7 +75,7 @@ class TicketLifecycleTest extends TicketApiSupport {
     @Test
     void fullIncidentLifecycle() throws Exception {
         String id = read(createIncident("Принтер не печатает"), "$.id");
-        String group = ru.easyitsm.platform.id.Ids.newId().toString();
+        String group = newGroup(agent);
 
         // Новая → Назначена: группа задана, переход по триггеру group_assigned
         patchAs(id, agent, "AGT", "{\"groupId\":\"" + group + "\"}")

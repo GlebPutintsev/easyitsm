@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -15,10 +16,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import ru.easyitsm.platform.id.Ids;
+import ru.easyitsm.platform.tenant.TenantContext;
 
 /**
  * Общие помощники API-тестов заявок. Пользователи новые в каждом экземпляре теста; настройки арендатора
  * (правила, поля) тесты создают с уникальными данными, чтобы не влиять друг на друга.
+ * <p>
+ * Агенты видят только заявки своих групп, поэтому {@code agent} и {@code agent2} заведены в справочнике
+ * identity и состоят в группе {@link #supportGroup}, а заявки из {@link #createIncident} попадают в её очередь.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -40,6 +45,54 @@ abstract class TicketApiSupport {
     final String admin = Ids.newId().toString();
 
     String tenant = DEMO;
+
+    /** Группа поддержки теста: в ней {@code agent} и {@code agent2}. */
+    String supportGroup;
+
+    @BeforeEach
+    void setUpSupportGroup() {
+        user(agent);
+        user(agent2);
+        supportGroup = newGroup(agent, agent2);
+    }
+
+    /** Пользователь в справочнике identity текущего арендатора (для членства в группах). */
+    void user(String id) {
+        TenantContext.runAs(UUID.fromString(tenant), () -> jdbc.sql("""
+                insert into user_account (id, tenant_id, login, display_name, created_at, updated_at, version)
+                values (cast(:id as uuid), cast(:t as uuid), :login, :name, now(), now(), 0)
+                on conflict (id) do nothing""")
+                .param("id", id).param("t", tenant).param("login", "t" + id.replace("-", ""))
+                .param("name", "Тест " + id.substring(30)).update());
+    }
+
+    /** Новая группа поддержки с участниками (заводит их в справочнике). */
+    String newGroup(String... members) {
+        String group = Ids.newId().toString();
+        UUID t = UUID.fromString(tenant);
+        TenantContext.runAs(t, () -> jdbc.sql("""
+                insert into user_group (id, tenant_id, name, created_at, updated_at, version)
+                values (cast(:id as uuid), cast(:t as uuid), :name, now(), now(), 0)""")
+                .param("id", group).param("t", tenant).param("name", "Группа " + group).update());
+        for (String m : members) {
+            user(m);
+            TenantContext.runAs(t, () -> jdbc.sql("""
+                    insert into group_member (tenant_id, group_id, user_id)
+                    values (cast(:t as uuid), cast(:g as uuid), cast(:u as uuid))""")
+                    .param("t", tenant).param("g", group).param("u", m).update());
+        }
+        return group;
+    }
+
+    /**
+     * Ставит заявку без группы в очередь {@link #supportGroup}, как это сделала бы группа по умолчанию.
+     * Статус не меняется: так тесты жизненного цикла начинают с «Новой».
+     */
+    void queue(String ticketId) {
+        TenantContext.runAs(UUID.fromString(tenant), () -> jdbc.sql(
+                        "update ticket set group_id = cast(:g as uuid) where id = cast(:id as uuid) and group_id is null")
+                .param("g", supportGroup).param("id", ticketId).update());
+    }
 
     MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder req, String user, String roles) {
         return req.header("X-Dev-User", user).header("X-Dev-Tenant", tenant).header("X-Dev-Roles", roles)
@@ -70,10 +123,15 @@ abstract class TicketApiSupport {
         return JsonPath.read(json, path);
     }
 
-    /** Создаёт инцидент от имени заявителя и возвращает JSON ответа. */
+    /**
+     * Создаёт инцидент от имени заявителя и возвращает JSON ответа (как его вернул сервер). Если маршрутизация
+     * не нашла группу, заявка ставится в очередь {@link #supportGroup}.
+     */
     String createIncident(String title) throws Exception {
-        return body(perform(asReq(post("/api/v1/tickets"))
+        String json = body(perform(asReq(post("/api/v1/tickets"))
                 .content("{\"type\":\"incident\",\"title\":\"" + title + "\",\"description\":\"Описание\"}")));
+        queue(read(json, "$.id"));
+        return json;
     }
 
     String fetch(String id, String user, String roles) throws Exception {

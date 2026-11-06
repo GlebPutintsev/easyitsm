@@ -25,7 +25,7 @@ class TicketQueueTest extends TicketApiSupport {
 
     @Test
     void takeNextPicksMostUrgentAndThenNothing() throws Exception {
-        String group = Ids.newId().toString();
+        String group = newGroup(agent, agent2);
         String low = inGroup("Низкий", group);
         String high = inGroup("Высокий", group);
         patchAs(high, agent, "AGT", "{\"impact\":\"high\",\"urgency\":\"high\"}")
@@ -39,23 +39,42 @@ class TicketQueueTest extends TicketApiSupport {
                 .andExpect(jsonPath("$.id").value(low));
         perform(asAgent(post("/api/v1/tickets/take-next")).content(body)).andExpect(status().isNoContent());
         perform(asReq(post("/api/v1/tickets/take-next")).content(body)).andExpect(status().isForbidden());
+        // Из очереди чужой группы «взять следующую» нельзя
+        String outsider = Ids.newId().toString();
+        perform(as(post("/api/v1/tickets/take-next"), outsider, "AGT").content(body)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void takeNextWithoutGroupLooksOnlyAtMyGroups() throws Exception {
+        String foreign = newGroup(agent2);
+        String theirs = inGroup("Чужая очередь", foreign);
+        String mine = inGroup("Моя очередь", newGroup(agent));
+        perform(asAgent(post("/api/v1/tickets/take-next")).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(mine));
+        perform(asAgent(post("/api/v1/tickets/take-next")).content("{}")).andExpect(status().isNoContent());
+        assertThat((Object) read(fetch(theirs, agent2, "AGT"), "$.assigneeId")).isNull();
     }
 
     @Test
     void escalationNeedsReasonAndMovesGroup() throws Exception {
-        String group = Ids.newId().toString();
-        String target = Ids.newId().toString();
+        String group = newGroup(agent);
+        String target = newGroup(agent2);
         String id = inGroup("Эскалация", group);
         perform(asAgent(post("/api/v1/tickets/" + id + "/escalate"))
                 .content("{\"kind\":\"functional\",\"groupId\":\"" + target + "\",\"reason\":\"\"}"))
                 .andExpect(status().isBadRequest());
         perform(asAgent(post("/api/v1/tickets/" + id + "/escalate")).header("If-Match", etag(id))
-                .content("{\"kind\":\"functional\",\"groupId\":\"" + target + "\",\"reason\":\"Нужен сетевик\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.groupId").value(target));
-        perform(asAgent(post("/api/v1/tickets/" + id + "/escalate")).header("If-Match", etag(id))
                 .content("{\"kind\":\"hierarchical\",\"reason\":\"Горит\"}"))
                 .andExpect(status().isOk());
-        String feed = body(perform(asAgent(get("/api/v1/tickets/" + id + "/activity"))));
+        perform(asAgent(post("/api/v1/tickets/" + id + "/escalate")).header("If-Match", etag(id))
+                .content("{\"kind\":\"functional\",\"groupId\":\"" + Ids.newId() + "\",\"reason\":\"Куда-то\"}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("invalid_assignment"));
+        perform(asAgent(post("/api/v1/tickets/" + id + "/escalate")).header("If-Match", etag(id))
+                .content("{\"kind\":\"functional\",\"groupId\":\"" + target + "\",\"reason\":\"Нужен сетевик\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.groupId").value(target));
+        // Заявка ушла в чужую группу: прежний агент её больше не видит, новая группа видит с историей
+        perform(asAgent(get("/api/v1/tickets/" + id))).andExpect(status().isNotFound());
+        String feed = body(perform(as(get("/api/v1/tickets/" + id + "/activity"), agent2, "AGT")));
         assertThat(TicketLifecycleTest.JsonPathList.of(feed, "$.items[*].meta.event")).contains("escalated");
     }
 
@@ -73,6 +92,7 @@ class TicketQueueTest extends TicketApiSupport {
         String id = read(body(perform(asReq(post("/api/v1/tickets")).content(
                 "{\"type\":\"incident\",\"title\":\"Сбросьте пароль\",\"categoryId\":\"" + category + "\"}"))
                 .andExpect(jsonPath("$.identityCheck.required").value(true))), "$.id");
+        queue(id);
         perform(asAgent(post("/api/v1/tickets/" + id + "/take")).header("If-Match", etag(id))).andExpect(status().isOk());
         assertThat((String) read(fetch(id, agent, "AGT"), "$.status.category")).isEqualTo("in_progress");
         String resolve = "{\"to\":\"resolved\",\"resolutionCode\":\"fixed\",\"resolutionText\":\"Сброшен\"}";
@@ -85,7 +105,7 @@ class TicketQueueTest extends TicketApiSupport {
 
     @Test
     void listFiltersCountAndCursor() throws Exception {
-        String group = Ids.newId().toString();
+        String group = newGroup(agent);
         String overdue = null;
         for (int i = 0; i < 3; i++) {
             overdue = inGroup("Очередь " + i, group);
@@ -108,6 +128,10 @@ class TicketQueueTest extends TicketApiSupport {
         perform(asAgent(get("/api/v1/tickets").param("groupId", group).param("assigneeId", "none")
                 .param("awaitingAgent", "false"))).andExpect(jsonPath("$.items.length()").value(3));
         perform(asAgent(get("/api/v1/tickets").param("sort", "bogus"))).andExpect(status().isBadRequest());
+        // groupId=mine — группы текущего пользователя
+        String mine = body(perform(asAgent(get("/api/v1/tickets").param("groupId", "mine").param("limit", "100"))));
+        assertThat(TicketLifecycleTest.JsonPathList.of(mine, "$.items[*].groupId")).contains(group)
+                .allMatch(g -> g.equals(group) || g.equals(supportGroup));
     }
 
     @Test

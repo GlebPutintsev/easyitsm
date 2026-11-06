@@ -53,7 +53,7 @@ class TicketSettingsTest extends TicketApiSupport {
 
     @Test
     void routingRuleAndRoundRobinAssign() throws Exception {
-        String group = Ids.newId().toString();
+        String group = newGroup(agent);
         String a1 = Ids.newId().toString();
         String a2 = Ids.newId().toString();
         String keyword = "принтер" + suffix;

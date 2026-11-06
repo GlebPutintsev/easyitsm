@@ -59,8 +59,7 @@ class TicketRelations {
 
     @Transactional
     LinkView link(String ref, TicketRequests.Link req, Actor actor) {
-        access.requireSupport(actor);
-        TicketRow t = tickets.read(ref, actor);
+        TicketRow t = access.requireWork(tickets.resolve(ref, false), actor);
         TicketRow other = tickets.read(req.targetId(), actor);
         UUID id = links.add(t.id, other.id, req.kind(), actor.userId());
         Instant now = Sql.now();
@@ -76,8 +75,7 @@ class TicketRelations {
 
     @Transactional
     void unlink(String ref, UUID linkId, Actor actor) {
-        access.requireSupport(actor);
-        TicketRow t = tickets.read(ref, actor);
+        TicketRow t = access.requireWork(tickets.resolve(ref, false), actor);
         UUID other = links.remove(t.id, linkId);
         Instant now = Sql.now();
         feed.add(t.id, "system", "internal", actor.userId(), false, "",
@@ -96,9 +94,9 @@ class TicketRelations {
 
     @Transactional
     TicketRow addSubtask(String ref, TicketRequests.Subtask req, Actor actor) {
-        access.requireSupport(actor);
-        TicketRow parent = tickets.read(ref, actor);
+        TicketRow parent = access.requireWork(tickets.resolve(ref, false), actor);
         TicketService.requireActive(parent);
+        access.requireValidAssignment(req.groupId() != null ? req.groupId() : parent.groupId, req.assigneeId(), actor);
         String description = tickets.guard(req.description(), "mask");
         var draft = new TicketService.Draft(TicketType.TASK, tickets.guard(req.title(), "mask"), description,
                 actor.userId(), null, parent.organizationId, Channel.AGENT, parent.impact, parent.urgency, null, null,
@@ -117,13 +115,13 @@ class TicketRelations {
         return watchers.list(tickets.read(ref, actor).id);
     }
 
-    /** Себя подписывает любой, кто видит заявку; других — поддержка. */
+    /** Себя подписывает любой, кто видит заявку; других — поддержка, которая работает с заявкой. */
     @Transactional
     void watch(String ref, String userRef, Actor actor) {
         TicketRow t = tickets.read(ref, actor);
         UUID user = user(userRef, actor);
         if (!actor.is(user)) {
-            access.requireSupport(actor);
+            access.requireWork(t, actor);
         }
         watchers.add(t, user, actor.is(user) ? "self" : "added", actor);
     }
@@ -133,7 +131,7 @@ class TicketRelations {
         TicketRow t = tickets.read(ref, actor);
         UUID user = user(userRef, actor);
         if (!actor.is(user)) {
-            access.requireSupport(actor);
+            access.requireWork(t, actor);
         }
         watchers.remove(t.id, user);
     }

@@ -49,8 +49,7 @@ class TicketMerge {
 
     @Transactional
     Result merge(String targetRef, List<String> sourceRefs, boolean preview, Actor actor) {
-        access.requireSupport(actor);
-        TicketRow target = access.requireRead(tickets.resolve(targetRef, true), actor);
+        TicketRow target = access.requireWork(tickets.resolve(targetRef, true), actor);
         TicketService.requireActive(target);
 
         List<SourceResult> results = new ArrayList<>();
@@ -62,6 +61,10 @@ class TicketMerge {
                 s = access.requireRead(tickets.resolve(ref, true), actor);
             } catch (ApiException e) {
                 results.add(new SourceResult(TicketService.parseUuid(ref), ref, false, "not_found"));
+                continue;
+            }
+            if (!access.canWork(s, actor)) {
+                results.add(new SourceResult(s.id, s.number, false, "forbidden"));
                 continue;
             }
             String code = null;

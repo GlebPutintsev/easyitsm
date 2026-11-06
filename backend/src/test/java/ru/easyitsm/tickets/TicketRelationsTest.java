@@ -83,6 +83,7 @@ class TicketRelationsTest extends TicketApiSupport {
         String otherRequester = Ids.newId().toString();
         String dup = read(body(perform(as(post("/api/v1/tickets"), otherRequester, "REQ")
                 .content("{\"type\":\"incident\",\"title\":\"Wi-Fi пропал\"}"))), "$.id");
+        queue(dup);
 
         String preview = body(perform(asAgent(post("/api/v1/tickets/" + target + "/merge"))
                 .content("{\"sourceIds\":[\"" + dup + "\",\"" + target + "\"],\"preview\":true}"))
@@ -110,7 +111,7 @@ class TicketRelationsTest extends TicketApiSupport {
     void bulkPreviewExecuteAndUndo() throws Exception {
         String a = read(createIncident("Массово 1"), "$.id");
         String b = read(createIncident("Массово 2"), "$.id");
-        String group = Ids.newId().toString();
+        String group = newGroup(agent);
         String req = "{\"ticketIds\":[\"" + a + "\",\"" + b + "\"],\"action\":\"assign\",\"params\":{\"groupId\":\""
                 + group + "\"}";
 
@@ -130,7 +131,7 @@ class TicketRelationsTest extends TicketApiSupport {
         perform(asAgent(post("/api/v1/tickets/bulk/" + op + "/undo"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].ok").value(org.hamcrest.Matchers.contains(true, true)));
         String restored = fetch(a, agent, "AGT");
-        assertThat((Object) read(restored, "$.groupId")).isNull();
+        assertThat((String) read(restored, "$.groupId")).isEqualTo(supportGroup);
         assertThat((String) read(restored, "$.status.code")).isEqualTo("new");
         perform(asAgent(post("/api/v1/tickets/bulk/" + op + "/undo"))).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("undo_expired"));

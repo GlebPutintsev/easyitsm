@@ -88,9 +88,10 @@ class TicketViews {
                 .toList();
         boolean active = !t.statusCategory.isFinal();
         boolean support = actor.isSupport();
-        var perms = new Permissions(support && active, support && active,
+        boolean work = support && access.canWork(t, actor);
+        var perms = new Permissions(work && active, work && active,
                 active && (support || access.canRead(t, actor)) && !actor.roles().equals(java.util.Set.of("AUD")),
-                support, support && active, (support || actor.has("SEC")) && active);
+                support, work && active, (work || actor.has("SEC")) && active);
         return new TicketDetails(view(t), t.description, transitions, perms);
     }
 }
