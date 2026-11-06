@@ -72,8 +72,7 @@
     "placeholder": "Queue and ticket card will arrive with the workspace module"
   },
   "admin": {
-    "title": "Administration",
-    "placeholder": "Setup wizard and settings will arrive with the admin module"
+    "title": "Administration"
   },
   "kb": {
     "title": "Knowledge base",
