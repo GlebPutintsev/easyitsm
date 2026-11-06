@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, saveBlob, type CursorPage } from '@/shared/api/client';
+import { api, downloadFile, type CursorPage } from '@/shared/api/client';
 
 /** Журнал аудита (/api/v1/audit): SEC и AUD читают, проверяют целостность и выгружают. */
 
@@ -108,9 +108,8 @@ export function useExport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ reason, filter }: { reason: string; filter: AuditFilter }) => {
-      const blob = await api.download('/audit/export', { reason, ...query(filter) });
       const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
-      saveBlob(blob, `audit-${stamp}.csv`);
+      await downloadFile('/audit/export', { reason, ...query(filter) }, `audit-${stamp}.csv`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: auditKeys.all }),
   });
