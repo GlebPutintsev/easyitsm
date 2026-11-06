@@ -1,0 +1,190 @@
+import './i18n';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, etagOf, newIdempotencyKey, type CursorPage } from '@/shared/api/client';
+
+/** Типы и запросы «Интеграции → Мониторинг» (/api/v1/integrations/monitoring). */
+
+export type SourceKind = 'zabbix' | 'alertmanager' | 'generic';
+export type Severity = 'critical' | 'high' | 'warning' | 'info';
+export type Level = 'high' | 'medium' | 'low';
+export const SEVERITIES: Severity[] = ['critical', 'high', 'warning', 'info'];
+
+export interface Impact {
+  impact: Level;
+  urgency: Level;
+}
+
+export interface MonitoringSource {
+  id: string;
+  name: string;
+  kind: SourceKind;
+  tokenHint: string;
+  enabled: boolean;
+  requesterId: string;
+  groupId: string | null;
+  minSeverity: Severity;
+  severityMap: Record<Severity, Impact>;
+  autoResolve: boolean;
+  resolutionCode: string;
+  lastEventAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SourceView {
+  source: MonitoringSource;
+  requesterName: string | null;
+  groupName: string | null;
+}
+
+export interface WithToken {
+  source: SourceView;
+  token: string;
+}
+
+export interface SourceInput {
+  name?: string;
+  kind?: SourceKind;
+  enabled?: boolean;
+  requesterId?: string | null;
+  groupId?: string | null;
+  clearGroup?: boolean;
+  minSeverity?: Severity;
+  severityMap?: Record<Severity, Impact>;
+  autoResolve?: boolean;
+  resolutionCode?: string;
+}
+
+export interface ActiveAlert {
+  id: string;
+  fingerprint: string;
+  ticketNumber: string;
+  ticketId: string;
+  severity: Severity;
+  title: string;
+  occurrences: number;
+  firstAt: string;
+  lastAt: string;
+}
+
+export type Outcome = 'created' | 'updated' | 'escalated' | 'reopened' | 'resolved' | 'ignored' | 'error';
+export const OUTCOMES: Outcome[] = ['created', 'updated', 'escalated', 'reopened', 'resolved', 'ignored', 'error'];
+
+export interface EventEntry {
+  id: string;
+  sourceId: string;
+  receivedAt: string;
+  fingerprint: string | null;
+  alertStatus: 'firing' | 'resolved' | null;
+  severity: Severity | null;
+  title: string | null;
+  outcome: Outcome;
+  ticketId: string | null;
+  ticketNumber: string | null;
+  detail: string | null;
+}
+
+export interface Option {
+  id: string;
+  name: string;
+}
+
+const keys = {
+  sources: ['integrations', 'monitoring', 'sources'] as const,
+  alerts: (id: string) => ['integrations', 'monitoring', 'alerts', id] as const,
+  events: (sourceId?: string, outcome?: string) => ['integrations', 'monitoring', 'events', sourceId, outcome] as const,
+};
+
+const BASE = '/integrations/monitoring';
+
+export function useSources() {
+  return useQuery({
+    queryKey: keys.sources,
+    queryFn: ({ signal }) => api.get<CursorPage<SourceView>>(`${BASE}/sources`, { signal }),
+    select: (page) => page.items,
+  });
+}
+
+export function useCreateSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SourceInput) =>
+      api.post<WithToken>(`${BASE}/sources`, input, { idempotencyKey: newIdempotencyKey() }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.sources }),
+  });
+}
+
+export function useUpdateSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, version, input }: { id: string; version: number; input: SourceInput }) =>
+      api.patch<SourceView>(`${BASE}/sources/${id}`, input, { ifMatch: etagOf(version) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.sources }),
+  });
+}
+
+export function useRotateToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<WithToken>(`${BASE}/sources/${id}/token`, {}),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.sources }),
+  });
+}
+
+export function useDeleteSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`${BASE}/sources/${id}`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.sources }),
+  });
+}
+
+export function useActiveAlerts(id: string | null) {
+  return useQuery({
+    queryKey: keys.alerts(id ?? ''),
+    queryFn: ({ signal }) => api.get<CursorPage<ActiveAlert>>(`${BASE}/sources/${id}/alerts`, { signal }),
+    select: (page) => page.items,
+    enabled: !!id,
+  });
+}
+
+export function useEvents(sourceId?: string, outcome?: string) {
+  return useInfiniteQuery({
+    queryKey: keys.events(sourceId, outcome),
+    queryFn: ({ pageParam, signal }) =>
+      api.get<CursorPage<EventEntry>>(`${BASE}/events`, {
+        query: { sourceId, outcome, cursor: pageParam ?? undefined, limit: 50 },
+        signal,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+  });
+}
+
+export function useGroups() {
+  return useQuery({
+    queryKey: ['integrations', 'groups'],
+    queryFn: ({ signal }) => api.get<CursorPage<Option>>('/groups', { query: { limit: 200 }, signal }),
+    select: (page) => page.items,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Активные коды решения (справочник «Управления») для автозакрытия. */
+export function useResolutionCodes() {
+  return useQuery({
+    queryKey: ['integrations', 'resolution-codes'],
+    queryFn: ({ signal }) =>
+      api.get<{ kind: string; items: { code: string; name: string; active: boolean }[] }[]>('/admin/dictionaries', {
+        signal,
+      }),
+    select: (all) => (all.find((d) => d.kind === 'resolution')?.items ?? []).filter((i) => i.active),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Адрес приёма событий для настройки мониторинга. */
+export function eventsUrl(): string {
+  return `${window.location.origin}/api/v1/integrations/events`;
+}

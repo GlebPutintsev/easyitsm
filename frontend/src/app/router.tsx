@@ -19,6 +19,7 @@ import { ImportPage } from '@/features/admin/ImportPage';
 import { JournalPage } from '@/features/admin/JournalPage';
 import { SetupWizard } from '@/features/admin/SetupWizard';
 import { UsersPage } from '@/features/admin/UsersPage';
+import { IntegrationsPage } from '@/features/integrations/IntegrationsPage';
 import { MailSettingsPage } from '@/features/mail/MailSettingsPage';
 import { TemplatesPage } from '@/features/notifications/TemplatesPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -33,6 +34,7 @@ import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
+import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
 import { MajorIncidentPage, MajorIncidentsPage, StatusPage } from '@/features/major';
 import { ProblemPage, ProblemsPage } from '@/features/problems';
 import { NotFound } from './NotFound';
@@ -81,6 +83,14 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
       { path: 'agent/major', element: <MajorIncidentsPage /> },
       { path: 'agent/major/:id', element: <MajorIncidentPage /> },
+      { path: 'agent/assets', element: <AssetsPage /> },
+      { path: 'agent/assets/licenses', element: <LicensesPage /> },
+      { path: 'agent/assets/licenses/:id', element: <LicensesPage /> },
+      { path: 'agent/assets/contracts', element: <ContractsPage /> },
+      { path: 'agent/assets/contracts/:id', element: <ContractsPage /> },
+      { path: 'agent/assets/directory', element: <DirectoryPage /> },
+      { path: 'agent/assets/:id', element: <AssetPage /> },
+      { path: 'portal/assets', element: <MyAssetsPage /> },
       { path: 'agent/problems', element: <ProblemsPage /> },
       { path: 'agent/problems/:number', element: <ProblemPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
@@ -96,6 +106,7 @@ export const router = createBrowserRouter([
       { path: 'admin/import', element: <ImportPage /> },
       { path: 'admin/journal', element: <JournalPage /> },
       { path: 'admin/mail', element: <MailSettingsPage /> },
+      { path: 'admin/integrations', element: <IntegrationsPage /> },
       { path: 'admin/notification-templates', element: <TemplatesPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
