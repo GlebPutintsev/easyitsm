@@ -128,6 +128,27 @@ class TicketService implements TicketCommands, TicketQueries {
                 .stream().map(TicketRow::snapshot).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TicketSnapshot> createdBetween(TicketType type, Instant from, Instant to,
+                                               java.util.Collection<UUID> ciIds,
+                                               java.util.Collection<UUID> serviceIds, int limit) {
+        if ((ciIds == null || ciIds.isEmpty()) && (serviceIds == null || serviceIds.isEmpty())) {
+            return List.of();
+        }
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("type", type.code());
+        params.put("from", java.sql.Timestamp.from(from));
+        params.put("to", java.sql.Timestamp.from(to));
+        params.put("cis", Sql.array(ciIds == null ? Set.of() : Set.copyOf(ciIds)));
+        params.put("services", Sql.array(serviceIds == null ? Set.of() : Set.copyOf(serviceIds)));
+        params.put("limit", Math.clamp(limit, 1, 200));
+        return store.query("""
+                where t.type = :type and t.created_at >= :from and t.created_at < :to
+                  and (t.ci_id = any(cast(:cis as uuid[])) or t.service_id = any(cast(:services as uuid[])))
+                order by t.created_at, t.id limit :limit""", params).stream().map(TicketRow::snapshot).toList();
+    }
+
     @Transactional(readOnly = true)
     TicketRow readTx(String ref, Actor actor) {
         return read(ref, actor);
