@@ -32,8 +32,9 @@ import type { TicketsApi } from './ticketsApi';
  * Адаптер рабочего места к модулю заявок: сырые вызовы и типы берутся из features/tickets/api.ts
  * (там же If-Match из version), здесь только перевод в UI-модель.
  *
- * API отдаёт идентификаторы (requesterId, groupId…), экрану нужны имена — их даёт справочник
- * из модулей identity и catalog.
+ * API отдаёт идентификаторы (requesterId, groupId…), экрану нужны имена. Группы, агенты, услуги каталога
+ * и категории приходят одним справочником GET /agent-workspace/directory, имена прочих людей (заявителей,
+ * наблюдателей, авторов записей) — пакетно из GET /people?ids= перед переводом ответа в модель экрана.
  */
 
 const str = (v: unknown) => (v === null || v === undefined ? null : String(v));
@@ -53,9 +54,54 @@ function loadDirectory(): Promise<Directory> {
   return directoryCache;
 }
 
+/** Имена людей вне справочника. Кэш на сессию страницы: имя человека за это время не меняется. */
+const people = new Map<string, UserRef>();
+const PEOPLE_BATCH = 100;
+
+interface Person {
+  id: string;
+  displayName: string;
+  email: string | null;
+  active: boolean;
+}
+
+const short = (id: string): UserRef => ({ id, name: id.slice(0, 8) });
+
+function known(dir: Directory, id: string): boolean {
+  return (
+    people.has(id) || dir.me.id === id || dir.agents.some((a) => a.id === id) || (dir.users?.some((u) => u.id === id) ?? false)
+  );
+}
+
+/**
+ * Догружает имена для id, которых нет в справочнике. Ошибка не мешает показать очередь: такие люди
+ * остаются короткими id и подгрузятся при следующем ответе.
+ */
+export async function resolvePeople(dir: Directory, ids: (string | null | undefined)[]): Promise<void> {
+  const missing = [...new Set(ids.filter((id): id is string => !!id))].filter((id) => !known(dir, id));
+  for (let i = 0; i < missing.length; i += PEOPLE_BATCH) {
+    const batch = missing.slice(i, i + PEOPLE_BATCH);
+    try {
+      const found = await api.get<Person[]>('/people', { query: { ids: batch.join(',') } });
+      for (const p of found) people.set(p.id, { id: p.id, name: p.displayName, email: p.email ?? undefined });
+      // Неизвестный id (удалён или чужой арендатор) больше не спрашиваем.
+      for (const id of batch) if (!people.has(id)) people.set(id, short(id));
+    } catch {
+      return;
+    }
+  }
+}
+
+/** Для тестов: сбросить кэши справочника и имён. */
+export function resetDirectoryCache() {
+  directoryCache = null;
+  people.clear();
+}
+
 function userRef(dir: Directory, id: string | null): UserRef | null {
   if (!id) return null;
-  return dir.agents.find((a) => a.id === id) ?? dir.users?.find((u) => u.id === id) ?? { id, name: id.slice(0, 8) };
+  if (id === dir.me.id) return dir.me;
+  return dir.agents.find((a) => a.id === id) ?? dir.users?.find((u) => u.id === id) ?? people.get(id) ?? short(id);
 }
 
 function ref(list: Ref[], id: string | null): Ref | null {
@@ -80,7 +126,8 @@ function toSummary(t: RawTicket, dir: Directory): TicketSummary {
     requester: userRef(dir, t.requesterId) ?? { id: t.requesterId, name: '' },
     assignee: userRef(dir, t.assigneeId),
     group: ref(dir.groups, t.groupId),
-    service: ref(dir.services, t.serviceId),
+    // Пока нет сервисной модели CMDB (1.0), услуга — предложение каталога, по которому заявка создана.
+    service: ref(dir.services, t.serviceId ?? t.catalogItemId),
     category: ref(dir.categories, t.categoryId),
     channel: t.channel,
     confidential: t.confidential,
@@ -93,9 +140,10 @@ function toSummary(t: RawTicket, dir: Directory): TicketSummary {
 
 async function toTicket(t: RawTicketDetails): Promise<Ticket> {
   const dir = await loadDirectory();
-  const summary = toSummary(t, dir);
   // Связи и наблюдатели приходят отдельными запросами; без них карточка всё равно открывается.
   const [links, watchers] = await Promise.all([raw.links(t.id).catch(() => []), raw.watchers(t.id).catch(() => [])]);
+  await resolvePeople(dir, [t.requesterId, t.assigneeId, ...watchers.map((w) => w.userId)]);
+  const summary = toSummary(t, dir);
   return {
     ...summary,
     description: t.description ?? '',
@@ -224,6 +272,7 @@ export const httpTicketsApi: TicketsApi = {
       raw.list(filter, { sort: sortOf(query.sort), cursor: query.cursor, limit: query.limit ?? 50 }, signal),
       query.cursor ? Promise.resolve(null) : raw.count(filter, signal),
     ]);
+    await resolvePeople(dir, page.items.flatMap((t) => [t.requesterId, t.assigneeId]));
     return { items: page.items.map((t) => toSummary(t, dir)), nextCursor: page.nextCursor, total: count?.count ?? -1 };
   },
 
@@ -256,6 +305,7 @@ export const httpTicketsApi: TicketsApi = {
   async activity(id, signal) {
     const dir = await loadDirectory();
     const page = await raw.activity(id, { limit: 200 }, signal);
+    await resolvePeople(dir, page.items.map((a) => a.authorId));
     return page.items.map((a) => toActivity(a, dir));
   },
   async addActivity(id, activity, idempotencyKey) {
@@ -278,6 +328,7 @@ export const httpTicketsApi: TicketsApi = {
   async requesterTickets(requesterId, excludeId, signal) {
     const dir = await loadDirectory();
     const page = await raw.list({ requesterId }, { sort: '-created', limit: 6 }, signal);
+    await resolvePeople(dir, page.items.map((t) => t.assigneeId));
     return page.items.filter((t) => t.id !== excludeId).slice(0, 5).map((t) => toSummary(t, dir));
   },
 
