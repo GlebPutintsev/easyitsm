@@ -41,4 +41,13 @@ public interface TicketQueries {
      * CMDB (CFG-09) и изменений. Без проверки прав: показывать пользователю через {@link #findVisible}.
      */
     List<TicketSnapshot> openForObjects(Collection<UUID> objectIds, int limit);
+
+    /**
+     * Заявки типа, созданные в интервале {@code [from, to)} и затрагивающие одну из КЕ или услуг — например,
+     * инциденты за 72 часа после изменения (CHG-11). Без проверки прав пользователя, по времени создания,
+     * не больше {@code limit} (до 200).
+     */
+    List<TicketSnapshot> createdBetween(TicketType type, java.time.Instant from, java.time.Instant to,
+                                        java.util.Collection<UUID> ciIds, java.util.Collection<UUID> serviceIds,
+                                        int limit);
 }
