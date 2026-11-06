@@ -120,16 +120,17 @@ class TicketAccessTest extends TicketApiSupport {
     }
 
     @Test
-    void unroutedTicketIsVisibleToLeadButNotToAgent() throws Exception {
+    void unroutedTicketIsVisibleToEveryAgent() throws Exception {
         String id = read(body(perform(asReq(post("/api/v1/tickets"))
                 .content("{\"type\":\"incident\",\"title\":\"Без группы\"}"))), "$.id");
         String outsider = Ids.newId().toString();
-        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isNotFound());
-        perform(as(get("/api/v1/tickets/" + id), outsider, "LEAD")).andExpect(status().isOk())
+        perform(as(get("/api/v1/tickets/" + id), Ids.newId().toString(), "REQ")).andExpect(status().isNotFound());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "LEAD")).andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.permissions.assign").value(true));
-        // Руководитель распределяет: назначает группу, дальше заявка — её
-        patchAs(id, outsider, "LEAD", "{\"groupId\":\"" + supportGroup + "\"}").andExpect(status().isOk());
-        perform(as(get("/api/v1/tickets/" + id), outsider, "LEAD")).andExpect(status().isNotFound());
+        // Любой агент распределяет: назначает группу, дальше заявка — её
+        patchAs(id, outsider, "AGT", "{\"groupId\":\"" + supportGroup + "\"}").andExpect(status().isOk());
+        perform(as(get("/api/v1/tickets/" + id), outsider, "AGT")).andExpect(status().isNotFound());
         perform(asAgent(get("/api/v1/tickets/" + id))).andExpect(status().isOk());
     }
 

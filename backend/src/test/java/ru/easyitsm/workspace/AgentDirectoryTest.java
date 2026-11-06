@@ -79,10 +79,9 @@ class AgentDirectoryTest {
         String ticket = body(mvc.perform(as(post("/api/v1/tickets"), requester, "REQ")
                 .content("{\"type\":\"incident\",\"title\":\"Не печатает\",\"description\":\"Описание\"}")));
         String id = JsonPath.read(ticket, "$.id");
-        // Заявка без группы видна руководителю группы, он её и распределяет (видимость по группам, PR #24).
-        String etag = mvc.perform(as(get("/api/v1/tickets/" + id), agent, "AGT,LEAD")).andReturn().getResponse()
+        String etag = mvc.perform(as(get("/api/v1/tickets/" + id), agent, "AGT")).andReturn().getResponse()
                 .getHeader("ETag");
-        mvc.perform(as(patch("/api/v1/tickets/" + id), agent, "AGT,LEAD").header("If-Match", etag)
+        mvc.perform(as(patch("/api/v1/tickets/" + id), agent, "AGT").header("If-Match", etag)
                         .content("{\"groupId\":\"" + support + "\",\"assigneeId\":\"" + agent + "\"}"))
                 .andExpect(status().isOk());
 

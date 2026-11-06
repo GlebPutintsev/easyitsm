@@ -14,8 +14,8 @@ import ru.easyitsm.identity.api.UserDirectory;
  * модуля identity: группы пользователя, роли «видит всё» (MIM, AUD) и «видит свои группы» (AGT, LEAD, CHG,
  * PRB, CFG, AST, KNW), организация, если политика арендатора это разрешает.
  * <p>
- * Своё правило tickets: руководитель группы (LEAD) видит ещё нераспределённые заявки (без группы), чтобы
- * заявка не потерялась, если маршрутизация не нашла группу, а группа по умолчанию не задана.
+ * Своё правило tickets: все, кто видит заявки своих групп, видят ещё нераспределённые (без группы), чтобы
+ * заявку взял любой агент, если маршрутизация не нашла группу, а группа по умолчанию не задана.
  */
 interface AccessScopes {
 
@@ -78,6 +78,6 @@ class IdentityAccessScopes implements AccessScopes {
             return new Scope(actor.userId(), directory.groupsOf(actor.userId()), false, false, null, false);
         }
         return new Scope(s.userId(), s.groupIds(), s.allNonConfidential(), s.groupScoped(), s.organizationId(),
-                actor.has("LEAD"));
+                s.groupScoped());
     }
 }
