@@ -575,6 +575,41 @@ class TicketService implements TicketCommands, TicketQueries {
 
     @Override
     @Transactional
+    public Optional<TicketRef> resolveIfPossible(UUID ticketId, String comment, String resolutionCode,
+                                                 String resolutionText, String trigger) {
+        TicketRow t = store.lock(ticketId).orElseThrow(() -> ApiException.notFound("Заявка"));
+        if (t.statusCategory.isFinal() || t.statusCategory == StatusCategory.RESOLVED) {
+            return Optional.empty();
+        }
+        Set<String> filled = new java.util.HashSet<>();
+        if (comment != null && !comment.isBlank()) {
+            filled.add("comment");
+        }
+        if (resolutionCode != null && !resolutionCode.isBlank() && resolutionText != null && !resolutionText.isBlank()) {
+            filled.add("resolution");
+        }
+        if (t.groupId != null) {
+            filled.add("group");
+        }
+        if (t.assigneeId != null) {
+            filled.add("assignee");
+        }
+        Workflow wf = engine.workflow(t.type);
+        Optional<String> to = wf.from(t.status).stream()
+                .filter(Workflow.Transition::manual)
+                .filter(x -> filled.containsAll(x.requiredFields()))
+                .map(Workflow.Transition::to)
+                .filter(code -> wf.status(code).map(s -> s.categoryEnum() == StatusCategory.RESOLVED).orElse(false))
+                .findFirst();
+        if (to.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(transition(ticketId, new TicketTransition(to.get(), comment, null, resolutionCode,
+                resolutionText), trigger));
+    }
+
+    @Override
+    @Transactional
     public boolean addWatcher(UUID ticketId, UUID userId, String reason) {
         TicketRow t = store.find(ticketId).orElseThrow(() -> ApiException.notFound("Заявка"));
         String why = Set.of("added", "mention", "creator").contains(reason) ? reason : "added";

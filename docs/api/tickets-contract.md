@@ -83,6 +83,7 @@ TicketRef     TicketCommands.escalate(id, kind, groupId, reason, actor) // SLA �
 void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: срок для sort=due
 TicketRef     TicketCommands.change(id, TicketChange)                 // автоматизация: приоритет, влияние, срочность, группа, исполнитель
 TicketRef     TicketCommands.transition(id, TicketTransition, trigger) // автоматизация: переход по ручному переходу цикла
+Optional<TicketRef> TicketCommands.resolveIfPossible(id, comment, resolutionCode, resolutionText, trigger) // мониторинг: «устранено»
 boolean       TicketCommands.addWatcher(id, userId, reason)           // автоматизация: подписка
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
@@ -107,6 +108,9 @@ TicketReadScope TicketSearchIndex.readScope();  Set<UUID> visibleAmong(ids);  Li
 `change`, `transition` и `addWatcher` выполняются от имени системы (`actorId = null` в событиях). Группа и исполнитель
 в `change` не сверяются с identity — это делает вызывающий модуль. `transition` берёт любой ручной переход из текущего
 статуса, обязательные поля перехода проверяются; `trigger` попадает в `TicketStatusChanged.trigger` (`automation`).
+`resolveIfPossible` ищет первый ручной переход из текущего статуса в статус категории `resolved`, обязательные поля
+которого уже заполнены (комментарий, код и текст решения, группа и исполнитель заявки). Нет такого перехода — пусто
+без исключения и без изменений: так мониторинг не решает инцидент, который ещё никто не взял.
 `NewTicket.awaitingApproval = true` создаёт запрос в статусе категории `approval` (`pending_approval`).
 Влияние в `NewTicket` — `HIGH | MEDIUM | LOW`; портал сам сопоставляет «только я / подразделение / все».
 

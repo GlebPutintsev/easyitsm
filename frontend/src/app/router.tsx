@@ -19,6 +19,7 @@ import { ImportPage } from '@/features/admin/ImportPage';
 import { JournalPage } from '@/features/admin/JournalPage';
 import { SetupWizard } from '@/features/admin/SetupWizard';
 import { UsersPage } from '@/features/admin/UsersPage';
+import { IntegrationsPage } from '@/features/integrations/IntegrationsPage';
 import { MailSettingsPage } from '@/features/mail/MailSettingsPage';
 import { TemplatesPage } from '@/features/notifications/TemplatesPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
       { path: 'admin/import', element: <ImportPage /> },
       { path: 'admin/journal', element: <JournalPage /> },
       { path: 'admin/mail', element: <MailSettingsPage /> },
+      { path: 'admin/integrations', element: <IntegrationsPage /> },
       { path: 'admin/notification-templates', element: <TemplatesPage /> },
       { path: 'profile/security', element: <SecurityPage /> },
       { path: '*', element: <NotFound /> },
