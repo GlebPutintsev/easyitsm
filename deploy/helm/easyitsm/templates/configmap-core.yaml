@@ -21,3 +21,15 @@ data:
   SERVER_PORT: "8080"
   # Заголовки X-Forwarded-* от Ingress: правильные адреса клиентов в журнале аудита.
   SERVER_FORWARD_HEADERS_STRATEGY: framework
+  {{- with .Values.audit.siem }}
+  {{- if .enabled }}
+  EASYITSM_AUDIT_SIEM_ENABLED: "true"
+  EASYITSM_AUDIT_SIEM_HOST: {{ required "audit.siem.host обязателен, если audit.siem.enabled" .host | quote }}
+  EASYITSM_AUDIT_SIEM_PORT: {{ .port | quote }}
+  EASYITSM_AUDIT_SIEM_TRANSPORT: {{ .transport | quote }}
+  EASYITSM_AUDIT_SIEM_FORMAT: {{ .format | quote }}
+  {{- if .caSecret }}
+  EASYITSM_AUDIT_SIEM_CAFILE: /run/secrets/easyitsm/siem/ca.crt
+  {{- end }}
+  {{- end }}
+  {{- end }}

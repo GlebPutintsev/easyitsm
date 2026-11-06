@@ -10,6 +10,7 @@ import {
   IconHome,
   IconListDetails,
   IconSettings,
+  IconShieldLock,
   IconSitemap,
   IconStack2,
   IconUsers,
@@ -59,6 +60,7 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
       { key: 'home', to: '/admin', icon: IconSettings },
       { key: 'users', to: '/admin/users', icon: IconUsers },
       { key: 'catalogAdmin', to: '/admin/catalog', icon: IconClipboardList },
+      { key: 'audit', to: '/admin/audit', icon: IconShieldLock },
     ],
   },
 };

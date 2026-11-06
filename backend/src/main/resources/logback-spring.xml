@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Логи приложения: стандартная конфигурация Spring Boot, но сообщение (%m, %msg, %message) проходит
+  маскирование секретов и адресов почты (SEC-13, раздел 12.5 ТЗ). Правила объявлены до подключения base.xml,
+  чтобы шаблоны консоли и файла уже использовали их.
+-->
+<configuration>
+    <conversionRule conversionWord="m" class="ru.easyitsm.audit.internal.MaskingMessageConverter"/>
+    <conversionRule conversionWord="msg" class="ru.easyitsm.audit.internal.MaskingMessageConverter"/>
+    <conversionRule conversionWord="message" class="ru.easyitsm.audit.internal.MaskingMessageConverter"/>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+</configuration>

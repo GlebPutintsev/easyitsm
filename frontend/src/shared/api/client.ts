@@ -50,6 +50,8 @@ interface RequestOptions {
   /** Ключ идемпотентности для создания (API-04). Генерируется один раз на действие пользователя. */
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /** Ответ — файл (выгрузка CSV): вернуть Blob вместо JSON */
+  blob?: boolean;
 }
 
 /**
@@ -96,7 +98,7 @@ async function send<T>(method: Method, path: string, options: RequestOptions): P
   for (const [key, value] of Object.entries(options.query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: options.blob ? '*/*' : 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   const csrf = method === 'GET' ? undefined : csrfToken();
   if (csrf) headers['X-XSRF-TOKEN'] = csrf;
@@ -121,6 +123,7 @@ async function send<T>(method: Method, path: string, options: RequestOptions): P
     throw new ApiError(problem);
   }
   if (response.status === 204) return undefined as T;
+  if (options.blob) return (await response.blob()) as T;
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
 }
@@ -131,7 +134,22 @@ export const api = {
   patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>('PATCH', path, { ...options, body }),
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
   delete: <T = void>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
+  /** Скачать файл, который сервер отдаёт на POST (выгрузка с причиной). Повторный вход обрабатывается как обычно. */
+  download: (path: string, body: unknown, options?: RequestOptions) =>
+    request<Blob>('POST', path, { ...options, body, blob: true }),
 };
+
+/** Сохраняет Blob как файл через временную ссылку. */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /** ETag записи для If-Match: сервер отдаёт версию как "N" (API-05). */
 export function etagOf(version: number): string {

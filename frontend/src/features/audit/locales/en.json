@@ -1,0 +1,103 @@
+{
+  "nav": { "audit": "Audit log" },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Sign-ins, access, settings, exports and denials. Entries cannot be changed: a hash chain links them.",
+    "verify": "Verify integrity",
+    "export": "Export",
+    "filters": {
+      "label": "Log filters",
+      "from": "From",
+      "to": "To",
+      "category": "Category",
+      "allCategories": "All categories",
+      "result": "Result",
+      "allResults": "Any result",
+      "action": "Action",
+      "actionPlaceholder": "auth. or access.denied",
+      "search": "Search",
+      "searchPlaceholder": "Login, object, address, trace"
+    },
+    "columns": { "at": "Time", "category": "Category", "action": "Action", "actor": "Who", "object": "Object", "result": "Result", "ip": "Address" },
+    "category": { "auth": "Sign-in", "access": "Access", "config": "Settings", "data": "Data", "security": "Security", "audit": "Log" },
+    "result": { "success": "Success", "failure": "Failed", "denied": "Denied" },
+    "actions": {
+      "auth.login": "Sign-in",
+      "auth.account.locked": "Account locked",
+      "auth.password.reset_requested": "Password reset requested",
+      "auth.factor.password_changed": "Password changed",
+      "auth.factor.password_reset": "Password reset",
+      "auth.factor.totp_enabled": "TOTP enabled",
+      "auth.factor.totp_disabled": "TOTP disabled",
+      "auth.factor.webauthn_added": "Security key added",
+      "auth.factor.webauthn_removed": "Security key removed",
+      "auth.factor.recovery_codes_generated": "Recovery codes issued",
+      "auth.factor.mfa_reset": "MFA reset",
+      "access.denied": "Access denied",
+      "access.role.grant": "Role granted",
+      "access.role.revoke": "Role revoked",
+      "access.group.member_add": "Added to group",
+      "access.group.member_remove": "Removed from group",
+      "access.user.create": "User created",
+      "access.user.block": "User blocked",
+      "access.user.unblock": "User unblocked",
+      "config.change": "Settings changed",
+      "security.privileged_action": "Action with re-authentication",
+      "data.export": "Bulk export",
+      "data.sensitive_read": "Sensitive data read",
+      "audit.verify": "Integrity check",
+      "audit.export": "Log export",
+      "audit.siem.test": "SIEM connection test"
+    },
+    "system": "System",
+    "showMore": "Show more",
+    "empty": "No entries yet",
+    "details": {
+      "title": "Entry #{{seq}}",
+      "when": "When",
+      "who": "Who",
+      "what": "What",
+      "object": "Object",
+      "result": "Result",
+      "where": "From",
+      "browser": "Browser",
+      "trace": "Trace",
+      "data": "Details",
+      "hash": "Hash",
+      "prevHash": "Previous hash",
+      "noData": "No details"
+    },
+    "verification": {
+      "ok": "Chain intact: {{count}} entries checked, last #{{head}}",
+      "broken": "Chain broken at entry #{{seq}}: {{problem}}",
+      "problem": {
+        "hash_mismatch": "entry modified",
+        "link_mismatch": "link to previous entry broken",
+        "gap": "entry deleted",
+        "truncated": "latest entries deleted"
+      },
+      "hint": "Notify the security administrator and compare entries with the SIEM copy."
+    },
+    "exportDialog": {
+      "title": "Export log",
+      "text": "The export is recorded in the log with its reason and current filters. You may be asked to confirm sign-in.",
+      "reason": "Reason for export",
+      "reasonPlaceholder": "For example, security request #42",
+      "reasonHint": "5 to 500 characters",
+      "submit": "Export CSV"
+    },
+    "siem": {
+      "title": "SIEM forwarding",
+      "off": "Not configured. Enable it in the installation settings: easyitsm.audit.siem.",
+      "target": "Receiver",
+      "lag": "Waiting",
+      "delivered": "Delivered up to entry #{{seq}}",
+      "deliveredAt": "Last delivery",
+      "lastError": "Last error",
+      "retry": "Retry",
+      "test": "Test connection",
+      "testOk": "Test message sent",
+      "testFailed": "Could not send: {{error}}"
+    }
+  }
+}
