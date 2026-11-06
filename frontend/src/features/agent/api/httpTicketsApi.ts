@@ -27,6 +27,7 @@ import type {
   UserRef,
 } from './model';
 import type { TicketsApi } from './ticketsApi';
+import { clearPeopleCache, loadPeople } from '@/shared/api/people';
 
 /**
  * Адаптер рабочего места к модулю заявок: сырые вызовы и типы берутся из features/tickets/api.ts
@@ -54,16 +55,8 @@ function loadDirectory(): Promise<Directory> {
   return directoryCache;
 }
 
-/** Имена людей вне справочника. Кэш на сессию страницы: имя человека за это время не меняется. */
+/** Имена людей вне справочника, из общего клиента shared/api/people.ts (пакеты ?ids= и кэш на сессию). */
 const people = new Map<string, UserRef>();
-const PEOPLE_BATCH = 100;
-
-interface Person {
-  id: string;
-  displayName: string;
-  email: string | null;
-  active: boolean;
-}
 
 const short = (id: string): UserRef => ({ id, name: id.slice(0, 8) });
 
@@ -75,27 +68,21 @@ function known(dir: Directory, id: string): boolean {
 
 /**
  * Догружает имена для id, которых нет в справочнике. Ошибка не мешает показать очередь: такие люди
- * остаются короткими id и подгрузятся при следующем ответе.
+ * остаются короткими id. Неизвестный id общий клиент запоминает и больше не спрашивает,
+ * а после сбоя связи спросит снова при следующем ответе.
  */
 export async function resolvePeople(dir: Directory, ids: (string | null | undefined)[]): Promise<void> {
   const missing = [...new Set(ids.filter((id): id is string => !!id))].filter((id) => !known(dir, id));
-  for (let i = 0; i < missing.length; i += PEOPLE_BATCH) {
-    const batch = missing.slice(i, i + PEOPLE_BATCH);
-    try {
-      const found = await api.get<Person[]>('/people', { query: { ids: batch.join(',') } });
-      for (const p of found) people.set(p.id, { id: p.id, name: p.displayName, email: p.email ?? undefined });
-      // Неизвестный id (удалён или чужой арендатор) больше не спрашиваем.
-      for (const id of batch) if (!people.has(id)) people.set(id, short(id));
-    } catch {
-      return;
-    }
-  }
+  if (!missing.length) return;
+  const found = await loadPeople(missing);
+  for (const p of found.values()) people.set(p.id, { id: p.id, name: p.displayName, email: p.email ?? undefined });
 }
 
 /** Для тестов: сбросить кэши справочника и имён. */
 export function resetDirectoryCache() {
   directoryCache = null;
   people.clear();
+  clearPeopleCache();
 }
 
 function userRef(dir: Directory, id: string | null): UserRef | null {
