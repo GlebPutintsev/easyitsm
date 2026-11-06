@@ -32,6 +32,10 @@
         "title": "Service catalog",
         "text": "Categories, offerings and approval routes"
       },
+      "automation": {
+        "title": "Automation",
+        "text": "Event–condition–action rules and the run log"
+      },
       "mail": {
         "title": "Email",
         "text": "Sending, support mailboxes, email logs"
@@ -361,7 +365,8 @@
         "identity": "Users and groups",
         "sla": "SLA and schedules",
         "tickets": "Tickets",
-        "catalog": "Catalog"
+        "catalog": "Catalog",
+        "automation": "Automation"
       },
       "allActions": "All actions",
       "action": "Action",
