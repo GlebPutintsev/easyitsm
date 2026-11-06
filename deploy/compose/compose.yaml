@@ -28,6 +28,29 @@ services:
     ports: ["9000:9000", "9001:9001"]
     volumes: [minio:/data]
 
+  # Глобальный поиск с морфологией. Без него ядро ищет в PostgreSQL.
+  # docker compose --profile search up -d, затем EASYITSM_SEARCH_OPENSEARCH_ENABLED=true для ядра.
+  opensearch:
+    image: opensearchproject/opensearch:2.19.2
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ports: ["9200:9200"]
+    volumes: [opensearch:/usr/share/opensearch/data]
+    profiles: [search]
+
+  # Антивирус для вложений: docker compose --profile av up -d, затем EASYITSM_ATTACHMENTS_ANTIVIRUS_MODE=clamd.
+  # Без него в разработке файлы помечаются «не проверено антивирусом».
+  clamav:
+    image: clamav/clamav:1.4
+    environment:
+      CLAMD_CONF_StreamMaxLength: 110M
+      CLAMD_CONF_MaxFileSize: 110M
+    ports: ["3310:3310"]
+    profiles: [av]
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     # Реалм easyitsm с клиентом приложения и тестовым пользователем sso.user импортируется при старте.
@@ -46,3 +69,4 @@ services:
 volumes:
   pgdata:
   minio:
+  opensearch:

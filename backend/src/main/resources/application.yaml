@@ -47,6 +47,29 @@ easyitsm:
       admin-login: ${EASYITSM_BOOTSTRAP_ADMIN_LOGIN:}
       admin-password: ${EASYITSM_BOOTSTRAP_ADMIN_PASSWORD:}
       admin-email: ${EASYITSM_BOOTSTRAP_ADMIN_EMAIL:}
+  # Глобальный поиск. Без OpenSearch (пилот) работает резервный поиск PostgreSQL. Параметры: SearchProperties.
+  search:
+    opensearch:
+      enabled: ${EASYITSM_SEARCH_OPENSEARCH_ENABLED:false}
+      urls: ${EASYITSM_SEARCH_OPENSEARCH_URLS:http://localhost:9200}
+      username: ${EASYITSM_SEARCH_OPENSEARCH_USERNAME:}
+      # Пароль — файлом EASYITSM_SEARCH_OPENSEARCH_PASSWORD в /run/secrets/easyitsm (configtree).
+      password: ${EASYITSM_SEARCH_OPENSEARCH_PASSWORD:}
+      replicas: ${EASYITSM_SEARCH_OPENSEARCH_REPLICAS:0}
+  # Вложения в S3 и антивирус. Параметры: AttachmentProperties.
+  attachments:
+    s3:
+      endpoint: ${EASYITSM_ATTACHMENTS_S3_ENDPOINT:http://localhost:9000}
+      public-endpoint: ${EASYITSM_ATTACHMENTS_S3_PUBLIC_ENDPOINT:}
+      region: ${EASYITSM_ATTACHMENTS_S3_REGION:ru-central1}
+      bucket: ${EASYITSM_ATTACHMENTS_S3_BUCKET:easyitsm-files}
+      access-key: ${EASYITSM_ATTACHMENTS_S3_ACCESS_KEY:}
+      # Секрет — файлом EASYITSM_ATTACHMENTS_S3_SECRET_KEY в /run/secrets/easyitsm (configtree).
+      secret-key: ${EASYITSM_ATTACHMENTS_S3_SECRET_KEY:}
+    antivirus:
+      mode: ${EASYITSM_ATTACHMENTS_ANTIVIRUS_MODE:clamd}
+      host: ${EASYITSM_ATTACHMENTS_ANTIVIRUS_HOST:localhost}
+      port: ${EASYITSM_ATTACHMENTS_ANTIVIRUS_PORT:3310}
 
 management:
   endpoints:
@@ -89,6 +112,16 @@ easyitsm:
     mfa:
       # Демо-пользователи входят без обязательной настройки MFA. В поставке MFA обязательна (SEC-02).
       enforced: false
+  attachments:
+    s3:
+      # MinIO из deploy/compose. В поставке ключи задаются секретом.
+      access-key: ${EASYITSM_ATTACHMENTS_S3_ACCESS_KEY:easyitsm}
+      secret-key: ${EASYITSM_ATTACHMENTS_S3_SECRET_KEY:easyitsm-dev-secret} # gitleaks:allow
+      create-bucket: true
+    antivirus:
+      # ClamAV в compose запускается профилем av (docker compose --profile av up -d clamav), он тяжёлый.
+      # Без него файлы проходят проверки содержимого и архивов и помечаются «не проверен антивирусом».
+      mode: ${EASYITSM_ATTACHMENTS_ANTIVIRUS_MODE:none}
 ---
 # Вход через Keycloak из deploy/compose (docker compose --profile sso up keycloak), реалм easyitsm.
 # Запуск: --spring.profiles.active=dev,sso

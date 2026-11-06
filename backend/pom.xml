@@ -23,6 +23,7 @@
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
+        <awssdk.version>2.57.0</awssdk.version>
     </properties>
 
     <dependencyManagement>
@@ -31,6 +32,13 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${awssdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -70,6 +78,26 @@
             <!-- Вход и синхронизация с AD, FreeIPA, ALD Pro (SEC-01, ACC-10) -->
             <groupId>org.springframework.ldap</groupId>
             <artifactId>spring-ldap-core</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Вложения в S3-совместимом хранилище, подписанные ссылки (TCK-04, SEC-25). Только синхронный
+                 HTTP-клиент JDK: без Netty и Apache HttpClient. -->
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

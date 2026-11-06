@@ -65,6 +65,8 @@ worker:
 # Веб-клиент: статический сервер SPA.
 web:
   replicas: 1
+  # Адрес хранилища файлов для CSP (connect-src, img-src). Пусто — из attachments.s3.publicEndpoint.
+  filesOrigin: ""
   resources:
     requests: { cpu: 50m, memory: 32Mi }
     limits: { memory: 128Mi }
@@ -106,6 +108,68 @@ postgresql:
     requests: { cpu: 250m, memory: 512Mi }
     limits: { memory: 2Gi }
 
+# Глобальный поиск (раздел 10 PLAN.md). Без OpenSearch работает запасной поиск в PostgreSQL:
+# те же права, но без морфологии синонимов и с меньшей скоростью на больших объёмах.
+search:
+  opensearch:
+    enabled: false
+    # Узлы через запятую: https://opensearch-0.example:9200,https://opensearch-1.example:9200
+    urls: ""
+    username: ""
+    # Секрет с ключом password. Пусто — без пароля (только для стенда).
+    existingSecret: ""
+    indexPrefix: easyitsm-search
+    shards: 1
+    # В кластере из трёх узлов — 1.
+    replicas: 0
+
+# Вложения (TCK-04, SEC-25…27): файлы лежат в S3-совместимом хранилище, браузер грузит и скачивает их
+# по коротким подписанным ссылкам, ядро только проверяет и выдаёт ссылки.
+attachments:
+  s3:
+    # Адрес хранилища для ядра (внутренняя сеть).
+    endpoint: ""
+    # Адрес для браузера в подписанных ссылках — отдельный домен файлов (SEC-25), например https://files.example.ru.
+    # Он же попадает в CSP веб-клиента. Пусто — endpoint.
+    publicEndpoint: ""
+    region: ru-central1
+    bucket: easyitsm-files
+    # Отдельный бакет карантина. Пусто — префикс quarantine/ в основном бакете.
+    quarantineBucket: ""
+    pathStyle: true
+    # Создать бакеты при старте. В продуктиве бакеты обычно заводит администратор хранилища.
+    createBucket: false
+    # Секрет с ключами access-key и secret-key.
+    existingSecret: ""
+  antivirus:
+    # clamd — проверка ClamAV по сети; none — без антивируса (файлы помечаются «не проверено»).
+    mode: clamd
+    # Пусто при clamav.enabled — встроенный сервис чарта.
+    host: ""
+    port: 3310
+
+# Антивирус ClamAV для проверки вложений. Базы сигнатур есть в образе; обновление — freshclam с зеркала.
+clamav:
+  enabled: true
+  image:
+    repository: docker.io/clamav/clamav
+    tag: "1.4"
+    digest: ""
+  # Предел потока на проверку: не меньше предельного размера вложения (100 МБ) с запасом.
+  streamMaxLength: 110M
+  freshclam:
+    enabled: true
+    # Офлайн-контур: собственное зеркало баз (cvdupdate, nginx) вместо database.clamav.net.
+    # Например http://clamav-mirror.example.local — тогда PrivateMirror, и в networkPolicy.clamavEgress разрешите его.
+    privateMirror: ""
+    checksPerDay: 12
+  resources:
+    requests: { cpu: 200m, memory: 1536Mi }
+    limits: { memory: 3Gi }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
 license:
   # Секрет с ключом license.json — подписанный файл лицензии (ADM-07). Без него работает пробный режим.
   existingSecret: ""
@@ -140,6 +204,8 @@ networkPolicy:
   #   - to: [{ ipBlock: { cidr: 10.0.10.25/32 } }]
   #     ports: [{ port: 587, protocol: TCP }]
   coreEgress: []
+  # Исходящие соединения freshclam к зеркалу баз ClamAV в том же формате. Пусто — любые адреса на 80 и 443.
+  clamavEgress: []
 
 podDisruptionBudget:
   enabled: true

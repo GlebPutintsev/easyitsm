@@ -9,8 +9,10 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -21,18 +23,48 @@ import (
 )
 
 // Политика безопасности контента для SPA. Ответы API ядро отдаёт со своей, более строгой политикой.
-const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; " +
-	"font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+//
+// filesOrigin — адрес хранилища файлов (S3), куда браузер сам кладёт вложения по подписанной ссылке и откуда
+// показывает картинки: без него в connect-src и img-src загрузка и предпросмотр не работают. Пустой — только 'self'
+// (хранилище за тем же доменом, например через /files на входном шлюзе).
+func csp(filesOrigin string) string {
+	files := ""
+	if filesOrigin != "" {
+		files = " " + filesOrigin
+	}
+	return "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:" + files + "; " +
+		"font-src 'self' data:; connect-src 'self'" + files + "; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; " +
+		"object-src 'none'"
+}
+
+// validOrigin пропускает только схему, хост и порт: в политику не должны попасть пробелы, «;» и подстановки.
+func validOrigin(origin string) error {
+	if origin == "" {
+		return nil
+	}
+	u, err := url.Parse(origin)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.Path != "" || u.RawQuery != "" ||
+		u.Fragment != "" || u.User != nil || strings.ContainsAny(origin, " ;,*'\"") {
+		return fmt.Errorf("адрес хранилища файлов должен быть вида https://files.example.ru[:порт], получено %q", origin)
+	}
+	return nil
+}
 
 func main() {
 	addr := flag.String("addr", ":8080", "адрес HTTP")
 	root := flag.String("root", "/srv", "каталог собранного SPA")
+	filesOrigin := flag.String("files-origin", os.Getenv("EASYITSM_FILES_ORIGIN"),
+		"адрес хранилища файлов для CSP (по умолчанию из EASYITSM_FILES_ORIGIN)")
 	flag.Parse()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	if err := validOrigin(*filesOrigin); err != nil {
+		logger.Error("web-server misconfigured", "error", err)
+		os.Exit(2)
+	}
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           newHandler(*root),
+		Handler:           newHandler(*root, *filesOrigin),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -56,13 +88,14 @@ func main() {
 	}
 }
 
-func newHandler(root string) http.Handler {
+func newHandler(root, filesOrigin string) http.Handler {
 	files := http.FileServer(http.Dir(root))
 	index := filepath.Join(root, "index.html")
+	policy := csp(filesOrigin)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
-		h.Set("Content-Security-Policy", csp)
+		h.Set("Content-Security-Policy", policy)
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("X-Frame-Options", "DENY")

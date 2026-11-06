@@ -96,3 +96,23 @@ imagePullSecrets:
 {{- end }}
 {{- end }}
 {{- end -}}
+
+{{/* Адрес clamd для ядра: явный или встроенный сервис чарта. */}}
+{{- define "easyitsm.clamavHost" -}}
+{{- if .Values.attachments.antivirus.host -}}
+{{- .Values.attachments.antivirus.host -}}
+{{- else if .Values.clamav.enabled -}}
+{{- printf "%s-clamav" (include "easyitsm.fullname" .) -}}
+{{- else -}}
+{{- fail "attachments.antivirus.host обязателен, если встроенный ClamAV выключен (или antivirus.mode=none)" -}}
+{{- end -}}
+{{- end -}}
+
+{{/* Источник хранилища файлов для CSP веб-клиента: схема, хост и порт без пути. */}}
+{{- define "easyitsm.filesOrigin" -}}
+{{- $url := default .Values.attachments.s3.publicEndpoint .Values.web.filesOrigin -}}
+{{- if $url -}}
+{{- $u := urlParse $url -}}
+{{- printf "%s://%s" $u.scheme $u.host -}}
+{{- end -}}
+{{- end -}}

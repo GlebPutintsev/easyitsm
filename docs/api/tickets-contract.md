@@ -84,11 +84,21 @@ void          TicketCommands.updateSlaDue(id, slaDueAt)               // SLA: с
 Optional<TicketSnapshot> TicketQueries.find(id) / findByNumber(number)
 Optional<TicketSnapshot> TicketQueries.findVisible(id)                // с правами текущего пользователя
 List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(text)
+Optional<TicketPermissions> TicketQueries.permissions(id)             // вложения: права текущего входа
+// Поиск (TicketSearchIndex): документ для индекса, область чтения данными и перепроверка выдачи
+Optional<TicketSearchDocument> TicketSearchIndex.document(id);  List<UUID> idsAfter(afterId, limit)
+TicketReadScope TicketSearchIndex.readScope();  Set<UUID> visibleAmong(ids);  List<TicketSearchHit> search(TicketTextQuery)
 ```
 
 Вызов идёт в арендаторе вызывающего (`TenantContext`) и без проверки прав пользователя. Исключение —
 `findVisible`: те же правила, что у `GET /tickets/{id}` для текущего входа (участник, область видимости,
 конфиденциальность); невидимая заявка — пусто. Так база знаний проверяет заявку перед статьёй из неё (KB-05).
+`permissions` — видимость как у `findVisible` и права текущего входа: `canComment`, `canSeeInternal`,
+`canAddInternal`, `closed`. `TicketReadScope.canRead(doc)` — те же правила видимости в виде данных
+(группы, конфиденциальность, участники, организация); модуль поиска переводит их в фильтр OpenSearch и затем
+перепроверяет страницу выдачи через `visibleAmong`, так что устаревший индекс не раскрывает заявку.
+`search` — запасной поиск PostgreSQL (`to_tsquery('russian')`, подсветка `ts_headline` маркерами
+`TicketSearchIndex.MARK_START/MARK_END`).
 `NewTicket.awaitingApproval = true` создаёт запрос в статусе категории `approval` (`pending_approval`).
 Влияние в `NewTicket` — `HIGH | MEDIUM | LOW`; портал сам сопоставляет «только я / подразделение / все».
 
@@ -123,6 +133,6 @@ List<SecretFinding>      SecretScanner.scan(text);  String SecretScanner.mask(te
 
 ## Чего нет в модуле
 
-Вложения (тред «Поиск и вложения»), опрос удовлетворённости (модуль surveys портала), SLA-таймеры
-(модуль sla), уведомления (notifications слушает события), полнотекстовый поиск OpenSearch
-(в tickets — резервный поиск PostgreSQL по `search_vector`).
+Вложения (модуль attachments, docs/api/search-attachments.md), опрос удовлетворённости (модуль surveys
+портала), SLA-таймеры (модуль sla), уведомления (notifications слушает события), индекс OpenSearch
+(модуль search; в tickets — документы для индекса и запасной поиск PostgreSQL).

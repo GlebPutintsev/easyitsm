@@ -17,6 +17,38 @@ data:
   {{- if .Values.license.existingSecret }}
   EASYITSM_LICENSE_FILE: /run/secrets/easyitsm/license/license.json
   {{- end }}
+  {{- with .Values.search.opensearch }}
+  EASYITSM_SEARCH_OPENSEARCH_ENABLED: {{ .enabled | quote }}
+  {{- if .enabled }}
+  EASYITSM_SEARCH_OPENSEARCH_URLS: {{ required "search.opensearch.urls обязателен, если OpenSearch включён" .urls | quote }}
+  {{- end }}
+  {{- with .username }}
+  EASYITSM_SEARCH_OPENSEARCH_USERNAME: {{ . | quote }}
+  {{- end }}
+  EASYITSM_SEARCH_OPENSEARCH_INDEX_PREFIX: {{ .indexPrefix | quote }}
+  EASYITSM_SEARCH_OPENSEARCH_SHARDS: {{ .shards | quote }}
+  EASYITSM_SEARCH_OPENSEARCH_REPLICAS: {{ .replicas | quote }}
+  {{- end }}
+  {{- with .Values.attachments.s3 }}
+  {{- with .endpoint }}
+  EASYITSM_ATTACHMENTS_S3_ENDPOINT: {{ . | quote }}
+  {{- end }}
+  {{- with .publicEndpoint }}
+  EASYITSM_ATTACHMENTS_S3_PUBLIC_ENDPOINT: {{ . | quote }}
+  {{- end }}
+  EASYITSM_ATTACHMENTS_S3_REGION: {{ .region | quote }}
+  EASYITSM_ATTACHMENTS_S3_BUCKET: {{ .bucket | quote }}
+  {{- with .quarantineBucket }}
+  EASYITSM_ATTACHMENTS_S3_QUARANTINE_BUCKET: {{ . | quote }}
+  {{- end }}
+  EASYITSM_ATTACHMENTS_S3_PATH_STYLE: {{ .pathStyle | quote }}
+  EASYITSM_ATTACHMENTS_S3_CREATE_BUCKET: {{ .createBucket | quote }}
+  {{- end }}
+  EASYITSM_ATTACHMENTS_ANTIVIRUS_MODE: {{ .Values.attachments.antivirus.mode | quote }}
+  {{- if eq .Values.attachments.antivirus.mode "clamd" }}
+  EASYITSM_ATTACHMENTS_ANTIVIRUS_HOST: {{ include "easyitsm.clamavHost" . | quote }}
+  EASYITSM_ATTACHMENTS_ANTIVIRUS_PORT: {{ .Values.attachments.antivirus.port | quote }}
+  {{- end }}
   MANAGEMENT_SERVER_PORT: "8081"
   SERVER_PORT: "8080"
   # Заголовки X-Forwarded-* от Ingress: правильные адреса клиентов в журнале аудита.

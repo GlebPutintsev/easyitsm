@@ -32,6 +32,12 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             {{- include "easyitsm.containerSecurityContext" . | nindent 12 }}
+          {{- with include "easyitsm.filesOrigin" . }}
+          env:
+            # Браузер грузит вложения и показывает картинки прямо из хранилища (CSP connect-src, img-src).
+            - name: EASYITSM_FILES_ORIGIN
+              value: {{ . | quote }}
+          {{- end }}
           ports:
             - name: http
               containerPort: 8080

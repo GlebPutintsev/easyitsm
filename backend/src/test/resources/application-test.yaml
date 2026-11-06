@@ -16,3 +16,18 @@ easyitsm:
     lockout:
       # Без задержек после неудачного входа, чтобы тесты шли быстро. Сама задержка проверяется отдельно.
       failure-delay: 0ms
+  # Поиск в тестах по умолчанию без OpenSearch (резервный путь). Тесты OpenSearch включают его сами,
+  # если задан EASYITSM_TEST_OPENSEARCH_URL.
+  search:
+    opensearch:
+      enabled: false
+  # Вложения: S3 из EASYITSM_TEST_S3_ENDPOINT (MinIO, moto). Антивирус — clamd, если задан EASYITSM_TEST_CLAMD_HOST.
+  attachments:
+    s3:
+      endpoint: ${EASYITSM_TEST_S3_ENDPOINT:http://localhost:9000}
+      bucket: easyitsm-test-files
+      access-key: test
+      secret-key: test # gitleaks:allow
+      create-bucket: true
+    antivirus:
+      mode: none

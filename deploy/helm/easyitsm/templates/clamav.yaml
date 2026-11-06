@@ -1,0 +1,206 @@
+{{- if .Values.clamav.enabled }}
+{{- $fullname := include "easyitsm.fullname" . -}}
+{{- $av := .Values.clamav -}}
+# Антивирус для вложений (SEC-26). clamd запускается напрямую, без /init образа: так он работает
+# без root и с файловой системой только для чтения (Pod Security restricted, SEC-34).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}-clamav
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+data:
+  clamd.conf: |
+    Foreground yes
+    TCPSocket 3310
+    TCPAddr 0.0.0.0
+    DatabaseDirectory /var/lib/clamav
+    TemporaryDirectory /tmp
+    PidFile /tmp/clamd.pid
+    LogTime yes
+    # Перечитывать базы после обновления freshclam.
+    SelfCheck 600
+    StreamMaxLength {{ $av.streamMaxLength }}
+    MaxFileSize {{ $av.streamMaxLength }}
+    MaxScanSize 400M
+    # Без двойной загрузки баз в память при обновлении: лимит пода остаётся предсказуемым.
+    ConcurrentDatabaseReload no
+  freshclam.conf: |
+    Foreground yes
+    DatabaseDirectory /var/lib/clamav
+    PidFile /tmp/freshclam.pid
+    Checks {{ $av.freshclam.checksPerDay }}
+    {{- if $av.freshclam.privateMirror }}
+    PrivateMirror {{ $av.freshclam.privateMirror }}
+    {{- else }}
+    DatabaseMirror database.clamav.net
+    {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-clamav
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+spec:
+  selector:
+    {{- include "easyitsm.selector" (list . "clamav") | nindent 4 }}
+  ports:
+    - name: clamd
+      port: 3310
+      targetPort: clamd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-clamav
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  # Базы занимают около 1 ГБ памяти: две копии на узле не нужны, ядро переждёт перезапуск очередью проверок.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "clamav") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "easyitsm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: clamav
+      annotations:
+        checksum/config: {{ printf "%s%s" $av.streamMaxLength (toJson $av.freshclam) | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "easyitsm.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      {{- include "easyitsm.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        # Пользователь clamav в образе (uid 100, gid 101).
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Базы из образа — стартовые: clamd поднимается и в контуре без интернета.
+        - name: seed-databases
+          image: {{ include "easyitsm.image" (list . $av.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "easyitsm.containerSecurityContext" . | nindent 12 }}
+          command: ["/bin/sh", "-c", "cp -n /var/lib/clamav/*.cvd /var/lib/clamav/*.cld /db/ 2>/dev/null; ls /db"]
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { memory: 64Mi }
+          volumeMounts:
+            - name: db
+              mountPath: /db
+      containers:
+        - name: clamd
+          image: {{ include "easyitsm.image" (list . $av.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "easyitsm.containerSecurityContext" . | nindent 12 }}
+          command: ["clamd", "--config-file=/etc/clamav-easyitsm/clamd.conf"]
+          ports:
+            - name: clamd
+              containerPort: 3310
+          startupProbe:
+            tcpSocket: { port: clamd }
+            periodSeconds: 5
+            # Загрузка баз занимает до минуты.
+            failureThreshold: 60
+          livenessProbe:
+            tcpSocket: { port: clamd }
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket: { port: clamd }
+            periodSeconds: 10
+          resources:
+            {{- toYaml $av.resources | nindent 12 }}
+          volumeMounts:
+            - { name: db, mountPath: /var/lib/clamav }
+            - { name: tmp, mountPath: /tmp }
+            - { name: config, mountPath: /etc/clamav-easyitsm, readOnly: true }
+        {{- if $av.freshclam.enabled }}
+        - name: freshclam
+          image: {{ include "easyitsm.image" (list . $av.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "easyitsm.containerSecurityContext" . | nindent 12 }}
+          command: ["freshclam", "--daemon", "--config-file=/etc/clamav-easyitsm/freshclam.conf"]
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - { name: db, mountPath: /var/lib/clamav }
+            - { name: tmp, mountPath: /tmp }
+            - { name: config, mountPath: /etc/clamav-easyitsm, readOnly: true }
+        {{- end }}
+      volumes:
+        - name: db
+          emptyDir:
+            sizeLimit: 2Gi
+        - name: tmp
+          emptyDir:
+            # Временные файлы проверяемого потока: до streamMaxLength на одну проверку.
+            sizeLimit: 2Gi
+        - name: config
+          configMap:
+            name: {{ $fullname }}-clamav
+      {{- with $av.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $av.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $av.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- if .Values.networkPolicy.enabled }}
+---
+# ClamAV: входящие только от ядра, исходящие только к зеркалу баз (если freshclam включён).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-clamav
+  labels:
+    {{- include "easyitsm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "easyitsm.selector" (list . "clamav") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              easyitsm.ru/core: "true"
+      ports:
+        - { port: 3310, protocol: TCP }
+  {{- if $av.freshclam.enabled }}
+  egress:
+    {{- with .Values.networkPolicy.clamavEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- else }}
+    - ports:
+        - { port: 443, protocol: TCP }
+        - { port: 80, protocol: TCP }
+    {{- end }}
+  {{- else }}
+  egress: []
+  {{- end }}
+{{- end }}
+{{- end }}

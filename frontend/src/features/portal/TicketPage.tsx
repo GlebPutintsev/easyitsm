@@ -8,6 +8,7 @@ import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { ListState } from '@/shared/ui/ListState';
 import { usePersonName } from '@/shared/api/people';
 import { useMe } from '@/features/auth/api';
+import { AttachmentsPanel } from '@/features/attachments';
 import { ApprovalRoute } from '@/features/catalog/ApprovalRoute';
 import { useApprovalRoute } from '@/features/catalog/api';
 import {
@@ -130,6 +131,13 @@ function TicketView({ ticket }: { ticket: TicketDetails }) {
               <p className="ep-msg-text">{ticket.description}</p>
             </div>
           )}
+
+          <AttachmentsPanel
+            ownerType="ticket"
+            ownerId={ticket.id}
+            canUpload={!final && ticket.permissions.comment}
+            className="ep-card ep-files"
+          />
 
           <Feed ticket={ticket} />
 

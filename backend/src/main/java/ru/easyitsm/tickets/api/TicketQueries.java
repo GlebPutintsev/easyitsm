@@ -20,4 +20,7 @@ public interface TicketQueries {
      * отсутствующая — пусто, модуль отвечает 404, как REST заявок.
      */
     Optional<TicketSnapshot> findVisible(UUID ticketId);
+
+    /** Видимая текущему пользователю заявка и его права на ленту; невидимая — пусто (404). */
+    Optional<TicketPermissions> permissions(UUID ticketId);
 }

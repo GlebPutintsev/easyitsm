@@ -101,6 +101,14 @@ spec:
       ports:
         - { port: {{ .Values.database.port }}, protocol: TCP }
     {{- end }}
+    {{- if and .Values.clamav.enabled (eq .Values.attachments.antivirus.mode "clamd") (not .Values.attachments.antivirus.host) }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "easyitsm.selector" (list . "clamav") | nindent 14 }}
+      ports:
+        - { port: 3310, protocol: TCP }
+    {{- end }}
     {{- with $np.coreEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

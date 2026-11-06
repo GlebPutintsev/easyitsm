@@ -88,6 +88,16 @@ class TicketService implements TicketCommands, TicketQueries {
         return store.find(ticketId).filter(t -> access.canRead(t, actor)).map(TicketRow::snapshot);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ru.easyitsm.tickets.api.TicketPermissions> permissions(UUID ticketId) {
+        Actor actor = Actor.current();
+        return store.find(ticketId).filter(t -> access.canRead(t, actor))
+                .map(t -> new ru.easyitsm.tickets.api.TicketPermissions(t.snapshot(),
+                        !actor.roles().equals(Set.of("AUD")), actor.canSeeInternal(), actor.isSupport(),
+                        t.statusCategory.isFinal()));
+    }
+
     @Transactional(readOnly = true)
     TicketRow readTx(String ref, Actor actor) {
         return read(ref, actor);
