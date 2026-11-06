@@ -35,6 +35,7 @@ import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
+import { MajorIncidentPage, MajorIncidentsPage, StatusPage } from '@/features/major';
 import { ProblemPage, ProblemsPage } from '@/features/problems';
 import { NotFound } from './NotFound';
 
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
       { path: 'agent/approvals', element: <ApprovalsPage /> },
       { path: 'admin/catalog', element: <CatalogAdminPage /> },
       { path: 'admin/catalog/items/:id', element: <ItemEditorPage /> },
+      { path: 'portal/status', element: <StatusPage /> },
       { path: 'portal/kb', element: <KnowledgePortal /> },
       { path: 'portal/kb/:id', element: <ArticlePage space="portal" /> },
       agentRoutes,
@@ -79,6 +81,8 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
+      { path: 'agent/major', element: <MajorIncidentsPage /> },
+      { path: 'agent/major/:id', element: <MajorIncidentPage /> },
       { path: 'agent/assets', element: <AssetsPage /> },
       { path: 'agent/assets/licenses', element: <LicensesPage /> },
       { path: 'agent/assets/licenses/:id', element: <LicensesPage /> },

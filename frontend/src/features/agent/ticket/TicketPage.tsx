@@ -25,6 +25,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
 import { ListState } from '@/shared/ui/ListState';
 import { CreateArticleFromTicketButton, canMakeArticle } from '@/features/knowledge';
+import { MajorTicketAction } from '@/features/major';
 import { CreateProblemDialog, KnownErrorsHint } from '@/features/problems';
 import { mainActionOf, transitionTo } from '../api/domain';
 import { useDirectory, useTake, useTicket } from '../api/hooks';
@@ -211,6 +212,12 @@ function TicketView({ ticket }: { ticket: Ticket }) {
                 {mainLabel}
               </Button>
             </Tooltip>
+          )}
+          {ticket.type === 'incident' && (
+            <MajorTicketAction
+              ticket={{ id: ticket.id, number: ticket.number, title: ticket.title, serviceId: ticket.service?.id ?? null }}
+              closed={ticket.status.category === 'closed' || ticket.status.category === 'cancelled'}
+            />
           )}
           {canArticle && <CreateArticleFromTicketButton ticketNumber={ticket.number} visibleFrom="sm" />}
           {ticket.permissions.assign && (
