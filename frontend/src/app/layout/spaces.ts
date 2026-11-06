@@ -1,5 +1,6 @@
 import {
   IconAlertTriangle,
+  IconBolt,
   IconBook,
   IconBox,
   IconChartBar,
@@ -59,6 +60,7 @@ export const spaces: Record<SpaceId, { home: string; nav: NavItem[] }> = {
       { key: 'home', to: '/admin', icon: IconSettings },
       { key: 'users', to: '/admin/users', icon: IconUsers },
       { key: 'catalogAdmin', to: '/admin/catalog', icon: IconClipboardList },
+      { key: 'automation', to: '/admin/automation', icon: IconBolt },
     ],
   },
 };
