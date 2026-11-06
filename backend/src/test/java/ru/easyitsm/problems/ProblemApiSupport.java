@@ -45,7 +45,7 @@ public abstract class ProblemApiSupport {
     protected String group;
 
     @BeforeEach
-    void setUpGroups() {
+    protected void setUpGroups() {
         group = newGroup(agent, lead, prb);
         newGroup(outsider);
     }
