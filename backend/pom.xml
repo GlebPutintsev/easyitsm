@@ -22,7 +22,7 @@
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <archunit.version>1.5.1</archunit.version>
         <bouncycastle.version>1.85</bouncycastle.version>
-        <jsoup.version>1.21.2</jsoup.version>
+        <jsoup.version>1.23.2</jsoup.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
     </properties>
 
