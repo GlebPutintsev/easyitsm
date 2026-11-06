@@ -1,4 +1,4 @@
-import { Anchor, Badge, Button, Group, Select, Stack, Table, Tabs, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, Badge, Button, Group, Select, Stack, Table, Tabs, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -7,9 +7,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
 import { useApprovalCount } from '@/features/catalog/api';
 import { ApprovalsList } from '@/features/catalog/ApprovalsPage';
-import { useUserName } from '@/features/catalog/users';
-import { StatusBadge } from './StatusBadge';
-import { type MyTicketsFilter, type MyTicketsTab, type TicketListItem, useMyTickets } from './tickets';
+import { usePersonName } from '@/shared/api/people';
+import type { Ticket, TicketSort } from '@/features/tickets/api';
+import { shortDateTime } from './format';
+import { type MyTicketsTab, useMyTickets } from './requester';
+import { TicketStatus } from './ui';
+import './portal.css';
 
 type Tab = MyTicketsTab | 'approvals';
 const PERIODS = { '7': 7, '30': 30, '90': 90, '365': 365 } as const;
@@ -31,9 +34,9 @@ export function MyTicketsPage() {
   };
 
   return (
-    <Stack maw={1100} mx="auto" gap="md" py="md">
+    <div className="ep-page">
       <Group justify="space-between">
-        <Title order={2}>{t('myTickets.title')}</Title>
+        <h1 className="ep-h1">{t('myTickets.title')}</h1>
         <Group gap="xs">
           <Button variant="default" component={Link} to="/portal/report">
             {t('portal.reportProblem')}
@@ -64,7 +67,7 @@ export function MyTicketsPage() {
           </Tabs.Panel>
         ))}
       </Tabs>
-    </Stack>
+    </div>
   );
 }
 
@@ -75,14 +78,13 @@ function TicketList({ state, params, set }: { state: MyTicketsTab; params: URLSe
   const [debouncedQ] = useDebouncedValue(q, 300);
   const type = params.get('type') ?? undefined;
   const period = params.get('period') as keyof typeof PERIODS | null;
-  const sort = (params.get('sort') as MyTicketsFilter['sort']) ?? '-updated';
+  const sort = (params.get('sort') as TicketSort | null) ?? '-updated';
   // Граница периода — начало дня: ключ запроса не меняется при каждой отрисовке.
   const [today] = useState(() => new Date().setHours(0, 0, 0, 0));
   const createdFrom = period ? new Date(today - PERIODS[period] * 86_400_000).toISOString() : undefined;
-  const tickets = useMyTickets({ state, q: debouncedQ, type, sort, createdFrom });
+  const tickets = useMyTickets({ state, q: debouncedQ, type, createdFrom }, sort);
   const rows = tickets.data?.pages.flatMap((p) => p.items) ?? [];
   const listState = listStateOf(tickets, rows.length, !!(debouncedQ || type || period));
-  const dt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'short', timeStyle: 'short' });
 
   return (
     <Stack gap="sm">
@@ -118,7 +120,7 @@ function TicketList({ state, params, set }: { state: MyTicketsTab; params: URLSe
         />
         <Select
           aria-label={t('myTickets.sort')}
-          w={190}
+          w={220}
           value={sort}
           onChange={(v) => set('sort', v === '-updated' ? null : v)}
           data={[
@@ -143,8 +145,8 @@ function TicketList({ state, params, set }: { state: MyTicketsTab; params: URLSe
         />
       ) : (
         <>
-          <Table.ScrollContainer minWidth={720}>
-            <Table highlightOnHover verticalSpacing="sm">
+          <Table.ScrollContainer minWidth={720} className="ep-card ep-table">
+            <Table highlightOnHover verticalSpacing="sm" horizontalSpacing="md">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>{t('myTickets.cols.number')}</Table.Th>
@@ -157,29 +159,29 @@ function TicketList({ state, params, set }: { state: MyTicketsTab; params: URLSe
               </Table.Thead>
               <Table.Tbody>
                 {rows.map((r) => (
-                  <Table.Tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/portal/tickets/${r.id}`)}>
-                    <Table.Td>
-                      <Anchor component={Link} to={`/portal/tickets/${r.id}`} onClick={(e) => e.stopPropagation()} ff="monospace" size="sm">
+                  <Table.Tr key={r.id} onClick={() => navigate(`/portal/tickets/${r.number}`)}>
+                    <Table.Td w={130}>
+                      <Anchor component={Link} to={`/portal/tickets/${r.number}`} onClick={(e) => e.stopPropagation()} ff="monospace" size="sm">
                         {r.number}
                       </Anchor>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" lineClamp={1}>
+                      <Text size="sm" fw={500} lineClamp={1}>
                         {r.title}
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <StatusBadge status={r.status} />
+                      <TicketStatus status={r.status} />
                     </Table.Td>
                     <Table.Td>
                       <Assignee row={r} />
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{r.dueAt ? dt.format(new Date(r.dueAt)) : '—'}</Text>
+                      <Text size="sm">{r.dueAt ? shortDateTime(r.dueAt, i18n.language) : '—'}</Text>
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" c="dimmed">
-                        {dt.format(new Date(r.updatedAt))}
+                        {shortDateTime(r.updatedAt, i18n.language)}
                       </Text>
                     </Table.Td>
                   </Table.Tr>
@@ -198,8 +200,8 @@ function TicketList({ state, params, set }: { state: MyTicketsTab; params: URLSe
   );
 }
 
-function Assignee({ row }: { row: TicketListItem }) {
+function Assignee({ row }: { row: Ticket }) {
   const { t } = useTranslation();
-  const name = useUserName(row.assigneeId);
+  const name = usePersonName(row.assigneeId);
   return <Text size="sm">{row.assigneeId ? name : t('myTickets.notAssigned')}</Text>;
 }

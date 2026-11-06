@@ -1,42 +1,31 @@
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Code,
-  Group,
-  Modal,
-  Paper,
-  Skeleton,
-  Stack,
-  Stepper,
-  Text,
-  Textarea,
-  Timeline,
-  Title,
-} from '@mantine/core';
-import { IconAlertCircle, IconCheck, IconMessage, IconRefresh, IconX } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Alert, Button, Group, Modal, Skeleton, Stack, Stepper, Text, Textarea } from '@mantine/core';
+import { IconCheck, IconClock, IconHourglass, IconLock, IconRefresh, IconX } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/shared/api/client';
+import { ErrorLine } from '@/shared/ui/ErrorLine';
 import { ListState } from '@/shared/ui/ListState';
+import { usePersonName } from '@/shared/api/people';
+import { useMe } from '@/features/auth/api';
 import { ApprovalRoute } from '@/features/catalog/ApprovalRoute';
 import { useApprovalRoute } from '@/features/catalog/api';
-import { useUserName } from '@/features/catalog/users';
-import { saveDraft } from './drafts';
-import { StatusBadge } from './StatusBadge';
-import { SurveyBlock } from './SurveyBlock';
 import {
-  type Activity,
+  type ActivityEntry,
   type AvailableTransition,
   type TicketDetails,
-  progressSteps,
-  useActivity,
-  useReply,
+  secretFindings,
+  useAddComment,
   useTicket,
-  useTransition,
-} from './tickets';
+  useTicketActivity,
+  useTransitionTicket,
+} from '@/features/tickets/api';
+import { saveDraft } from './drafts';
+import { dateTime, relativeTime } from './format';
+import { progressIndex, progressSteps } from './requester';
+import { SurveyBlock } from './SurveyBlock';
+import { PersonAvatar, PersonName, TicketStatus } from './ui';
+import './portal.css';
 
 /** Карточка заявки на портале (10.5): шкала статуса, срок, публичная лента, ответ, действия заявителя, оценка. */
 export function TicketPage() {
@@ -45,22 +34,24 @@ export function TicketPage() {
   const ticket = useTicket(ref);
   if (ticket.isPending) {
     return (
-      <Stack maw={900} mx="auto" py="md" aria-busy="true">
+      <div className="ep-page" aria-busy="true">
         <Skeleton height={32} width="50%" />
         <Skeleton height={60} />
         <Skeleton height={200} />
-      </Stack>
+      </div>
     );
   }
   if (ticket.error) {
     const notFound = ticket.error instanceof ApiError && ticket.error.status === 404;
     return (
-      <ListState
-        state={notFound ? 'empty' : 'error'}
-        title={notFound ? t('ticket.notFound') : undefined}
-        error={ticket.error}
-        onRetry={() => void ticket.refetch()}
-      />
+      <div className="ep-page">
+        <ListState
+          state={notFound ? 'empty' : 'error'}
+          title={notFound ? t('ticket.notFound') : undefined}
+          error={ticket.error}
+          onRetry={() => void ticket.refetch()}
+        />
+      </div>
     );
   }
   return <TicketView ticket={ticket.data} />;
@@ -73,8 +64,6 @@ function TicketView({ ticket }: { ticket: TicketDetails }) {
   const cat = ticket.status.category;
   const final = cat === 'closed' || cat === 'cancelled';
   const steps = progressSteps(ticket.type, cat, !!route.data);
-  const active = cat === 'assigned' ? steps.indexOf('new') : cat === 'pending' ? steps.indexOf('in_progress') : steps.indexOf(cat);
-  const dt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long', timeStyle: 'short' });
 
   const createBasedOn = () => {
     saveDraft('incident', {
@@ -89,88 +78,143 @@ function TicketView({ ticket }: { ticket: TicketDetails }) {
   };
 
   return (
-    <Stack maw={900} mx="auto" gap="lg" py="md">
-      <Stack gap={4}>
+    <div className="ep-page">
+      <nav className="ep-crumbs" aria-label={t('portal.breadcrumbs')}>
+        <Link to="/portal">{t('nav.home')}</Link> / <Link to="/portal/tickets">{t('nav.myTickets')}</Link> / {ticket.number}
+      </nav>
+      <Stack gap={6}>
         <Group gap="xs">
-          <Text ff="monospace" c="dimmed">
+          <TicketStatus status={ticket.status} />
+          <span className="ep-mono" style={{ fontSize: 13 }}>
             {ticket.number}
-          </Text>
-          <StatusBadge status={ticket.status} />
-          <Badge variant="outline" color="gray">
-            {t(`myTickets.types.${ticket.type}`, { defaultValue: ticket.type })}
-          </Badge>
+          </span>
+          <span className="ep-chip">{t(`myTickets.types.${ticket.type}`, { defaultValue: ticket.type })}</span>
         </Group>
-        <Title order={2}>{ticket.title}</Title>
+        <h1 className="ep-h1">{ticket.title}</h1>
       </Stack>
 
-      {cat !== 'cancelled' && (
-        <Stepper active={final ? steps.length : Math.max(active, 0)} size="sm" allowNextStepsSelect={false} aria-label={t('ticket.progress')}>
-          {steps.map((s) => (
-            <Stepper.Step key={s} label={t(`ticket.steps.${s}`)} />
-          ))}
-        </Stepper>
-      )}
+      <div className="ep-ticket">
+        <div className="ep-ticket-main">
+          {cat !== 'cancelled' && (
+            <Stepper active={progressIndex(steps, cat)} size="sm" allowNextStepsSelect={false} aria-label={t('ticket.progress')}>
+              {steps.map((s) => (
+                <Stepper.Step key={s} label={t(`ticket.steps.${s}`)} />
+              ))}
+            </Stepper>
+          )}
 
-      {ticket.dueAt && !final && cat !== 'resolved' && (
-        <Alert variant="light" color="blue">
-          {t('ticket.expected', { date: dt.format(new Date(ticket.dueAt)) })}
-        </Alert>
-      )}
-      {cat === 'pending' && ticket.pendingReason && (
-        <Alert variant="light" color="yellow">
-          {t('ticket.pending', { reason: ticket.pendingReason })}
-        </Alert>
-      )}
+          {ticket.dueAt && !final && cat !== 'resolved' && (
+            <div className="ep-banner">
+              <IconClock size={20} aria-hidden="true" />
+              <div>
+                <strong>{t('ticket.expected', { date: dateTime(ticket.dueAt, i18n.language) })}</strong>
+              </div>
+            </div>
+          )}
+          {cat === 'pending' && (
+            <div className="ep-banner" style={{ background: 'var(--ei-wait-soft)' }}>
+              <IconHourglass size={20} aria-hidden="true" style={{ color: 'var(--ei-wait)' }} />
+              <div>
+                <strong>{t('ticket.waitingYou')}</strong>
+                {ticket.pendingReason && <p>{t('ticket.pending', { reason: ticket.pendingReason })}</p>}
+              </div>
+            </div>
+          )}
 
-      {route.data && <ApprovalRoute route={route.data} />}
+          {route.data && <ApprovalRoute route={route.data} />}
 
-      {cat === 'resolved' && <ResolvedActions ticket={ticket} />}
+          {cat === 'resolved' && <ResolvedActions ticket={ticket} />}
 
-      {ticket.description && (
-        <Paper withBorder p="md">
-          <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-            {ticket.description}
-          </Text>
-        </Paper>
-      )}
+          {ticket.description && (
+            <div className="ep-card" style={{ padding: 16 }}>
+              <p className="ep-msg-text">{ticket.description}</p>
+            </div>
+          )}
 
-      <Feed ticketId={ticket.id} />
+          <Feed ticket={ticket} />
 
-      {!final && ticket.permissions.comment !== false && <ReplyBox ticketId={ticket.id} />}
+          {!final && ticket.permissions.comment && <ReplyBox ticket={ticket} />}
 
-      {cat === 'closed' && <SurveyBlock ticketId={ticket.id} />}
+          {cat === 'closed' && <SurveyBlock ticketId={ticket.id} />}
 
-      <Group gap="xs">
-        {!final && <CancelAction ticket={ticket} />}
-        {final && (
-          <Button variant="default" onClick={createBasedOn}>
-            {t('ticket.createBasedOn')}
-          </Button>
+          <Group gap="xs">
+            {!final && <CancelAction ticket={ticket} />}
+            {final && (
+              <Button variant="default" onClick={createBasedOn}>
+                {t('ticket.createBasedOn')}
+              </Button>
+            )}
+          </Group>
+        </div>
+        <Details ticket={ticket} />
+      </div>
+    </div>
+  );
+}
+
+/** Справа: кто ведёт заявку и сроки. Имена — из справочника людей. */
+function Details({ ticket }: { ticket: TicketDetails }) {
+  const { t, i18n } = useTranslation();
+  const me = useMe();
+  const meId = me.data?.id;
+  const assignee = usePersonName(ticket.assigneeId);
+  return (
+    <aside className="ep-card ep-details" aria-label={t('ticket.details')}>
+      <dl>
+        <dt>{t('myTickets.cols.assignee')}</dt>
+        <dd>{ticket.assigneeId ? assignee : t('myTickets.notAssigned')}</dd>
+        <dt>{t('ticket.requester')}</dt>
+        <dd>
+          <PersonName id={ticket.requesterId} meId={meId} />
+        </dd>
+        {ticket.createdForId && ticket.createdForId !== ticket.requesterId && (
+          <>
+            <dt>{t('ticket.createdFor')}</dt>
+            <dd>
+              <PersonName id={ticket.createdForId} meId={meId} />
+            </dd>
+          </>
         )}
-      </Group>
-    </Stack>
+        <dt>{t('ticket.created')}</dt>
+        <dd>{dateTime(ticket.createdAt, i18n.language)}</dd>
+        <dt>{t('myTickets.cols.updated')}</dt>
+        <dd>{relativeTime(ticket.updatedAt, i18n.language)}</dd>
+        {ticket.resolvedAt && (
+          <>
+            <dt>{t('ticket.resolvedAt')}</dt>
+            <dd>{dateTime(ticket.resolvedAt, i18n.language)}</dd>
+          </>
+        )}
+        {ticket.closedAt && (
+          <>
+            <dt>{t('ticket.closedAt')}</dt>
+            <dd>{dateTime(ticket.closedAt, i18n.language)}</dd>
+          </>
+        )}
+      </dl>
+    </aside>
   );
 }
 
 function ResolvedActions({ ticket }: { ticket: TicketDetails }) {
   const { t } = useTranslation();
-  const transition = useTransition(ticket.id);
+  const transition = useTransitionTicket();
   const [reopen, setReopen] = useState(false);
   const [comment, setComment] = useState('');
   const confirm = ticket.transitions.find((x) => x.category === 'closed');
   const back = ticket.transitions.find((x) => x.category === 'in_progress' || x.category === 'new' || x.category === 'assigned');
   return (
-    <Card withBorder padding="md" bg="var(--mantine-color-teal-light)">
+    <div className="ep-resolved">
       <Stack gap="sm">
         <Text fw={600}>{t('ticket.resolvedTitle')}</Text>
-        {ticket.resolutionText && (
-          <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-            {ticket.resolutionText}
-          </Text>
-        )}
+        {ticket.resolutionText && <p className="ep-msg-text">{ticket.resolutionText}</p>}
         <Group gap="xs">
           {confirm && (
-            <Button leftSection={<IconCheck size={16} />} color="teal" loading={transition.isPending} onClick={() => transition.mutate({ to: confirm.to })}>
+            <Button
+              leftSection={<IconCheck size={16} />}
+              loading={transition.isPending && !reopen}
+              onClick={() => transition.mutate({ ticket, input: { to: confirm.to } })}
+            >
               {t('ticket.confirm')}
             </Button>
           )}
@@ -192,14 +236,13 @@ function ResolvedActions({ ticket }: { ticket: TicketDetails }) {
             />
             <Group gap="xs">
               <Button
-                size="xs"
                 disabled={!comment.trim()}
                 loading={transition.isPending}
-                onClick={() => transition.mutate({ to: back.to, comment: comment.trim(), reasonCode: 'reopened' })}
+                onClick={() => transition.mutate({ ticket, input: { to: back.to, comment: comment.trim(), reasonCode: 'reopened' } })}
               >
                 {t('ticket.sendBack')}
               </Button>
-              <Button size="xs" variant="subtle" onClick={() => setReopen(false)}>
+              <Button variant="subtle" color="gray" onClick={() => setReopen(false)}>
                 {t('actions.cancel')}
               </Button>
             </Group>
@@ -207,13 +250,13 @@ function ResolvedActions({ ticket }: { ticket: TicketDetails }) {
         )}
         <ErrorLine error={transition.error} />
       </Stack>
-    </Card>
+    </div>
   );
 }
 
 function CancelAction({ ticket }: { ticket: TicketDetails }) {
   const { t } = useTranslation();
-  const transition = useTransition(ticket.id);
+  const transition = useTransitionTicket();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const cancel: AvailableTransition | undefined = ticket.transitions.find((x) => x.category === 'cancelled');
@@ -238,7 +281,7 @@ function CancelAction({ ticket }: { ticket: TicketDetails }) {
               loading={transition.isPending}
               onClick={() =>
                 transition.mutate(
-                  { to: cancel.to, comment: reason.trim(), reasonCode: 'requester_cancelled' },
+                  { ticket, input: { to: cancel.to, comment: reason.trim(), reasonCode: 'requester_cancelled' } },
                   { onSuccess: () => setOpen(false) },
                 )
               }
@@ -252,100 +295,128 @@ function CancelAction({ ticket }: { ticket: TicketDetails }) {
   );
 }
 
-function Feed({ ticketId }: { ticketId: string }) {
+/** Публичная лента: сообщения карточками с аватаром, смена статуса — строкой с кружком. */
+function Feed({ ticket }: { ticket: TicketDetails }) {
   const { t } = useTranslation();
-  const activity = useActivity(ticketId);
-  const items = (activity.data?.pages.flatMap((p) => p.items) ?? []).filter((a) => a.visibility === 'public');
-  if (activity.isPending) return <Skeleton height={80} />;
+  const me = useMe();
+  const activity = useTicketActivity(ticket.id, 'public');
+  // Лента приходит от старых к новым страницами по 50, читается сверху вниз, как переписка.
+  const items = (activity.data?.pages.flatMap((p) => p.items) ?? [])
+    .filter((a) => a.visibility === 'public')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (activity.isPending) return <Skeleton height={80} radius="lg" />;
   if (activity.error) return <ListState state="error" error={activity.error} onRetry={() => void activity.refetch()} />;
   if (!items.length) return null;
   return (
-    <Stack gap="xs">
-      <Title order={4}>{t('ticket.feed')}</Title>
-      <Timeline bulletSize={22} lineWidth={2}>
-        {items.map((a) => (
-          <Timeline.Item key={a.id} bullet={<IconMessage size={12} />}>
-            <FeedItem a={a} />
-          </Timeline.Item>
-        ))}
-      </Timeline>
-    </Stack>
-  );
-}
-
-function FeedItem({ a }: { a: Activity }) {
-  const { t, i18n } = useTranslation();
-  const author = useUserName(a.authorId);
-  const dt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' });
-  return (
-    <Stack gap={2}>
-      <Group gap="xs">
-        <Text size="sm" fw={600}>
-          {a.authorId ? (a.fromRequester ? t('ticket.you') : author) : t('ticket.system')}
-        </Text>
-        <Text size="xs" c="dimmed">
-          {dt.format(new Date(a.createdAt))}
-        </Text>
-      </Group>
-      <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-        {a.body}
-      </Text>
-    </Stack>
-  );
-}
-
-function ReplyBox({ ticketId }: { ticketId: string }) {
-  const { t } = useTranslation();
-  const reply = useReply(ticketId);
-  const [body, setBody] = useState('');
-  const send = (mask?: boolean) =>
-    reply.mutate({ body: body.trim(), secrets: mask ? 'mask' : 'warn' }, { onSuccess: () => setBody('') });
-  const secrets = reply.error instanceof ApiError && reply.error.code === 'secrets_detected';
-  return (
-    <Stack gap="xs">
-      <Textarea
-        label={t('ticket.reply')}
-        autosize
-        minRows={3}
-        maxRows={12}
-        value={body}
-        onChange={(e) => setBody(e.currentTarget.value)}
-      />
-      {secrets ? (
-        <Alert color="orange" title={t('request.secretsTitle')}>
-          <Group gap="xs">
-            <Button size="xs" color="orange" onClick={() => send(true)} loading={reply.isPending}>
-              {t('request.maskAndSend')}
-            </Button>
-            <Button size="xs" variant="subtle" onClick={() => reply.reset()}>
-              {t('request.editText')}
-            </Button>
-          </Group>
-        </Alert>
-      ) : (
-        <ErrorLine error={reply.error} />
-      )}
-      <Group justify="flex-end">
-        <Button disabled={!body.trim()} loading={reply.isPending} onClick={() => send()}>
-          {t('ticket.send')}
+    <section className="ep-section" aria-label={t('ticket.feed')}>
+      <h2 className="ep-h2">{t('ticket.feed')}</h2>
+      <div className="ep-feed">
+        {items.map((a) =>
+          a.kind === 'reply' || a.kind === 'note' ? (
+            <Message key={a.id} a={a} mine={!!me.data && a.authorId === me.data.id} />
+          ) : (
+            <SystemEvent key={a.id} a={a} />
+          ),
+        )}
+      </div>
+      {activity.hasNextPage && (
+        <Button variant="subtle" size="xs" mx="auto" onClick={() => void activity.fetchNextPage()} loading={activity.isFetchingNextPage}>
+          {t('actions.showMore')}
         </Button>
-      </Group>
-    </Stack>
+      )}
+    </section>
   );
 }
 
-export function ErrorLine({ error }: { error: unknown }) {
-  const { t } = useTranslation();
-  if (!error) return null;
-  const e = error instanceof ApiError ? error : null;
+function Message({ a, mine }: { a: ActivityEntry; mine: boolean }) {
+  const { t, i18n } = useTranslation();
+  const author = usePersonName(a.authorId);
+  const name = mine ? t('people.you') : a.authorId ? author : t('ticket.system');
   return (
-    <Alert color="red" icon={<IconAlertCircle />} role="alert" p="xs">
-      <Text size="sm">{e?.message ?? t('states.errorText')}</Text>
-      {e?.traceId && (
-        <Text size="xs" c="dimmed">
-          {t('states.traceId')}: <Code>{e.traceId}</Code>
-        </Text>
-      )}
-    </Alert>
+    <article className="ep-msg">
+      <PersonAvatar name={a.authorId ? author : '·'} tone={a.fromRequester ? undefined : 'accent'} />
+      <div className="ep-card ep-msg-body" data-mine={mine || undefined}>
+        <div className="ep-msg-head">
+          <b>{name}</b>
+          {!a.fromRequester && a.authorId && <span className="ep-chip" data-tone="accent">{t('ticket.support')}</span>}
+          <time dateTime={a.createdAt} title={dateTime(a.createdAt, i18n.language)}>
+            {relativeTime(a.createdAt, i18n.language)}
+          </time>
+        </div>
+        <p className="ep-msg-text">{a.body}</p>
+      </div>
+    </article>
+  );
+}
+
+function SystemEvent({ a }: { a: ActivityEntry }) {
+  const { t, i18n } = useTranslation();
+  const event = a.meta.event as string | undefined;
+  let text: string;
+  if (event === 'status_changed') text = t('ticket.event.status', { name: String(a.meta.toName ?? a.meta.to ?? '') });
+  else if (event === 'merged') text = t('ticket.event.merged', { numbers: ((a.meta.sources as string[] | undefined) ?? []).join(', ') });
+  else text = a.body || t('ticket.event.other');
+  return (
+    <div className="ep-event">
+      <span>
+        {text}
+        {event === 'status_changed' && a.body ? ` — «${a.body}»` : ''} ·{' '}
+        <time dateTime={a.createdAt} title={dateTime(a.createdAt, i18n.language)}>
+          {relativeTime(a.createdAt, i18n.language)}
+        </time>
+      </span>
+    </div>
+  );
+}
+
+function ReplyBox({ ticket }: { ticket: TicketDetails }) {
+  const { t } = useTranslation();
+  const reply = useAddComment();
+  const [body, setBody] = useState('');
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === '#reply') ref.current?.focus();
+  }, [hash]);
+  const send = (mask?: boolean) =>
+    reply.mutate(
+      { id: ticket.id, input: { body: body.trim(), visibility: 'public', secrets: mask ? 'mask' : 'warn' } },
+      { onSuccess: () => setBody('') },
+    );
+  const secrets = secretFindings(reply.error);
+  return (
+    <section id="reply" className="ep-card ep-reply">
+      <Stack gap="xs">
+        <Textarea
+          ref={ref}
+          label={t('ticket.reply')}
+          description={ticket.status.category === 'pending' ? t('ticket.replyResumes') : undefined}
+          autosize
+          minRows={3}
+          maxRows={12}
+          value={body}
+          onChange={(e) => setBody(e.currentTarget.value)}
+        />
+        {secrets ? (
+          <Alert color="orange" icon={<IconLock />} title={t('request.secretsTitle')}>
+            <Group gap="xs">
+              <Button size="xs" color="orange" onClick={() => send(true)} loading={reply.isPending}>
+                {t('request.maskAndSend')}
+              </Button>
+              <Button size="xs" variant="subtle" onClick={() => reply.reset()}>
+                {t('request.editText')}
+              </Button>
+            </Group>
+          </Alert>
+        ) : (
+          <ErrorLine error={reply.error} />
+        )}
+        <Group justify="flex-end">
+          <Button disabled={!body.trim()} loading={reply.isPending} onClick={() => send()}>
+            {t('ticket.send')}
+          </Button>
+        </Group>
+      </Stack>
+    </section>
   );
 }

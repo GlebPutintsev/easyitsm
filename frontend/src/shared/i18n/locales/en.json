@@ -907,5 +907,11 @@
       "blocked": "Account blocked",
       "unknown_user": "Unknown user"
     }
+  },
+  "people": {
+    "placeholder": "Employee name or email",
+    "notFound": "Nobody found. You can paste the employee ID",
+    "typeToSearch": "Start typing a name or email",
+    "you": "You"
   }
 }

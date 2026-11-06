@@ -15,7 +15,7 @@ export function MobileNav() {
     { key: 'tickets', label: t('nav.myTickets'), to: '/portal/tickets', icon: IconListDetails },
     { key: 'create', label: t('nav.create'), to: '/portal/catalog', icon: IconPlus },
     { key: 'approvals', label: t('nav.approvals'), to: '/portal/approvals', icon: IconChecklist, badge: approvals.data },
-    { key: 'profile', label: t('nav.profile'), to: '/portal/profile', icon: IconUserCircle },
+    { key: 'profile', label: t('nav.profile'), to: '/profile/security', icon: IconUserCircle },
   ];
   const active = (to: string) => (to === '/portal' ? pathname === '/portal' : pathname.startsWith(to));
   return (
@@ -25,7 +25,7 @@ export function MobileNav() {
           key={key}
           onClick={() => navigate(to)}
           aria-current={active(to) ? 'page' : undefined}
-          style={{ flex: 1, textAlign: 'center', color: active(to) ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)' }}
+          style={{ flex: 1, textAlign: 'center', color: active(to) ? 'var(--ei-accent-text)' : 'var(--ei-text-3)', fontWeight: active(to) ? 600 : 400 }}
           py={6}
         >
           <Indicator disabled={!badge} label={badge} size={14} offset={2} inline>

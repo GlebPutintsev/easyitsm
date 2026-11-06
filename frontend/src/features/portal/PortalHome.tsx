@@ -1,43 +1,95 @@
-import { Alert, Anchor, Badge, Button, Card, Group, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
-import { IconAlertTriangle, IconChecklist, IconMessageCircleQuestion, IconShoppingCart } from '@tabler/icons-react';
+import { Button, Group, Skeleton } from '@mantine/core';
+import { IconAlertTriangle, IconCalendarEvent, IconInfoCircle, IconShoppingBag } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { ListState, listStateOf } from '@/shared/ui/ListState';
+import { useMe } from '@/features/auth/api';
 import { useApprovalCount, usePopularItems } from '@/features/catalog/api';
-import { ItemTile } from '@/features/catalog/ItemTile';
+import { ServiceIcon } from '@/features/catalog/icons';
+import { leadTime } from '@/features/catalog/ItemTile';
 import { useActiveAnnouncements } from './announcements';
+import { dateTime } from './format';
 import { PortalSearch } from './PortalSearch';
-import { StatusBadge } from './StatusBadge';
-import { useRecentTickets } from './tickets';
-
-const kindColor = { info: 'blue', maintenance: 'yellow', outage: 'red' } as const;
+import { useRecentTickets } from './requester';
+import { TicketHint, TicketStatus } from './ui';
+import './portal.css';
 
 /**
- * Главная портала (10.4, PRT-01): поиск, две главные кнопки, «Требует вашего ответа», популярные услуги,
- * мои заявки и объявления.
+ * Главная портала (10.4, PRT-01; макет «Портал: главная»): поиск «Опишите, что случилось» и две главные
+ * кнопки, баннеры сбоев и плановых работ, «Требует вашего ответа», популярные услуги, мои заявки справа.
  */
 export function PortalHome() {
   const { t } = useTranslation();
+  const me = useMe();
+  const firstName = me.data?.displayName.trim().split(/\s+/)[0];
   return (
-    <Stack maw={960} mx="auto" gap="xl" py="md">
-      <PortalSearch />
-      <SimpleGrid cols={{ base: 1, xs: 2 }}>
-        <Button size="lg" variant="light" color="orange" leftSection={<IconAlertTriangle />} component={Link} to="/portal/report">
-          {t('portal.reportProblem')}
-        </Button>
-        <Button size="lg" variant="light" leftSection={<IconShoppingCart />} component={Link} to="/portal/catalog">
-          {t('portal.orderService')}
-        </Button>
-      </SimpleGrid>
-      <NeedsYou />
-      <Popular />
-      <RecentTickets />
-      <Announcements />
-    </Stack>
+    <>
+      <section className="ep-hero">
+        <div className="ep-hero-inner">
+          {firstName && <div style={{ fontSize: 14, color: 'var(--ei-text-3)' }}>{t('portal.hello', { name: firstName })}</div>}
+          <h1 className="ep-display">{t('portal.headline')}</h1>
+          <PortalSearch />
+          <Group gap="sm" justify="center">
+            <Button size="md" h={44} leftSection={<IconAlertTriangle size={18} />} component={Link} to="/portal/report">
+              {t('portal.reportProblem')}
+            </Button>
+            <Button size="md" h={44} variant="default" leftSection={<IconShoppingBag size={18} />} component={Link} to="/portal/catalog">
+              {t('portal.orderService')}
+            </Button>
+          </Group>
+        </div>
+      </section>
+
+      <div className="ep-page" style={{ gap: 32, paddingTop: 32, paddingBottom: 96 }}>
+        <Announcements />
+        <div className="ep-columns">
+          <div className="ep-main">
+            <NeedsYou />
+            <Popular />
+          </div>
+          <aside className="ep-aside">
+            <RecentTickets />
+          </aside>
+        </div>
+      </div>
+    </>
   );
 }
 
-/** «Требует вашего ответа»: показывается, только если есть заявки в ожидании или согласования. */
+const bannerIcon = { outage: IconAlertTriangle, maintenance: IconCalendarEvent, info: IconInfoCircle } as const;
+
+/** Сбои (warn) и плановые работы (accent) сверху; пока объявлений нет — блок не показывается. */
+function Announcements() {
+  const { t, i18n } = useTranslation();
+  const announcements = useActiveAnnouncements();
+  const items = announcements.data?.items ?? [];
+  if (!items.length) return null;
+  const order = { outage: 0, maintenance: 1, info: 2 } as const;
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }} aria-label={t('portal.announcements')}>
+      {[...items]
+        .sort((a, b) => order[a.kind] - order[b.kind])
+        .map((a) => {
+          const Icon = bannerIcon[a.kind];
+          return (
+            <div key={a.id} className="ep-banner" data-kind={a.kind} role={a.kind === 'outage' ? 'alert' : undefined}>
+              <Icon size={20} aria-hidden="true" />
+              <div>
+                <strong>{a.title}</strong>
+                <p>
+                  {a.body ? `${a.body} ` : ''}
+                  {a.kind === 'maintenance' &&
+                    `${dateTime(a.startsAt, i18n.language)}${a.endsAt ? ` — ${dateTime(a.endsAt, i18n.language)}` : ''}`}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+    </section>
+  );
+}
+
+/** «Требует вашего ответа»: заявки в ожидании заявителя и согласования; если ничего нет — блока нет. */
 function NeedsYou() {
   const { t } = useTranslation();
   const waiting = useRecentTickets('waiting', 5);
@@ -46,26 +98,38 @@ function NeedsYou() {
   const n = approvals.data ?? 0;
   if (!items.length && !n) return null;
   return (
-    <Alert variant="light" color="yellow" icon={<IconMessageCircleQuestion />} title={t('portal.needsYou')}>
-      <Stack gap={6}>
-        {items.map((x) => (
-          <Group key={x.id} gap="xs" wrap="nowrap">
-            <Anchor component={Link} to={`/portal/tickets/${x.id}`} size="sm" lineClamp={1}>
-              {x.number} · {x.title}
-            </Anchor>
-            <StatusBadge status={x.status} />
-          </Group>
-        ))}
-        {n > 0 && (
-          <Anchor component={Link} to="/portal/approvals" size="sm">
-            <Group gap={6}>
-              <IconChecklist size={16} />
-              {t('portal.approvalsWaiting', { count: n })}
-            </Group>
-          </Anchor>
-        )}
-      </Stack>
-    </Alert>
+    <section className="ep-section">
+      <h2 className="ep-h2">{t('portal.needsYou')}</h2>
+      {items.map((x) => {
+        const resolved = x.status.category === 'resolved';
+        return (
+          <div key={x.id} className="ep-needs">
+            <div>
+              <Group gap={8}>
+                <span className="ep-mono">{x.number}</span>
+                <TicketStatus status={x.status} />
+              </Group>
+              <strong>{x.title}</strong>
+              <p>{resolved ? t('portal.needs.resolved') : x.pendingReason || t('portal.needs.pending')}</p>
+            </div>
+            <Button variant="default" component={Link} to={`/portal/tickets/${x.number}${resolved ? '' : '#reply'}`}>
+              {resolved ? t('portal.needs.check') : t('portal.needs.reply')}
+            </Button>
+          </div>
+        );
+      })}
+      {n > 0 && (
+        <div className="ep-needs">
+          <div>
+            <strong>{t('portal.approvalsWaiting', { count: n })}</strong>
+            <p>{t('portal.needs.approvalsHint')}</p>
+          </div>
+          <Button variant="default" component={Link} to="/portal/approvals">
+            {t('portal.needs.decide')}
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -73,117 +137,73 @@ function Popular() {
   const { t } = useTranslation();
   const popular = usePopularItems();
   const items = popular.data ?? [];
-  if (!popular.isPending && !items.length) return null;
+  if (!popular.isPending && !popular.error && !items.length) return null;
   return (
-    <Stack gap="sm">
-      <Group justify="space-between">
-        <Title order={3}>{t('portal.popular')}</Title>
-        <Anchor component={Link} to="/portal/catalog" size="sm">
+    <section className="ep-section">
+      <div className="ep-section-head">
+        <h2 className="ep-h2">{t('portal.popular')}</h2>
+        <Link className="ep-link" to="/portal/catalog">
           {t('portal.allServices')}
-        </Anchor>
-      </Group>
-      {popular.isPending || popular.error ? (
-        <ListState state={popular.error ? 'error' : 'loading'} error={popular.error} rows={2} onRetry={() => void popular.refetch()} />
-      ) : (
-        <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="sm">
-          {items.map((i) => (
-            <ItemTile key={i.id} item={i} compact />
+        </Link>
+      </div>
+      {popular.isPending ? (
+        <div className="ep-tiles" aria-busy="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} height={120} radius="lg" />
           ))}
-        </SimpleGrid>
+        </div>
+      ) : popular.error ? (
+        <ListState state="error" error={popular.error} onRetry={() => void popular.refetch()} />
+      ) : (
+        <div className="ep-tiles">
+          {items.map((i) => (
+            <Link key={i.id} className="ep-tile" to={`/portal/catalog/${i.id}`}>
+              <ServiceIcon name={i.icon} kind={i.kind} />
+              <b>{i.name}</b>
+              <span>{i.leadTimeHours != null ? t('portal.leadTime', { time: leadTime(t, i.leadTimeHours) }) : ' '}</span>
+            </Link>
+          ))}
+        </div>
       )}
-    </Stack>
+    </section>
   );
 }
 
 function RecentTickets() {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const recent = useRecentTickets(undefined, 5);
   const items = recent.data ?? [];
   const state = listStateOf(recent, items.length);
-  const dt = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'short', timeStyle: 'short' });
   return (
-    <Stack gap="sm">
-      <Group justify="space-between">
-        <Title order={3}>{t('nav.myTickets')}</Title>
-        <Anchor component={Link} to="/portal/tickets" size="sm">
+    <section className="ep-card ep-mine">
+      <div className="ep-section-head" style={{ marginBottom: 4 }}>
+        <h2 className="ep-h2">{t('nav.myTickets')}</h2>
+        <Link className="ep-link" to="/portal/tickets">
           {t('portal.allTickets')}
-        </Anchor>
-      </Group>
+        </Link>
+      </div>
       {state ? (
-        <ListState state={state} title={state === 'empty' ? t('portal.noTickets') : undefined} error={recent.error} onRetry={() => void recent.refetch()} rows={3} />
+        <div style={{ padding: '8px 0 12px' }}>
+          <ListState
+            state={state}
+            title={state === 'empty' ? t('portal.noTickets') : undefined}
+            error={recent.error}
+            onRetry={() => void recent.refetch()}
+            rows={3}
+          />
+        </div>
       ) : (
-        <Card withBorder padding={0}>
-          <Table highlightOnHover verticalSpacing="sm">
-            <Table.Tbody>
-              {items.map((x) => (
-                <Table.Tr key={x.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/portal/tickets/${x.id}`)}>
-                  <Table.Td w={120}>
-                    <Text ff="monospace" size="sm" c="dimmed">
-                      {x.number}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" lineClamp={1}>
-                      {x.title}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td w={150}>
-                    <StatusBadge status={x.status} />
-                  </Table.Td>
-                  <Table.Td w={140} visibleFrom="sm">
-                    <Text size="xs" c="dimmed">
-                      {dt.format(new Date(x.updatedAt))}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Card>
-      )}
-    </Stack>
-  );
-}
-
-function Announcements() {
-  const { t, i18n } = useTranslation();
-  const announcements = useActiveAnnouncements();
-  const items = announcements.data?.items ?? [];
-  const state = listStateOf(announcements, items.length);
-  const dateFormat = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' });
-  return (
-    <Stack gap="sm">
-      <Title order={3}>{t('portal.announcements')}</Title>
-      {state ? (
-        <ListState
-          state={state}
-          title={state === 'empty' ? t('portal.noAnnouncements') : undefined}
-          error={announcements.error}
-          onRetry={() => void announcements.refetch()}
-          rows={2}
-        />
-      ) : (
-        items.map((a) => (
-          <Card key={a.id} withBorder padding="md">
-            <Group justify="space-between" mb={4}>
-              <Text fw={600}>{a.title}</Text>
-              <Badge color={kindColor[a.kind]} variant="light">
-                {t(`portal.kind.${a.kind}`)}
-              </Badge>
-            </Group>
-            <Text size="sm" c="dimmed">
-              {dateFormat.format(new Date(a.startsAt))}
-              {a.endsAt ? ` — ${dateFormat.format(new Date(a.endsAt))}` : ''}
-            </Text>
-            {a.body && (
-              <Text size="sm" mt="xs">
-                {a.body}
-              </Text>
-            )}
-          </Card>
+        items.map((x) => (
+          <Link key={x.id} className="ep-row" to={`/portal/tickets/${x.number}`}>
+            <b>{x.title}</b>
+            <TicketStatus status={x.status} />
+            <small className="ep-mono">{x.number}</small>
+            <small>
+              <TicketHint ticket={x} />
+            </small>
+          </Link>
         ))
       )}
-    </Stack>
+    </section>
   );
 }

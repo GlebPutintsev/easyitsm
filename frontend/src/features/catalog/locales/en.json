@@ -8,7 +8,24 @@
     "popular": "Popular services",
     "allServices": "Full catalog",
     "allTickets": "All tickets",
-    "noTickets": "No tickets yet. If something is wrong, report a problem"
+    "noTickets": "No tickets yet. If something is wrong, report a problem",
+    "brand": "Support",
+    "navLabel": "Portal sections",
+    "knowledge": "Knowledge base",
+    "breadcrumbs": "You are here",
+    "hello": "Hello, {{name}}",
+    "headline": "How can we help?",
+    "searchHint": "Describe what happened, e.g. “the printer does not print”",
+    "leadTime": "within {{time}}",
+    "hint": { "confirm": "confirm the resolution", "waitingYou": "waiting for your reply", "due": "due {{time}}" },
+    "needs": {
+      "resolved": "We resolved it. Check and confirm, or send it back",
+      "pending": "The assignee is waiting for your reply",
+      "check": "Review",
+      "reply": "Reply",
+      "approvalsHint": "Your colleagues’ requests are waiting for your decision",
+      "decide": "Go to approvals"
+    }
   },
   "search": { "services": "Services", "articles": "Articles", "tickets": "My tickets", "nothing": "Nothing found", "report": "Report a problem" },
   "catalog": {
@@ -43,7 +60,11 @@
         "minItems": "Choose at least {{n}}",
         "maxItems": "Choose at most {{n}}"
       }
-    }
+    },
+    "lead": "Pick a service, fill in a short form, and we will take it from there",
+    "teamChip": "Team: {{name}}",
+    "count_one": "{{count}} service",
+    "count_other": "{{count}} services"
   },
   "request": {
     "forOther": "On behalf of a colleague",
@@ -118,7 +139,17 @@
     "cancelReason": "Reason",
     "cancelConfirm": "Cancel ticket",
     "createBasedOn": "Create a follow-up",
-    "basedOn": "Follow-up to {{number}}"
+    "basedOn": "Follow-up to {{number}}",
+    "waitingYou": "Waiting for your reply",
+    "details": "Ticket details",
+    "requester": "Requester",
+    "createdFor": "For",
+    "created": "Created",
+    "resolvedAt": "Resolved",
+    "closedAt": "Closed",
+    "support": "support",
+    "replyResumes": "Once you reply, the ticket goes back to work",
+    "event": { "status": "Status: {{name}}", "merged": "Merged with {{numbers}}", "other": "Ticket updated" }
   },
   "survey": {
     "question": "How did we do?",
