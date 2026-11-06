@@ -26,6 +26,7 @@ const MAJOR: MajorIncident = {
   reason: 'Почта недоступна во всех офисах',
   hypothesis: null,
   services: [{ id: 's1', name: 'Почта' }],
+  cmdbServices: [{ id: 'ci-svc', name: 'Корпоративная почта', layer: 'business_service', criticality: 'high', depth: 2 }],
   declaredBy: 'u1',
   declaredAt: '2026-11-06T09:00:00Z',
   approvedBy: 'u1',
@@ -153,6 +154,7 @@ describe('крупные инциденты', () => {
   it('командный центр: гипотеза с If-Match, сообщение по шаблону, подтверждение оповещения', async () => {
     renderAt('/agent/major/m1');
     expect(await screen.findByRole('heading', { name: 'Сбой почты' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Корпоративная почта' })).toHaveAttribute('href', '/agent/cmdb/ci-svc');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Текущая гипотеза' }), { target: { value: 'Сертификат SMTP' } });
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));

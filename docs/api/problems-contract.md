@@ -48,7 +48,7 @@ PRB-01…05 (4.5 ТЗ), таблицы 7.4. Пакет `ru.easyitsm.problems`, �
 | `PUT /problems/{ref}/known-error` | Создать (без If-Match) или изменить (If-Match — версия известной ошибки). |
 | `POST /problems/{ref}/known-error/publish`, `/unpublish` | If-Match — версия известной ошибки. |
 | `GET /known-errors` | `ticketId` — подбор к заявке (КЕ ×3, услуга ×2, категория ×1, слова темы), иначе `q`, `serviceId`, `ciId`, `categoryId`; `includeDrafts`, `limit ≤ 50`. Исправленные — ниже. |
-| `GET /problems/recurring` | `dimension=service|category|ci`, `days` (1–366, по умолчанию 30), `minCount` (≥ 2, по умолчанию 3), `limit` → группы `{key, name, count, open, firstAt, lastAt, incidentIds (видимые), sample, problems}`. |
+| `GET /problems/recurring` | `dimension=service|category|ci`, `days` (1–366, по умолчанию 30), `minCount` (≥ 2, по умолчанию 3), `limit` → группы (`name` для `ci` — имя КЕ из CMDB) `{key, name, count, open, firstAt, lastAt, incidentIds (видимые), sample, problems}`. |
 
 ## Решение инцидентов (PRB-04)
 

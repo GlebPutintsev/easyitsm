@@ -93,6 +93,38 @@ class MimApiTest extends ProblemApiSupport {
                 .hasValueSatisfying(a -> assertThat(a.state()).isEqualTo("active"));
     }
 
+    private String ci(String name, String classCode) throws Exception {
+        return read(body(perform(as(post("/api/v1/cmdb/cis"), lead, "CFG")
+                .content("{\"name\":\"" + name + "\",\"classCode\":\"" + classCode + "\"}"))
+                .andExpect(status().isCreated())), "$.id");
+    }
+
+    @Test
+    void commandCenterShowsServicesDependingOnIncidentCi() throws Exception {
+        grant(lead, "LEAD");
+        String vm = ci(uniq("vm-mail"), "virtual_machine");
+        String app = ci(uniq("Почтовый сервер"), "application");
+        String svc = ci(uniq("Почта"), "business_service");
+        perform(as(post("/api/v1/cmdb/cis/" + app + "/relations"), lead, "CFG")
+                .content("{\"typeCode\":\"runs_on\",\"targetId\":\"" + vm + "\",\"direction\":\"outgoing\"}"))
+                .andExpect(status().isCreated());
+        perform(as(post("/api/v1/cmdb/cis/" + svc + "/relations"), lead, "CFG")
+                .content("{\"typeCode\":\"depends_on\",\"targetId\":\"" + app + "\",\"direction\":\"outgoing\"}"))
+                .andExpect(status().isCreated());
+        String inc = incident(uniq("Почта не отвечает"));
+        TenantContext.runAs(UUID.fromString(DEMO), () -> jdbc.sql(
+                "update ticket set ci_id = cast(:c as uuid) where id = cast(:id as uuid)")
+                .param("c", vm).param("id", inc).update());
+        String json = declare(lead, "AGT,LEAD", inc);
+        assertThat((List<String>) read(json, "$.cmdbServices[*].id")).containsExactly(svc);
+        assertThat((List<Integer>) read(json, "$.cmdbServices[*].depth")).containsExactly(2);
+        assertThat((List<String>) read(json, "$.cmdbServices[*].layer")).containsExactly("business_service");
+
+        // Без КЕ у заявки подсказки нет.
+        String plain = declare(lead, "AGT,LEAD", incident(uniq("Без КЕ")));
+        assertThat((List<String>) read(plain, "$.cmdbServices")).isEmpty();
+    }
+
     @Test
     void agentRequestNeedsApproval() throws Exception {
         grant(lead, "LEAD");

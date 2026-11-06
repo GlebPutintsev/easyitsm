@@ -221,6 +221,23 @@ class ProblemApiTest extends ProblemApiSupport {
     }
 
     @Test
+    void recurringByCiShowsCmdbNames() throws Exception {
+        String name = uniq("srv-repeat");
+        String ci = read(body(perform(as(post("/api/v1/cmdb/cis"), prb, "CFG")
+                .content("{\"name\":\"" + name + "\",\"classCode\":\"virtual_machine\"}"))
+                .andExpect(status().isCreated())), "$.id");
+        for (String id : List.of(incident(uniq("Падает ВМ")), incident(uniq("Падает ВМ")))) {
+            TenantContext.runAs(UUID.fromString(DEMO), () -> jdbc.sql(
+                    "update ticket set ci_id = cast(:c as uuid) where id = cast(:id as uuid)")
+                    .param("c", ci).param("id", id).update());
+        }
+        String list = body(perform(as(get("/api/v1/problems/recurring").param("dimension", "ci")
+                .param("minCount", "2").param("limit", "100"), prb, "PRB")).andExpect(status().isOk()));
+        List<String> names = read(list, "$[?(@.key == '" + ci + "')].name");
+        assertThat(names).containsExactly(name);
+    }
+
+    @Test
     void otherModulesCreateProblemsThroughApi() throws Exception {
         String inc = incident(uniq("Сбой оплаты"));
         ProblemRef ref = TenantContext.callAs(UUID.fromString(DEMO), () -> problemCommands.create(new NewProblem(

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.easyitsm.catalog.api.CatalogItemRef;
 import ru.easyitsm.catalog.api.CatalogQueries;
+import ru.easyitsm.cmdb.api.CiDirectory;
+import ru.easyitsm.cmdb.api.CiRef;
 import ru.easyitsm.identity.api.UserDirectory;
 import ru.easyitsm.platform.tenant.TenantContext;
 import ru.easyitsm.platform.web.ApiException;
@@ -61,20 +63,22 @@ class ProblemService implements ProblemCommands {
     private final TicketLinks links;
     private final TicketTrends trends;
     private final TicketDirectory ticketDirectory;
+    private final CiDirectory cis;
     private final CatalogQueries catalog;
     private final UserDirectory directory;
     private final IncidentResolver resolver;
     private final ApplicationEventPublisher events;
 
     ProblemService(ProblemStore store, TicketQueries tickets, TicketCommands commands, TicketLinks links,
-                   TicketTrends trends, TicketDirectory ticketDirectory, CatalogQueries catalog,
-                   UserDirectory directory, IncidentResolver resolver, ApplicationEventPublisher events) {
+                   TicketTrends trends, TicketDirectory ticketDirectory, CiDirectory cis,
+                   CatalogQueries catalog, UserDirectory directory, IncidentResolver resolver, ApplicationEventPublisher events) {
         this.store = store;
         this.tickets = tickets;
         this.commands = commands;
         this.links = links;
         this.trends = trends;
         this.ticketDirectory = ticketDirectory;
+        this.cis = cis;
         this.catalog = catalog;
         this.directory = directory;
         this.resolver = resolver;
@@ -286,7 +290,7 @@ class ProblemService implements ProblemCommands {
         Instant from = to.minus(Duration.ofDays(Math.clamp(days, 1, 366)));
         var clusters = trends.recurringIncidents(dim, from, to, Math.clamp(minCount, 2, 1000), Math.clamp(limit, 1,
                 100));
-        Map<UUID, String> names = names(dim);
+        Map<UUID, String> names = names(dim, clusters.stream().map(TicketTrends.IncidentCluster::key).toList());
         Set<UUID> all = clusters.stream().flatMap(c -> c.ticketIds().stream()).collect(Collectors.toSet());
         Map<UUID, List<UUID>> problemsByIncident = store.problemsOf(all);
         Map<UUID, String> numbers = new LinkedHashMap<>();
@@ -315,14 +319,15 @@ class ProblemService implements ProblemCommands {
         return out;
     }
 
-    private Map<UUID, String> names(TicketTrends.Dimension dim) {
+    private Map<UUID, String> names(TicketTrends.Dimension dim, List<UUID> keys) {
         return switch (dim) {
             case SERVICE -> catalog.activeItems().stream()
                     .collect(Collectors.toMap(CatalogItemRef::id, CatalogItemRef::name, (a, b) -> a));
             case CATEGORY -> ticketDirectory.categories().stream()
                     .collect(Collectors.toMap(TicketDirectory.CategoryRef::id, TicketDirectory.CategoryRef::name,
                             (a, b) -> a));
-            case CI -> Map.of(); // имена КЕ — модуль cmdb (волна 3), пока интерфейс показывает id
+            case CI -> cis.findAll(keys.stream().filter(java.util.Objects::nonNull).toList()).stream()
+                    .collect(Collectors.toMap(CiRef::id, CiRef::name, (a, b) -> a));
         };
     }
 

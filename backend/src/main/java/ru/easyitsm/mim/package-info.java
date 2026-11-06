@@ -6,7 +6,7 @@
  * {@code parent_of}, обновления пользователям — публичные записи в ленты (INC-09). Модуль зависит от
  * {@code tickets.api}, {@code identity.api} (роли менеджера, участники групп), {@code admin.api.DutyRoster}
  * (кто дежурит), {@code notifications.api.Notifier}, {@code problems.api} (проблема из разбора),
- * {@code catalog.api} (имена услуг) и {@code announcements.api} (объявления на странице статуса).
+ * {@code catalog.api} (имена услуг), {@code cmdb.api} (услуги, затронутые по связям КЕ) и {@code announcements.api} (объявления на странице статуса).
  * <p>
  * Каналы оповещения не зашиты: модуль сам пишет в центр уведомлений и почту, а события
  * {@code OnCallPaged} и {@code MajorIncidentUpdatePublished} слушают будущие каналы (мессенджеры, SMS, MIM-06).

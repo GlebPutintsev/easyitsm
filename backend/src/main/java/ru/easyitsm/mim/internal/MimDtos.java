@@ -93,6 +93,10 @@ final class MimDtos {
     record ServiceRef(UUID id, String name) {
     }
 
+    /** Услуга CMDB, зависящая от КЕ инцидента; depth — сколько связей до неё (0 — КЕ сама услуга). */
+    record CmdbServiceView(UUID id, String name, String layer, String criticality, int depth) {
+    }
+
     record RoleView(String role, UUID userId) {
     }
 
@@ -119,7 +123,7 @@ final class MimDtos {
     record MajorIncidentView(UUID id, TicketRef ticket, String state, String publicTitle, String reason,
                              String hypothesis, List<ServiceRef> services, UUID declaredBy, Instant declaredAt,
                              UUID approvedBy, Instant approvedAt, Instant restoredAt, Instant closedAt,
-                             Instant nextUpdateAt, List<RoleView> roles, List<EventView> timeline,
+                             Instant nextUpdateAt, List<RoleView> roles, List<CmdbServiceView> cmdbServices, List<EventView> timeline,
                              List<TaskView> tasks, List<UpdateView> updates, List<PageView> pages,
                              List<TicketRef> children, String pir, TicketRef problem, Permissions permissions,
                              long version) {
