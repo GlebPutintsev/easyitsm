@@ -2,6 +2,7 @@ import { Anchor, Avatar, Badge, Button, Divider, Group, Paper, Select, Stack, Te
 import { IconMail, IconPhone, IconStar } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { TicketAssetsPanel } from '@/features/assets/TicketAssetsPanel';
 import { priorityOf } from '../api/domain';
 import { useQueryClient } from '@tanstack/react-query';
 import { ticketsApi } from '../api';
@@ -243,6 +244,8 @@ export function TicketSidePanel({ ticket }: { ticket: Ticket }) {
           </>
         )}
       </Paper>
+
+      <TicketAssetsPanel ticketId={ticket.id} requesterId={ticket.requester.id} />
 
       {(ticket.links.length > 0 || ticket.watchers.length > 0) && (
         <Paper withBorder p="sm" radius="md">

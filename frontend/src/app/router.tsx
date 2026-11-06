@@ -33,6 +33,7 @@ import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
+import { AssetPage, AssetsPage, ContractsPage, DirectoryPage, LicensesPage, MyAssetsPage } from '@/features/assets';
 import { NotFound } from './NotFound';
 
 /**
@@ -76,6 +77,14 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
+      { path: 'agent/assets', element: <AssetsPage /> },
+      { path: 'agent/assets/licenses', element: <LicensesPage /> },
+      { path: 'agent/assets/licenses/:id', element: <LicensesPage /> },
+      { path: 'agent/assets/contracts', element: <ContractsPage /> },
+      { path: 'agent/assets/contracts/:id', element: <ContractsPage /> },
+      { path: 'agent/assets/directory', element: <DirectoryPage /> },
+      { path: 'agent/assets/:id', element: <AssetPage /> },
+      { path: 'portal/assets', element: <MyAssetsPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },
