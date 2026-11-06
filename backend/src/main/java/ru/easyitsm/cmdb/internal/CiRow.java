@@ -28,7 +28,8 @@ record CiRow(
         UUID createdBy,
         Instant updatedAt,
         UUID updatedBy,
-        long version) {
+        long version,
+        UUID mergedInto) {
 
     CiRef ref() {
         return new CiRef(id, name, classCode, className, layer, status, environment, criticality, ownerGroupId,

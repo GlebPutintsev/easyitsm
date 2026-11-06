@@ -18,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  *   <li>полнота — заполнены группа-владелец и обязательные атрибуты класса;</li>
  *   <li>актуальность — источник видел КЕ за последние {@value #STALE_DAYS} дней, а КЕ без источников
- *       менялась за последние {@value #MANUAL_STALE_DAYS} дней;</li>
+ *       менялась за последние {@value #MANUAL_STALE_DAYS} дней; КЕ, которую все её источники больше не видят
+ *       (удалена или не пришла в последнем полном обходе), неактуальна сразу;</li>
  *   <li>сироты — КЕ без единой активной связи;</li>
  *   <li>дубликаты — КЕ с одинаковым идентификатором (атрибуты из правил идентификации) или одинаковым именем
  *       в одном классе.</li>
@@ -115,9 +116,12 @@ class QualityService {
     private List<UUID> staleIds(int limit) {
         Instant now = Instant.now();
         return jdbc.sql("""
-                        select id from ci where status <> 'retired'
-                           and (last_seen_at < :seen or last_seen_at is null and updated_at < :manual)
-                         order by coalesce(last_seen_at, updated_at), id limit :limit""")
+                        select c.id from ci c where c.status <> 'retired'
+                           and (c.last_seen_at < :seen or c.last_seen_at is null and c.updated_at < :manual
+                                or exists (select 1 from ci_source_record r where r.ci_id = c.id)
+                                   and not exists (select 1 from ci_source_record r where r.ci_id = c.id
+                                                      and r.removed_at is null and r.missing_since is null))
+                         order by coalesce(c.last_seen_at, c.updated_at), c.id limit :limit""")
                 .param("seen", Sql.ts(now.minus(Duration.ofDays(STALE_DAYS))))
                 .param("manual", Sql.ts(now.minus(Duration.ofDays(MANUAL_STALE_DAYS))))
                 .param("limit", limit).query(UUID.class).list();

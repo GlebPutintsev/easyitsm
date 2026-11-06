@@ -38,6 +38,10 @@ class CmdbJson {
         return json == null ? null : mapper.readValue(json, Object.class);
     }
 
+    <T> T read(String json, TypeReference<T> type) {
+        return json == null ? null : mapper.readValue(json, type);
+    }
+
     List<AttributeDef> readAttributes(String json) {
         return json == null || json.isBlank() ? new ArrayList<>() : mapper.readValue(json, ATTRIBUTES);
     }
