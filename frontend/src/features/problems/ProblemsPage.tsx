@@ -211,7 +211,13 @@ function Recurring({ onCreate, canCreate }: { onCreate: (d: ProblemDraft) => voi
               </div>
               <Stack gap={8} style={{ minWidth: 0 }}>
                 <Group gap={8}>
-                  <Text fw={600}>{name(c)}</Text>
+                  {c.dimension === 'ci' ? (
+                    <Anchor component={Link} to={`/agent/cmdb/${c.key}`} fw={600}>
+                      {name(c)}
+                    </Anchor>
+                  ) : (
+                    <Text fw={600}>{name(c)}</Text>
+                  )}
                   <Text size="xs" c="dimmed">
                     {t('problems.recurring.last', { date: new Date(c.lastAt).toLocaleDateString(i18n.language) })}
                   </Text>

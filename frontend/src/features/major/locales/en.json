@@ -70,7 +70,10 @@
       "publicTitle": "Title for users",
       "publicTitleHint": "Shown on the status page and in updates, without internal details",
       "services": "Affected services",
-      "servicesPlaceholder": "Choose services"
+      "servicesPlaceholder": "Choose services",
+      "cmdbServices": "Depend on the incident CI via CMDB relations",
+      "cmdbDepth": "{{count}} hop(s) away",
+      "cmdbDirect": "the CI itself"
     },
     "card": {
       "back": "Major incidents",

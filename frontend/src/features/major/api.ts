@@ -26,6 +26,15 @@ export interface ServiceRef {
   name: string;
 }
 
+/** Услуга CMDB, которая по связям зависит от КЕ инцидента; depth 0 — КЕ сама услуга. */
+export interface CmdbService {
+  id: string;
+  name: string;
+  layer: string;
+  criticality: 'low' | 'medium' | 'high' | 'critical';
+  depth: number;
+}
+
 export interface TimelineEvent {
   id: string;
   kind: string;
@@ -91,6 +100,7 @@ export interface MajorIncident {
   closedAt: string | null;
   nextUpdateAt: string | null;
   roles: { role: MajorRole; userId: string | null }[];
+  cmdbServices?: CmdbService[];
   timeline: TimelineEvent[];
   tasks: Task[];
   updates: Update[];

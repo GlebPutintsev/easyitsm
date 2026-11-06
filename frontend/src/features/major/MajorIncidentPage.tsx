@@ -37,6 +37,7 @@ import {
   useMajorAction,
   useTemplates,
   type Audience,
+  type CmdbService,
   type MajorIncident,
   type MajorRole,
   type Page,
@@ -619,7 +620,31 @@ function Services({ m }: { m: MajorIncident }) {
       ) : (
         <Text size="sm">{m.services.map((s) => s.name).join(', ') || '—'}</Text>
       )}
+      <CmdbServices items={m.cmdbServices ?? []} />
     </Section>
+  );
+}
+
+/** Подсказка из CMDB: услуги, зависящие от КЕ основной и дочерних заявок. */
+function CmdbServices({ items }: { items: CmdbService[] }) {
+  const { t } = useTranslation();
+  if (items.length === 0) return null;
+  return (
+    <Stack gap={4} mt="sm">
+      <Text size="xs" c="dimmed">
+        {t('major.fields.cmdbServices')}
+      </Text>
+      {items.map((s) => (
+        <Group key={s.id} gap={6} wrap="nowrap">
+          <Anchor component={Link} to={`/agent/cmdb/${s.id}`} size="sm" truncate>
+            {s.name}
+          </Anchor>
+          <Text size="xs" c="dimmed">
+            {s.depth === 0 ? t('major.fields.cmdbDirect') : t('major.fields.cmdbDepth', { count: s.depth })}
+          </Text>
+        </Group>
+      ))}
+    </Stack>
   );
 }
 

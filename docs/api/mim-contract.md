@@ -26,6 +26,10 @@ Java: `ru.easyitsm.mim.api`, `ru.easyitsm.mim.events`. REST: `/api/v1/major-inci
 - Закрытие (MIM-05) — только из `restored`: черновик PIR в Markdown (сводка, участники, хронология,
   сообщения, задачи) и, по желанию, проблема через `ProblemCommands.create` (`source = major_incident`,
   инциденты — главный и дочерние, хронология копируется).
+- Подсказка из CMDB: `cmdbServices` в командном центре — услуги (`{id, name, layer, criticality, depth}`), которые
+  по связям CMDB зависят от КЕ главной и дочерних заявок (`CiImpact`, глубина до 5, не больше 50, ближайшие и
+  критичные первыми; `depth = 0` — КЕ сама услуга). Только чтение: затронутые услуги (`services`) выбирает
+  менеджер.
 
 ## Права
 
