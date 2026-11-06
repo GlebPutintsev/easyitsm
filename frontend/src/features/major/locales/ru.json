@@ -72,7 +72,10 @@
       "publicTitle": "Название для пользователей",
       "publicTitleHint": "Его видят на странице статуса и в сообщениях, без внутренних подробностей",
       "services": "Затронутые услуги",
-      "servicesPlaceholder": "Выберите услуги"
+      "servicesPlaceholder": "Выберите услуги",
+      "cmdbServices": "По связям CMDB зависят от КЕ инцидента",
+      "cmdbDepth": "через {{count}} связ.",
+      "cmdbDirect": "сама КЕ"
     },
     "card": {
       "back": "Крупные инциденты",

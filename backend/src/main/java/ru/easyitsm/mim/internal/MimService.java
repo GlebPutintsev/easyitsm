@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.easyitsm.announcements.api.AnnouncementQueries;
 import ru.easyitsm.catalog.api.CatalogItemRef;
 import ru.easyitsm.catalog.api.CatalogQueries;
+import ru.easyitsm.cmdb.api.CiImpact;
+import ru.easyitsm.cmdb.api.ImpactedCi;
 import ru.easyitsm.identity.api.Role;
 import ru.easyitsm.identity.api.UserDirectory;
 import ru.easyitsm.identity.api.UserSummary;
@@ -92,6 +94,7 @@ class MimService implements MajorIncidentQueries {
     private final TicketLinks links;
     private final UserDirectory directory;
     private final CatalogQueries catalog;
+    private final CiImpact impact;
     private final AnnouncementQueries announcements;
     private final ProblemCommands problems;
     private final Notifier notifier;
@@ -99,7 +102,7 @@ class MimService implements MajorIncidentQueries {
 
     MimService(MimStore store, MessageTemplates templates, Paging paging, TicketQueries tickets,
                TicketCommands commands, TicketLinks links, UserDirectory directory, CatalogQueries catalog,
-               AnnouncementQueries announcements, ProblemCommands problems, Notifier notifier,
+               CiImpact impact, AnnouncementQueries announcements, ProblemCommands problems, Notifier notifier,
                ApplicationEventPublisher events) {
         this.store = store;
         this.templates = templates;
@@ -109,6 +112,7 @@ class MimService implements MajorIncidentQueries {
         this.links = links;
         this.directory = directory;
         this.catalog = catalog;
+        this.impact = impact;
         this.announcements = announcements;
         this.problems = problems;
         this.notifier = notifier;
@@ -751,8 +755,31 @@ class MimService implements MajorIncidentQueries {
         return new MajorIncidentView(i.id(), ticketRef(i.ticketId()), i.state(), i.publicTitle(), i.reason(),
                 i.hypothesis(), services(i.serviceIds(), serviceNames), i.declaredBy(), i.declaredAt(),
                 i.approvedBy(), i.approvedAt(), i.restoredAt(), i.closedAt(), i.nextUpdateAt(), roleViews,
-                store.events(id), store.tasks(id), store.updates(id), pages, kids, i.pir(),
-                i.problemId() == null ? null : ticketRef(i.problemId()), perms, i.version());
+                cmdbServices(i.ticketId(), kids), store.events(id), store.tasks(id), store.updates(id), pages, kids,
+                i.pir(), i.problemId() == null ? null : ticketRef(i.problemId()), perms, i.version());
+    }
+
+    /**
+     * Услуги, которые по связям CMDB зависят от КЕ основной и дочерних заявок: подсказка менеджеру, какие услуги
+     * указать затронутыми. Ближайшие и критичные — первыми.
+     */
+    private List<MimDtos.CmdbServiceView> cmdbServices(UUID ticketId, List<TicketRef> kids) {
+        Set<UUID> ciIds = new LinkedHashSet<>();
+        tickets.find(ticketId).map(TicketSnapshot::ciId).ifPresent(ciIds::add);
+        for (TicketRef k : kids) {
+            tickets.find(k.id()).map(TicketSnapshot::ciId).ifPresent(ciIds::add);
+        }
+        if (ciIds.isEmpty()) {
+            return List.of();
+        }
+        return impact.impactedServices(ciIds, CiImpact.MAX_DEPTH).stream()
+                .sorted(java.util.Comparator.comparingInt(ImpactedCi::depth)
+                        .thenComparing(s -> -s.ci().criticality().ordinal())
+                        .thenComparing(s -> s.ci().name()))
+                .limit(50)
+                .map(s -> new MimDtos.CmdbServiceView(s.ci().id(), s.ci().name(), s.ci().layer().code(),
+                        s.ci().criticality().code(), s.depth()))
+                .toList();
     }
 
     long version(UUID id) {
