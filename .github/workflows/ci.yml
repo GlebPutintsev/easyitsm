@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  # Быстрая проверка до сборки: версии миграций Flyway уникальны во всём ядре (на PR — уже с учётом main).
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Уникальность версий миграций
+        run: .github/scripts/check-migration-versions.sh
   backend:
     runs-on: ubuntu-latest
     services:

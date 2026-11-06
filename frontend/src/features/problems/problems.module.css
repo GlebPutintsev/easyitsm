@@ -1,0 +1,219 @@
+/* Проблемы: только токены --ei-*, вид — DESIGN.md («Адмирал»). */
+
+.section {
+  padding: 16px 20px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ei-accent-text);
+}
+
+.label::after {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin-top: 6px;
+  background: var(--ei-brass-line);
+}
+
+.mono {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* «5 почему»: шаги цепочкой, линия слева соединяет вопросы. */
+.whys {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.why {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.whyNo {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 4px;
+  border: 1px solid var(--ei-border-strong);
+  border-radius: 999px;
+  background: var(--ei-surface);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ei-text-2);
+}
+
+.whyLast .whyNo {
+  border-color: var(--ei-brass-line);
+  background: var(--ei-brass-soft);
+  color: var(--ei-brass-text);
+}
+
+/* Исикава: три категории сверху, хребет к следствию, три снизу. */
+.fish {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(140px, 200px);
+  grid-template-rows: auto 28px auto;
+  column-gap: 16px;
+}
+
+.bone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--ei-border);
+  border-radius: 8px;
+  background: var(--ei-bg);
+}
+
+.boneTop {
+  border-bottom: 2px solid var(--ei-border-strong);
+}
+
+.boneBottom {
+  border-top: 2px solid var(--ei-border-strong);
+}
+
+.spine {
+  grid-column: 1 / 4;
+  grid-row: 2;
+  align-self: center;
+  height: 2px;
+  background: var(--ei-text-3);
+}
+
+.head {
+  grid-column: 4;
+  grid-row: 1 / 4;
+  align-self: center;
+  padding: 12px 14px;
+  border: 1px solid var(--ei-accent);
+  border-left: 3px solid var(--ei-brass-line);
+  border-radius: 8px;
+  background: var(--ei-accent-soft);
+  color: var(--ei-accent-text);
+  font-weight: 600;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .fish {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    row-gap: 8px;
+  }
+
+  .spine {
+    display: none;
+  }
+
+  .head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 14px;
+  border-left: 2px solid var(--ei-border);
+}
+
+.event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.event::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 14px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ei-surface);
+  border-radius: 999px;
+  background: var(--ei-text-3);
+}
+
+@media (max-width: 700px) {
+  .event {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.knownError {
+  padding: 12px 14px;
+  border: 1px solid var(--ei-border);
+  border-left: 3px solid var(--ei-warn);
+  border-radius: 8px;
+  background: var(--ei-surface);
+}
+
+.knownErrorFixed {
+  border-left-color: var(--ei-ok);
+}
+
+.workaround {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--ei-warn-soft);
+  color: var(--ei-text);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cluster {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid var(--ei-border);
+  border-radius: 12px;
+  background: var(--ei-surface);
+}
+
+.clusterCount {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 700;
+  color: var(--ei-text);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .cluster {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.preWrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

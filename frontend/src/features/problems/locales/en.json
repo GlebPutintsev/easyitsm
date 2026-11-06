@@ -1,0 +1,144 @@
+{
+  "problems": {
+    "title": "Problems",
+    "subtitle": "Causes of recurring and major incidents, known errors and fixes",
+    "tabs": { "list": "Problems", "knownErrors": "Known errors", "recurring": "Recurring incidents" },
+    "states": { "active": "In progress", "waiting": "Pending and resolved", "closed": "Closed", "all": "All" },
+    "new": "New problem",
+    "empty": "No problems",
+    "emptyHint": "Create a problem from an incident or from the recurring incidents report",
+    "columns": { "number": "Number", "title": "Subject", "status": "Status", "priority": "Priority", "created": "Created" },
+    "loadMore": "Show more",
+    "source": {
+      "manual": "Created manually",
+      "incident": "From an incident",
+      "recurring": "From recurring incidents",
+      "major_incident": "From a major incident review"
+    },
+    "create": {
+      "title": "New problem",
+      "fromTicket": "Problem from {{number}}",
+      "name": "Subject",
+      "description": "Description",
+      "group": "Group",
+      "incidents": "Linked incidents: {{count}}",
+      "submit": "Create problem",
+      "button": "Create problem",
+      "created": "Problem {{number}} created"
+    },
+    "card": {
+      "back": "To problems",
+      "openTicket": "Status, assignee and activity",
+      "notFound": "Problem {{number}} not found or not available",
+      "tabs": { "overview": "Overview", "analysis": "Root cause analysis", "knownError": "Known error", "incidents": "Incidents", "changes": "Changes" },
+      "rootCause": "Root cause",
+      "rootCauseHint": "What actually caused the incidents",
+      "workaround": "Workaround",
+      "workaroundHint": "How to restore service until the fix",
+      "closeIncidents": "Resolve linked incidents when the problem is resolved",
+      "save": "Save",
+      "saved": "Saved",
+      "readOnly": "Read only: the problem belongs to another group or is closed",
+      "risk": {
+        "title": "Accepted risk",
+        "none": "Risk not accepted: the problem needs a fix",
+        "accept": "Accept the risk without a fix",
+        "reason": "Why no fix is needed",
+        "reviewAt": "Review on",
+        "acceptedBy": "Accepted by {{name}} on {{date}}, review on {{review}}"
+      }
+    },
+    "analysis": {
+      "timeline": "Timeline",
+      "timelineHint": "Events in order: changes, failures, observations",
+      "addEvent": "Add event",
+      "eventText": "What happened",
+      "eventAt": "When",
+      "whys": "5 whys",
+      "whysHint": "Each answer becomes the next question. The root is usually 3–5 steps away",
+      "why": "Why?",
+      "because": "Because…",
+      "addWhy": "Another why",
+      "ishikawa": "Ishikawa diagram",
+      "ishikawaHint": "Possible causes by category. Empty categories are not saved",
+      "addCause": "Cause",
+      "head": "Effect",
+      "conclusion": "Conclusion",
+      "conclusionHint": "What the analysis found and what changes",
+      "remove": "Remove",
+      "categories": {
+        "people": "People",
+        "process": "Process",
+        "technology": "Technology",
+        "environment": "Environment",
+        "suppliers": "Suppliers",
+        "measurement": "Measurement and control"
+      }
+    },
+    "knownError": {
+      "title": "Known error",
+      "hint": "Once published, agents see it on similar incidents",
+      "none": "No known error yet",
+      "create": "Describe the known error",
+      "name": "Name",
+      "symptoms": "Symptoms",
+      "symptomsHint": "How the error looks to users and agents",
+      "workaround": "Workaround",
+      "draft": "Draft",
+      "published": "Published",
+      "fixed": "Fixed",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "publishHint": "Published by a problem manager or a team lead",
+      "search": "Search known errors",
+      "emptySearch": "Nothing found",
+      "problem": "Problem {{number}}"
+    },
+    "incidents": {
+      "empty": "No incidents",
+      "add": "Link incidents",
+      "addLabel": "Incident numbers, comma separated",
+      "addPlaceholder": "INC-000123, INC-000124",
+      "hidden": "No access",
+      "resolve": "Resolve open incidents",
+      "resolveHint": "Available once the problem is resolved",
+      "resolveComment": "Comment for requesters",
+      "resolved": "Incidents resolved: {{count}}",
+      "skipped": "{{number}}: {{reason}}",
+      "skipReason": {
+        "no_assignee": "no assignee, an agent will resolve it",
+        "open_subtasks": "open subtasks",
+        "identity_check_required": "identity check required",
+        "transition_not_allowed": "transition not available"
+      }
+    },
+    "changes": {
+      "empty": "No fix changes",
+      "create": "Create change",
+      "name": "Change subject",
+      "description": "What changes",
+      "created": "Change {{number}} created"
+    },
+    "recurring": {
+      "hint": "Incidents with the same service, category or CI over a period. Frequent repeats are problem candidates",
+      "dimension": "Group by",
+      "dimensions": { "service": "Service", "category": "Category", "ci": "CI" },
+      "days": "Period",
+      "daysValue": "{{count}} days",
+      "minCount": "At least",
+      "count": "{{count}} incidents",
+      "open": "{{count}} open",
+      "unknown": "Unnamed",
+      "existing": "Already exists",
+      "createProblem": "Create problem",
+      "problemTitle": "Recurring incidents: {{name}}",
+      "empty": "No repeats in the period",
+      "last": "latest {{date}}"
+    },
+    "hint": {
+      "title": "Known errors",
+      "workaround": "Workaround",
+      "open": "Open problem"
+    }
+  }
+}

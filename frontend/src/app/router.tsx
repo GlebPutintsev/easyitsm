@@ -33,6 +33,7 @@ import { KnowledgeWorkspace } from '@/features/knowledge/KnowledgeWorkspace';
 import { NewArticle } from '@/features/knowledge/NewArticle';
 import { SearchPage } from '@/features/search';
 import { ReportsPage } from '@/features/reports/ReportsPage';
+import { ProblemPage, ProblemsPage } from '@/features/problems';
 import { NotFound } from './NotFound';
 
 /**
@@ -76,6 +77,8 @@ export const router = createBrowserRouter([
       { path: 'agent/kb/:id', element: <ArticlePage space="agent" /> },
       { path: 'agent/kb/:id/edit', element: <ArticleEditor /> },
       { path: 'agent/kb/:id/history', element: <ArticleHistory /> },
+      { path: 'agent/problems', element: <ProblemsPage /> },
+      { path: 'agent/problems/:number', element: <ProblemPage /> },
       { path: 'agent/reports', element: <ReportsPage /> },
       { path: 'agent/reports/:dashboard', element: <ReportsPage /> },
       { path: 'admin', element: <AdminHome /> },

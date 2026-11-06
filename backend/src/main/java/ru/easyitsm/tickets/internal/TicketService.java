@@ -97,7 +97,7 @@ class TicketService implements TicketCommands, TicketQueries {
         return store.find(ticketId).filter(t -> access.canRead(t, actor))
                 .map(t -> new ru.easyitsm.tickets.api.TicketPermissions(t.snapshot(),
                         !actor.roles().equals(Set.of("AUD")), actor.canSeeInternal(), actor.isSupport(),
-                        t.statusCategory.isFinal()));
+                        t.statusCategory.isFinal(), access.canWork(t, actor)));
     }
 
     @Override
